@@ -19,7 +19,7 @@ const ProfileScreen = () => {
 
   return (
     <View style={style.Screen}>
-      <StatusBar barStyle="dark-content" backgroundColor='#f9f9fb'/>
+      <StatusBar barStyle="dark-content" backgroundColor='#f9f9fb' />
       {/* Header */}
       <View>
         <TouchableOpacity>
@@ -30,17 +30,6 @@ const ProfileScreen = () => {
             color="#1b47d2"
           />
         </TouchableOpacity>
-
-        {/* <Text style={style.profiletext}>Profile</Text> */}
-
-        {/* <TouchableOpacity>
-          <Feather
-            style={style.settingIcon}
-            name={"settings"}
-            size={25}
-            color="#1b47d2"
-          />
-        </TouchableOpacity> */}
       </View>
 
       {/* Main White Card */}
@@ -159,7 +148,7 @@ export default ProfileScreen;
 const style = StyleSheet.create({
   Screen: {
     flex: 1,
-     backgroundColor: '#f9f9fb',
+    backgroundColor: '#f9f9fb',
   },
   backIcon: {
     paddingVertical: 15,
@@ -182,13 +171,13 @@ const style = StyleSheet.create({
     paddingHorizontal: 20,
     alignItems: "center",
   },
- avatarImage: {
-  width: 90,
-  height: 90,
-  borderRadius: 45,
-  borderColor: '#1b47d2',
-  backgroundColor: '#eef6fa',
-},
+  avatarImage: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    borderColor: '#1b47d2',
+    backgroundColor: '#eef6fa',
+  },
   namerow: {
     flexDirection: 'row',
     marginTop: 10,
@@ -216,7 +205,7 @@ const style = StyleSheet.create({
     paddingBottom: 16,
   },
   box: {
-    backgroundColor:'#fff',
+    backgroundColor: '#fff',
     // borderWidth: 0.2,
     width: "45%",
     marginBottom: 10,
@@ -236,20 +225,20 @@ const style = StyleSheet.create({
   // SETTINGS SECTION
   settingsSection: {
     paddingVertical: 15,
-    flexDirection: 'row',      // ✅ aligns icon + text in one line
-    alignItems: 'center',      // ✅ vertically center them
+    flexDirection: 'row',
+    alignItems: 'center',
     padding: 10,
     backgroundColor: '#fff',
     borderRadius: 20,
     // borderWidth: 0.2,
     margin: 10,
     marginBottom: 0,
-    elevation: 1,              // optional: adds subtle shadow
+    elevation: 1,
   },
   SettingsText: {
     fontSize: 16,
     fontWeight: '500',
-    marginLeft: 10,            // ✅ adds space between icon and text
+    marginLeft: 10,
     color: '#000',
   },
 
