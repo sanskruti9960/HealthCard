@@ -1,20 +1,18 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+} from "react-native";
+import ProfileScreen from "./Src/Screens/ProfileScreen";
 
-const App = () => {
-  return (
-    <View style={styles.container}>
-      <Text>Welcome</Text>
+const App=()=>{
+  return(
+    <View style={{flex:1}}>
+      <ProfileScreen />
     </View>
-  );
-};
-
+  )
+}
 export default App;
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
