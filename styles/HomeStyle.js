@@ -7,7 +7,7 @@ const HomeStyle = StyleSheet.create({
   main: {
     flex: 1,
     backgroundColor: "white",
-    padding: 10
+    padding: 5
   },
   profile_icon: {
     position: "absolute",
@@ -24,29 +24,7 @@ const HomeStyle = StyleSheet.create({
 
   },
 
-  // health information
-  info_blood: {
-    backgroundColor: "#ffe0e0",
-    marginRight: 10,
-    marginTop: 10,
-    borderRadius: 15,
-    padding: 5
-  },
-  info_Allergies: {
-    backgroundColor: "#fff3cd",
-    marginRight: 10,
-    marginTop: 10,
-    borderRadius: 15,
-    padding: 5
-  },
-  info_cond: {
-    borderRadius: 15,
-    marginTop: 10,
-    backgroundColor: "#d1ecf1",
-    width: "55%",
 
-
-  },
   // icon in circle facility provided
   facility: {
     flexDirection: 'row',
@@ -100,8 +78,36 @@ const HomeStyle = StyleSheet.create({
   },
   fac_singleIcon: {
     alignItems: 'center'
-  }
+  },
 
+
+// steps procress style
+    card: {
+    backgroundColor: 'white',
+    padding: 16,
+    borderRadius: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: "95%",
+    marginLeft:10,
+    marginTop:20,
+    elevation:3
+  },
+  title: {
+    color: 'black',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  subtitle: {
+    color: '#1b47d2',
+    fontSize: 12,
+  },
+  percent: {
+    color: '#1b47d2',
+    fontSize: 12,
+    fontWeight:'bold'
+  },
 
 
 })
