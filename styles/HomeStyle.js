@@ -20,8 +20,8 @@ const HomeStyle = StyleSheet.create({
   },
   Topbar: {
     flexDirection: "row",
-    margin: 10
-
+    margin: 10,
+    
   },
 
 
