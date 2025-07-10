@@ -109,6 +109,15 @@ const HomeStyle = StyleSheet.create({
     fontWeight:'bold'
   },
 
+  /* Dailycheckout 4 cards */
+    container: {
+    padding: 7,
+    flex: 1,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
 
 })
 export default HomeStyle

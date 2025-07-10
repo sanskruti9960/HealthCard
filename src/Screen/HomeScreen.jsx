@@ -5,7 +5,9 @@ import MaterialIcons from "react-native-vector-icons/MaterialIcons"
 import FontAwesome5 from "react-native-vector-icons/FontAwesome5"
 import HomeStyle from "../../styles/HomeStyle"
 import ActivityCard from "./ActivityCard"
+import Dailycheckout from "../compoenents/Dailycheckout"
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
+import Svg, { Path } from 'react-native-svg'
 
 const HomeScreen = () => {
 
@@ -175,9 +177,110 @@ const HomeScreen = () => {
             <Text style={{ fontSize: 15, color: '#007AFF' }}>Record</Text>
           </TouchableOpacity>
         </View>
-
-
         <ActivityCard />
+
+
+        {/* Dailycheckout 4 cards */}
+        <Text style={{ fontSize: 20, fontWeight: 'bold',marginLeft:10 }}>Vital Health Stats</Text>
+        <View style={HomeStyle.container}>
+          <View style={HomeStyle.row}>
+            {/* heart rate card */}
+            <Dailycheckout
+              title="Heart Rate"
+              value="72"
+              unit="bpm"
+              backgroundColor='#F8E7EC'
+            >
+              <Image
+                source={require('../img/heart.png')}
+                style={{
+
+                  width: 120,
+                  height: 120,
+                  position: 'absolute',
+                  bottom: 10,
+                  right: 10,
+                  opacity: 0.9,
+                  marginBottom: -27
+                }}
+                resizeMode='contain'
+              />
+            </Dailycheckout>
+
+            {/* blood pressure card */}
+            <Dailycheckout
+              title="BP Tracker"
+              value="120/80"
+              unit="mmHg"
+              backgroundColor='#E3E6FA'
+            >    <Image
+                source={require('../img/pressure.png')}
+                style={{
+
+                  width: 90,
+                  height: 90,
+                  position: 'absolute',
+                  bottom: 10,
+                  right: 10,
+                  opacity: 0.9,
+                  marginBottom: -10
+                }}
+                resizeMode='contain'
+              />
+            </Dailycheckout>
+
+          </View>
+          <View style={HomeStyle.row}>
+
+            {/* blood  oxygen card */}
+            <Dailycheckout
+              title="Blood Oxygen"
+              value="90%"
+              unit="SpO₂"
+              backgroundColor='#EAEAFB'
+
+            > <Image
+                source={{ uri: 'https://static.vecteezy.com/system/resources/previews/026/112/390/non_2x/blood-donation-concept-blood-test-or-analysis-clinical-laboratory-examination-tiny-volunteers-with-nurses-donating-blood-in-hospital-health-care-modern-flat-cartoon-style-illustration-vector.jpg' }}
+                style={{
+
+                  width: 100,
+                  height: 100,
+                  position: 'absolute',
+                  bottom: 10,
+                  right: 10,
+                  opacity: 0.9,
+                  marginBottom: -18
+
+                }}
+                resizeMode='contain'
+              />
+            </Dailycheckout>
+
+            {/* water card   */}
+            <Dailycheckout
+              title="Water Intake"
+              value="1.5"
+              unit="L"
+              backgroundColor='#d6f0fa'
+
+            > <Image
+                source={require('../img/water.jpg')}
+                style={{
+
+                  width: 100,
+                  height: 100,
+                  position: 'absolute',
+                  bottom: 10,
+                  right: 10,
+                  opacity: 0.9,
+                  marginBottom: -13
+                }}
+                resizeMode='contain'
+              />
+            </Dailycheckout>
+
+          </View>
+        </View>
       </ScrollView>
 
     </View>
