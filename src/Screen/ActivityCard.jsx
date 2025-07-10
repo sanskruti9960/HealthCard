@@ -172,7 +172,36 @@ const ActivityCard = () => {
       </Pressable>
 
       {/* medicine intake card */}
-  <MedicationCard/>
+ <Pressable
+     
+        style={({ pressed }) => [
+             HomeStyle.rectangle,
+          {
+            backgroundColor: pressed ? '#d6f0fa' : 'white',
+            transform: [{ scale: pressed ? 1 : 0.95 }],
+            elevation: pressed ? 5 : 3,
+         },
+        ]}
+      >
+           <View style={{ flexDirection: 'row', }}>
+          <Text style={{
+            marginLeft: 13,
+            fontSize: 14,
+            fontWeight: 'bold',
+            marginTop: 10
+          }}>Medication</Text>
+          <FontAwesome5 name="spa" size={18} color="#0d6e9c" style={HomeStyle.Card_icon} />
+        </View>
+        <LottieView
+          source={require('../img/sleeplotie.json')} // Replace with your actual lottie
+          autoPlay
+          loop
+           style={{
+              width: 150, height: 150, alignItems: 'center',
+              justifyContent: 'center',marginTop:7
+            }}
+        />
+      </Pressable>
 
     </ScrollView>
 

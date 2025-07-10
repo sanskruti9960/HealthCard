@@ -2,164 +2,276 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  Pressable,
   Modal,
   TextInput,
-  Button,
+  TouchableOpacity,
   StyleSheet,
-  ScrollView,
+  FlatList
 } from 'react-native';
-import LottieView from 'lottie-react-native';
 
-export default function MedicationCard() {
+const MedicationModal = () => {
+  // State to manage modal visibility and medication name
   const [modalVisible, setModalVisible] = useState(false);
-  const [medications, setMedications] = useState([]);
+  const [medicationName, setMedicationName] = useState('');
 
-  const [name, setName] = useState('');
-  const [dosage, setDosage] = useState('');
-  const [time, setTime] = useState('');
+  // State to manage type selection modal and selected types
+  const [typeModalselectedTypes, setTypeModalselectedTypes] = useState(false);
+  const [selectedType, setSelectedType] = useState([]);
+  const [tempTypeSelection, setTempTypeSelection] = useState([]);
 
-  const [showForm, setShowForm] = useState(false);
-
-  const handleAdd = () => {
-    const newMed = {
-      id: Date.now().toString(),
-      name,
-      dosage,
-      time,
-    };
-    setMedications((prev) => [...prev, newMed]);
-    setShowForm(false);
-    setName('');
-    setDosage('');
-    setTime('');
-  };
-
+  const typeOptions = ['Tablet', 'Syrup', 'Capsule', 'Injection', 'Drops','Lotion', 'topical', 'Device','Foam','Ointment', 'Cream', 'Patch','softgel capsule',
+    'pill','Gel','powder','spray','inhaler','Gummy','Insulin','suppository','other'
+  ];
+const [text, setText] = useState('Select type');
   return (
-    <View>
-      {/* Medication Card */}
-      <Pressable
-        onPress={() => setModalVisible(true)}
-        style={({ pressed }) => [
-          {
-            backgroundColor: pressed ? '#d6f0fa' : 'white',
-            padding: 5,
-            width: 150,
-            height: 180,
-            borderRadius: 20,
-            marginRight: 12,
-            transform: [{ scale: pressed ? 1 : 0.95 }],
-            elevation: pressed ? 5 : 3,
-            alignItems: 'center',
-            justifyContent: 'center',
-          },
-        ]}
-      >
-        <LottieView
-          source={require('../img/sleeplotie.json')} // Replace with your actual lottie
-          autoPlay
-          loop
-          style={{ width: 100, height: 100 }}
-        />
-        <Text style={{ marginTop: 8, fontSize: 16 }}>Medication</Text>
-      </Pressable>
+    <View style={styles.container}>
+      {/* Button to open modal */}
+      <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.openButton}>
+        <Text style={styles.openButtonText}>
+          {medicationName ? medicationName : 'Enter Medication Name'}
+        </Text>
+      </TouchableOpacity>
 
       {/* Modal */}
-      <Modal visible={modalVisible} animationType="slide">
-        <ScrollView contentContainerStyle={styles.modalContent}>
-          <Text style={styles.title}>Your Medications</Text>
+      <Modal
+        transparent
+        animationType="slide"
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.overlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.label}>Medication name</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. Paracetamol"
+              placeholderTextColor="#999"
+              value={medicationName}
+              onChangeText={setMedicationName}
+            />
 
-          {/* Show List */}
-          {medications.length === 0 ? (
-            <Text style={{ textAlign: 'center', marginBottom: 16 }}>No medications yet.</Text>
-          ) : (
-            medications.map((med) => (
-              <View key={med.id} style={styles.medCard}>
-                <Text>🧪 {med.name}</Text>
-                <Text>💊 {med.dosage}</Text>
-                <Text>⏰ {med.time}</Text>
-              </View>
-            ))
-          )}
+            <View style={styles.buttonRow}>
+              <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.cancelButton}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
 
-          {/* Add New Button */}
-          {!showForm && (
-            <Pressable onPress={() => setShowForm(true)} style={styles.addButton}>
-              <Text style={{ fontSize: 18 }}>➕ Add New Medication</Text>
-            </Pressable>
-          )}
-
-          {/* Medication Form */}
-          {showForm && (
-            <View style={{ marginTop: 20, width: '100%' }}>
-              <TextInput
-                placeholder="Medicine Name"
-                  placeholderTextColor="#888" 
-                value={name}
-                onChangeText={setName}
-                style={styles.input}
-              />
-              <TextInput
-                placeholder="Dosage (e.g., 1 tablet)"
-                  placeholderTextColor="#888" 
-                value={dosage}
-                onChangeText={setDosage}
-                style={styles.input}
-              />
-              <TextInput
-                placeholder="Time (e.g., 08:00)"
-                  placeholderTextColor="#888" 
-                value={time}
-                onChangeText={setTime}
-                style={styles.input}
-              />
-
-              <Button title="Add Medication" onPress={handleAdd} />
-              <View style={{ marginTop: 10 }} />
-              <Button title="Cancel" color="gray" onPress={() => setShowForm(false)} />
+              <TouchableOpacity
+                onPress={() => {
+                  console.log('Saved:', medicationName);
+                  setModalVisible(false);
+                }}
+                style={styles.saveButton}
+              >
+                <Text style={styles.saveText}>Save</Text>
+              </TouchableOpacity>
             </View>
-          )}
-
-          {/* Close Modal */}
-          <View style={{ marginTop: 30 }}>
-            <Button title="Close" color="#cc0000" onPress={() => setModalVisible(false)} />
           </View>
-        </ScrollView>
+        </View>
       </Modal>
+
+      {/* select type box */}
+
+      <View style={{ marginTop: 5 , height: 62, width: '100%', justifyContent: 'center' }}>
+        {/* Select Type Card */}
+        <TouchableOpacity
+          onPress={() => {
+            setTempTypeSelection(selectedType); // prefill with previous selection
+            setTypeModalselectedTypes(true);
+          }}
+          style={styles.openButton}
+        >
+         
+              (<Text style={styles.openButtonText}>{text}</Text>)
+
+          {selectedType ? (
+            <View style={styles.pillContainer}>
+              <View style={styles.pill}>
+                <Text style={styles.pillText}>{selectedType}</Text>
+              </View>
+            </View>
+          ) : null}
+        </TouchableOpacity>
+
+
+
+      </View>
+      {/* Type Selection Modal */}
+
+      <Modal
+        visible={typeModalselectedTypes}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setTypeModalselectedTypes(false)}
+      >
+        <View style={styles.overlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.label}>Select Type</Text>
+
+            <FlatList
+              data={typeOptions}
+              keyExtractor={(item) => item}
+              renderItem={({ item }) => {
+                const isSelected = tempTypeSelection === item;
+                return (
+                  <TouchableOpacity
+                    onPress={() => setTempTypeSelection(item)}
+                    style={[
+                      styles.itemButton,
+                      isSelected && styles.itemSelected,
+                      { flexDirection: 'row', alignItems: 'center' },
+                    ]}
+                  >
+                    {/* Radio Button Circle */}
+                    <View style={{ flexDirection:'row',flexWrap:'wrap',alignContent:"center",paddingVertical:6}}>
+                    <View style={styles.radioWrapper}>
+                      {isSelected && <View style={styles.radioDot} />} </View>
+
+                    <Text style={styles.itemText}>
+                      {item}
+                    </Text>
+                    </View>
+
+
+                  </TouchableOpacity>
+                );
+              }}
+
+            />
+
+            <View style={styles.buttonRow}>
+              <TouchableOpacity onPress={() => setTypeModalselectedTypes(false)} style={styles.cancelButton}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => {
+                  setSelectedType(tempTypeSelection);
+                  setTypeModalselectedTypes(false);
+                  setText("Type"); // Update the text state with selected type
+                }}
+                style={styles.saveButton}
+              >
+                <Text style={styles.saveText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
-}
+};
+
+export default MedicationModal;
 
 const styles = StyleSheet.create({
-  modalContent: {
-    padding: 20,
-    backgroundColor: '#fff',
-    flexGrow: 1,
-    alignItems: 'center',
+  container: {
+    flex: 1,
+    backgroundColor: '#fff', // white mode
+    padding: 15,
+    marginTop: 20,
   },
-  title: {
-    fontSize: 24,
-    marginBottom: 16,
-    textAlign: 'center',
+  openButton: {
+    backgroundColor: '#f2f2f2',
+    padding: 12,
+    borderRadius: 20,
+    marginBottom: 20,
+  },
+  openButtonText: {
+    color: 'black',
+    fontSize: 16,
+    paddingLeft: 10,
+  },
+  overlay: {
+    flex: 1,
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    padding: 20,
+  },
+  modalContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+    elevation: 5,
+      maxHeight: '80%',
+      
+  },
+  label: {
+    color: '#333',
+    marginBottom: 10,
+    fontSize: 18,
+    fontWeight: '600',
   },
   input: {
-    borderBottomWidth: 1,
-    borderColor: '#aaa',
-    padding: 8,
-    marginBottom: 12,
-    width: '100%',
-  },
-  medCard: {
-    backgroundColor: '#f0f0f0',
-    padding: 12,
+    backgroundColor: '#f2f2f2',
+    color: '#000',
     borderRadius: 8,
-    width: '100%',
-    marginBottom: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 20,
   },
-  addButton: {
-    marginTop: 16,
-    backgroundColor: '#d0ebff',
-    padding: 12,
-    borderRadius: 8,
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
   },
+  cancelButton: {
+    padding: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  cancelText: {
+    color: '#888',
+    fontSize: 16,
+  },
+  saveButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  saveText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  pillContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  pill: {
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    marginRight: 8,
+  },
+  pillText: {
+    color: 'blue',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  radioWrapper: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: 'grey',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    marginBottom: 20,
+
+  },
+
+  radioDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 5,
+    backgroundColor: 'black',
+  },
+  itemText :{
+    fontSize: 16,
+  },
+  
+
+
 });
