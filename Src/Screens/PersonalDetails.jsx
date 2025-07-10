@@ -1,39 +1,26 @@
 import  React,{useState,useEffect} from "react";
-import {Text,View,TouchableOpacity,StyleSheet,ScrollView,Title, } from 'react-native';
-import {  Button,  Divider, Card,TextInput, } from "react-native-paper";
+import {Text,View,TouchableOpacity,StyleSheet,ScrollView,Title,TextInput,KeyboardAvoidingView, Platform,FlatList } from 'react-native';
+import {  Button,  Divider, Card, } from "react-native-paper";
 import DropDownPicker from "react-native-dropdown-picker";
-import { useForm } from "./FormContext";
+import { useForm as useFormContext } from "./FormContext";
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LottieView from 'lottie-react-native';
 import Styling from "./Styling";
+import { useForm, Controller } from "react-hook-form";
 
 
 const PersonalDetails = ({ navigation }) => {
-  const { formData, handleChange } = useForm();
+  const { formData, handleChange } =useFormContext();
 
+   const { control, handleSubmit, formState: { errors } } = useForm();
+  
+  const onSubmit = (data) => {
+    console.log(data);
+    navigation.navigate('EmergencyContact'); // replace with actual screen name
+  };
+  
 
-    // const [formData,setFormData] = React.useState({
-    //     fullName:"",
-    //     age:"",
-    //     gender:"",
-    //     bloodGrp:"",
-    //     EmergencyContactName:"",
-    //     EmergencyContactPhn:"",
-    //     medicalConditions: "",
-    //      allergies: "",
-    //      medications: "",
-    //      pastSurgery: "",
-    //     doctorName: "",
-    //     doctorPhone: "",
-    //     insuranceProviderName: "",
-    //     policyNumber: "",
-    //     disability:"",
-    
-    // })
-    //     const handleChange = (name, value) => {
-    //     setFormData({ ...formData, [name]: value });
-    // }
     // Gender Dropdown
   const [genderOpen, setGenderOpen] = useState(false);
   const [genderItems, setGenderItems] = useState([
@@ -57,60 +44,83 @@ const PersonalDetails = ({ navigation }) => {
     
     
     return(
-      <ScrollView nestedScrollEnabled={true} contentContainerStyle={styles.container}>
-        <Card style={styles.card}>
-          <Card.Content>
+//       <KeyboardAvoidingView
+//   style={{ flex: 1 }}
+//   behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+// >
+//   <ScrollView
+//     contentContainerStyle={styles.container}
+//     keyboardShouldPersistTaps="handled"
+//   >
+<FlatList
+    data={[]} // No data to render in list itself
+    style={styles.flatList}
+  contentContainerStyle={styles.flatListContent}
+  ListHeaderComponent={
+    <View style={styles.viewStyle}>
             
-             {/* <Icon name="user-circle" size={40} color="#0A66C2" alignSelf='center' />*/}
              <Text style={styles.heading}>User Details</Text> 
 
              <Styling/>
-
-            <Divider/>
-            <View style={styles.viewStyle}>
-                   
-                  
+           
+            <Text style={styles.HeaderStyle}>Full Name :</Text>
+           
             
-            <Text style={styles.HeaderStyle}>Full Name</Text>
-            {/* <Ionicons name="person-circle-outline" size={25} color="grey" alignSelf='center' style={styles.iconStyle}/>
-               */}
-            <TextInput 
-                placeholder='Full Name'
-                placeholderTextColor='grey'
-                mode="outlined"
-                value={formData.fullName}
-                onChangeText={text=> handleChange('fullName',text)}
-                left={<TextInput.Icon icon="account"  />}style={{ marginBottom: 16 ,height:45}}/>
+                <Controller
+                  control={control}
+                    name="condition"
+                      rules={{ required: "Full name is required" }}
+                      render={({ field: { onChange, onBlur, value } }) => (
+                      <TextInput
+                        style={styles.textInputStyle}
+                         placeholder="Name"
+                         placeholderTextColor="grey"
+                         value={value}
+                         onBlur={onBlur}
+                         onChangeText={onChange} />
+                 )}
+            />
+      {errors.condition && <Text style={{ color: 'red', marginLeft: 20 }}>{errors.condition.message}</Text>}
+                
+                                                 
+         {/* Phone Number */}
+        <Text style={styles.HeaderStyle}>Phone Number :</Text>
+        <Controller
+          control={control}
+          name="phoneNumber"
+          rules={{ required: "Phone number is required" }}
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextInput
+              style={styles.textInputStyle}
+              placeholder="Phone no."
+              placeholderTextColor="grey"
+              keyboardType="phone-pad"
+              value={value}
+              onBlur={onBlur}
+              onChangeText={onChange}
+            />
+          )}
+        />
+        {errors.phoneNumber && <Text style={styles.error}>{errors.phoneNumber.message}</Text>}
+              {/* Birth Date */}
+        <Text style={styles.HeaderStyle}>Birth Date :</Text>
+        <Controller
+          control={control}
+          name="birthDate"
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextInput
+              placeholder="DD-MON-YEAR"
+              placeholderTextColor="grey"
+              style={styles.textInputStyle}
+              value={value}
+              onBlur={onBlur}
+              onChangeText={onChange}
+            />
+          )}
+        />
 
-              <Text style={styles.HeaderStyle}>Phone Number</Text>
-
-               <TextInput
-                    placeholder="Phone Number"
-                    placeholderTextColor="grey"
-                    mode="outlined"
-                    value={formData.phone}
-                    onChangeText={text => handleChange('phone', text) } 
-                    left={<TextInput.Icon icon="phone"  />}style={{marginBottom:16,height:45}}
-                  />
-
-               {/* <Icon name="phone-alt" size={20} color="grey" alignSelf='center' style={styles.iconStyle}/>
-             
-            <TextInput placeholder="Phone Number"
-                placeholderTextColor='grey'
-                mode="outlined"
-             style={styles.textInputStyle}/> */}
-
-              <Text style={styles.HeaderStyle}>Birth Date</Text>
-              {/* <Ionicons name="calendar-outline" size={25} color="grey" alignSelf='center' style={styles.iconStyle}/> */}
-             
-            <TextInput placeholder="DD-MON-YEAR"
-                placeholderTextColor='grey'
-                mode="outlined" 
-                value={formData.birthdate}
-             onChangeText={text => handleChange('birthDate', text)}
-                    left={<TextInput.Icon icon="calendar"  />}style={styles.textInputStyle} /> 
-              
-              <Text style={styles.HeaderStyle}>Gender</Text>
+           
+              <Text style={styles.HeaderStyle}>Gender :</Text>
              
              <DropDownPicker //dropdown for selection of grnder
               open={genderOpen}
@@ -127,12 +137,9 @@ const PersonalDetails = ({ navigation }) => {
               zIndex={3000}
               zIndexInverse={1000}
             />
-            {/* <TextInput placeholder=" Gender"
-                placeholderTextColor='grey'
-                mode="outlined"
-             style={styles.textInputStyle}/> */}
+           
 
-             <Text style={styles.HeaderStyle}>Blood Group</Text>
+             <Text style={styles.HeaderStyle}>Blood Group :</Text>
             
              <DropDownPicker //dropdown for blood group
               open={bloodOpen}
@@ -146,119 +153,123 @@ const PersonalDetails = ({ navigation }) => {
               placeholder="Select Blood Group"
               style={styles.dropdown}
               dropDownContainerStyle={styles.dropdownContainer}
+              scrollViewProps={{
+                  nestedScrollEnabled: true,
+                  keyboardShouldPersistTaps: 'handled',
+                }}
               zIndex={2000}
               zIndexInverse={3000}
             />
-            {/* <TextInput placeholder="blood group"
-                placeholderTextColor='grey'
-                mode="outlined"
-             style={styles.textInputStyle}/> */}
+           
+             <View style={styles.buttonRow}>
+          <TouchableOpacity style={styles.btnStyle} onPress={handleSubmit(onSubmit)}>
+            <Text style={styles.btnText}>Next</Text>
+          </TouchableOpacity>
+        </View>
 
-
-             <View style={{flexDirection:'row',flexWrap:'wrap',alignSelf:'centre',marginLeft:30,}}>
-
-              <TouchableOpacity
-                style={styles.btnStyle}
-                onPress={() => navigation.navigate('EmergencyContact')}>
-
-              <Text style={{textAlign:'center',color:'white',fontWeight:'500',}}>Skip</Text>
-            </TouchableOpacity>
-
-             <TouchableOpacity
-              style={styles.btnStyle}
-              onPress={() => navigation.navigate('EmergencyContact')}>
-
-           <Text style={{textAlign:'center',color:'white',fontWeight:'500',}}>Next</Text>
-           </TouchableOpacity>
-
-</View>
+    <Divider/>
 
                
-
-               <Divider/>
-
-               
-             </View>
-        </Card.Content>
-
-      </Card>
+             
+   </View>
       
-      </ScrollView>
-       
-    )
+//   </ScrollView>
+// </KeyboardAvoidingView>
+ }
+    keyExtractor={(item, index) => index.toString()}
+    keyboardShouldPersistTaps="handled"
+  />
+)
+    
 }
 
 export default PersonalDetails
 const styles=StyleSheet.create({
     container: {
     padding: 16,
-    backgroundColor:'#E5E4E2'//'#F5F7FA'
-  
+    backgroundColor: "white",
   },
-  card: {
-    padding: 16,
-    borderRadius: 12,
-    elevation: 3,
-    backgroundColor: "#fff",
-    marginBottom:20,
+  viewStyle: {
+    flex: 1,
+    backgroundColor: "white",
   },
-  
   heading: {
     marginBottom: 16,
     fontSize: 24,
     fontWeight: "bold",
     textAlign: "center",
-    marginTop:10,
-    color:'#0A66C2',
+    marginTop: 10,
+    color: "#0A66C2",
   },
-    viewStyle:{
-      flex:1,
-    backgroundColor:'white',
-
-    },
-    HeaderStyle : {
-      fontWeight:'500',
-        fontSize:16,
-       marginTop:12,
-       color:"#333",
-
-    },
-//#E5E4E2
-    textInputStyle :{
-        color: 'black',            // ✅ Text color inside input
-          backgroundColor: 'transperent',  // ✅ Required for borderRadius to work
-          borderRadius: 60,          // ✅ Rounded corners
-          marginBottom: 0,
-          height: 45,
-          width: '100%',
-          paddingHorizontal: 10,
-          borderWidth:0,
-    },
-    btnStyle:{
-      backgroundColor:"#0A66C2",
-      alignSelf:'flex-end',
+  HeaderStyle: {
+    fontWeight: "500",
+    fontSize: 16,
+    marginTop: 12,
+    color: "#333",
+    marginBottom: 10,
+    marginLeft: 20,
+  },
+  textInputStyle: {
+    color: "black",
+    backgroundColor: "#F5F5F5",
+    borderRadius: 10,
+    marginBottom: 15,
+    height: 45,
+    width: "90%",
+    paddingHorizontal: 10,
+    borderWidth: 0,
+    alignSelf: "center",
+  },
+  error: {
+    color: "red",
+    marginLeft: 25,
+    marginBottom: 10,
+  },
+  btnStyle: {
+    backgroundColor:"white",
+      
       textAlign:'center',
       padding:7,
-      margin:25,
-  
+      marginTop:25,
       marginBottom:40,
       borderRadius:15,
       height:35,
       width:70,
 
-    },
-     dropdown: {
+  },
+  btnText: {
+    textAlign: "center",
+    color: "#0A66C2",
+    fontWeight: "bold",
+    marginRight:-210,
+  },
+  buttonRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+  },
+  dropdown: {
     backgroundColor: "#F5F5F5",
-   
-    borderRadius: 5,
+    borderWidth: 0,
+    borderRadius: 10,
     marginTop: 4,
-    marginBottom: 10,
-    
+    width: "90%",
+    alignSelf: "center",
+    marginBottom: 15,
   },
   dropdownContainer: {
-    backgroundColor: "##F5F5F5",
-    
+    backgroundColor: "#F5F5F5",
+    borderWidth: 1,
+    borderTopWidth: 0,
+    borderBottomWidth: 0,
     borderRadius: 15,
-    
+    maxHeight: 320,
+  },
+  flatList: {
+    flex: 1,
+    backgroundColor: 'white',
+  },
+  flatListContent: {
+    padding: 16,
+    paddingBottom: 40,
   },
 })

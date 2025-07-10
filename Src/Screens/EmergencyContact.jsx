@@ -5,21 +5,27 @@ import Icon from 'react-native-vector-icons/FontAwesome6'
 import DropDownPicker from "react-native-dropdown-picker";
 import Styling from "./Styling";
 import FormContext from "./FormContext";
-import { useForm } from "./FormContext";
+import { useForm, Controller } from "react-hook-form";
+
 const EmergencyContact = ({ navigation }) => {
   const { formData, handleChange } = useForm();
+   const { control, handleSubmit, formState: { errors } } = useForm();
+  
+  const onSubmit = (data) => {
+    console.log(data);
+    navigation.navigate('MedicalInfo'); // replace with actual screen name
+  };
+  
     return(
         <ScrollView nestedScrollEnabled={true} contentContainerStyle={styles.container}>
-            <Card style={styles.card}>
-                <Card.Content>
+             <View style={styles.viewStyle}>
                   
                     <Text style={styles.heading}>Emergency Contacts </Text>
                     <Styling/>
                     
-                         <Divider/>
-                          <View style={styles.viewStyle}>
+                          
                             
-               <Text style={styles.HeaderStyle}> Emergency Contact Name</Text>
+               {/* <Text style={styles.HeaderStyle}> Emergency Contact Name</Text>
             <TextInput placeholder="Full Name"
                 placeholderTextColor='grey'
                 mode="outlined"
@@ -29,46 +35,110 @@ const EmergencyContact = ({ navigation }) => {
             <TextInput placeholder="Phone Number"
                 placeholderTextColor='grey'
                 mode="outlined"
-                 style={styles.textInputStyle}/>
+                 style={styles.textInputStyle}/> */}
+
+
+                 {/* Emergency Contact Name */}
+        <Text style={styles.HeaderStyle}>Emergency Contact Name</Text>
+        <Controller
+          control={control}
+          name="contactName"
+          rules={{ required: "Contact name is required" }}
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextInput
+              placeholder="Full Name"
+              placeholderTextColor="grey"
+              style={styles.textInputStyle}
+              onBlur={onBlur}
+              onChangeText={onChange}
+              value={value}
+            />
+          )}
+        />
+        {errors.contactName && (
+          <Text style={styles.error}>{errors.contactName.message}</Text>
+        )}
+
+        {/* Emergency Contact Number */}
+        <Text style={styles.HeaderStyle}>Emergency Contact Number</Text>
+        <Controller
+          control={control}
+          name="contactNumber"
+          rules={{
+            required: "Phone number is required",
+            pattern: {
+              value: /^[0-9]{10}$/,
+              message: "Enter a valid 10-digit number",
+            },
+          }}
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextInput
+              placeholder="Phone Number"
+              placeholderTextColor="grey"
+              style={styles.textInputStyle}
+              onBlur={onBlur}
+              onChangeText={onChange}
+              value={value}
+              keyboardType="phone-pad"
+            />
+          )}
+        />
+        {errors.contactNumber && (
+          <Text style={styles.error}>{errors.contactNumber.message}</Text>
+        )}
+
 
                <Text style={styles.HeaderStyle}> Emergency Contact Relation</Text>
-            <TextInput placeholder="Brother/Wife/father"
-                placeholderTextColor='grey'
-                mode="outlined"
-                 style={styles.textInputStyle}/>
+            
 
-                 <Divider/>
+                 <Controller
+                  control={control}
+                   name="Relation"
+                   render={({ field: { onChange, onBlur, value } }) => (
+                   <TextInput
+                    style={styles.textInputStyle}
+                     placeholder="eg: Wife,Brother,Father"
+                      placeholderTextColor="grey"
+                       value={value}
+                       onBlur={onBlur}
+                        onChangeText={onChange} />
+                     )}
+                     />
+                
 
-      <View style={{flexDirection:'row',flexWrap:'wrap',alignSelf:'centre',}}>
+               
 
-        <TouchableOpacity
-                   style={styles.btnStyle}
-                   onPress={() => navigation.navigate('PersonalDetails')}>
-                 
-                   <Text style={{textAlign:'center',color:'white',fontWeight:'500',}}>Previous</Text>
-                 </TouchableOpacity>
-                 
+      <View style={styles.buttonRow}>
           <TouchableOpacity
-                   style={styles.btnStyle}
-                   onPress={() => navigation.navigate('EmergencyContact')}>
-                 
-                   <Text style={{textAlign:'center',color:'white',fontWeight:'500',}}>Skip</Text>
-                 </TouchableOpacity>
+            style={styles.btnStyle}
+            onPress={() => navigation.navigate("PersonalDetails")}
+          >
+            <Text style={{ textAlign: "center", color: "#0A66C2", fontWeight: "bold",marginLeft:-150, }}>
+              Previous
+            </Text>
+          </TouchableOpacity>
 
-                 <TouchableOpacity
-  style={styles.btnStyle}
-  onPress={() => navigation.navigate('MedicalInfo')}
->
-  <Text style={{textAlign:'center',color:'white',fontWeight:'500'}}>Next</Text>
-</TouchableOpacity>
+          {/* <TouchableOpacity
+            style={styles.btnStyle}
+            onPress={() => navigation.navigate("MedicalInfo")}
+          >
+            <Text style={{ textAlign: "center", color: "#0A66C2", fontWeight: "500" }}>
+              Skip
+            </Text>
+          </TouchableOpacity> */}
 
-<Divider/>
+          <TouchableOpacity style={styles.btnStyle} onPress={handleSubmit(onSubmit)}>
+            <Text style={{ textAlign: "center", color: "#0A66C2", fontWeight: "bold",marginRight:-150, }}>
+              Next
+            </Text>
+          </TouchableOpacity>
+
+
 
 </View>
 
-                          </View>
-                </Card.Content>
-            </Card>
+                          
+                </View>
 
            
         </ScrollView>
@@ -80,7 +150,7 @@ export default EmergencyContact
 const styles=StyleSheet.create({
     container: {
     padding: 16,
-    backgroundColor:'#E5E4E2'//'#F5F7FA'
+    backgroundColor:'white'//'#F5F7FA'
   
   },
   card: {
@@ -109,6 +179,8 @@ const styles=StyleSheet.create({
         fontSize:16,
        marginTop:12,
        color:"#333",
+       marginBottom:10,
+       margin:20
 
     },
 //#E5E4E2
@@ -120,33 +192,31 @@ const styles=StyleSheet.create({
         marginBottom:10,
         borderRadius:10,
         height:40,
-        width:"100%"
+        width:"90%",
+        alignSelf:'center'
     },
-    btnStyle:{
-      backgroundColor:"#0A66C2",
+    error: {
+    color: "red",
+    marginLeft: 25,
+    marginBottom: 10,
+  },
+  btnStyle: {
+    backgroundColor:"white",
       alignSelf:'flex-end',
       textAlign:'center',
       padding:7,
       margin:13,
-  
+      marginTop:40,
       marginBottom:40,
       borderRadius:15,
       height:35,
       width:70,
-
-    },
-     dropdown: {
-    backgroundColor: "#F5F5F5",
-   
-    borderRadius: 10,
-    marginTop: 5,
-    marginBottom: 15,
-    
   },
-  dropdownContainer: {
-    backgroundColor: "##F5F5F5",
-    
-    borderRadius: 15,
-    
+  buttonRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignSelf: "center",
+    justifyContent: "center",
+    marginTop: 40,
   },
 })
