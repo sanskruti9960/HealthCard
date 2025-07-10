@@ -15,7 +15,7 @@ const MedicalInfo = ({ navigation }) => {
 
 const onSubmit = (data) => {
   console.log(data);
-  navigation.navigate('NextScreenName'); // replace with actual screen name
+  navigation.navigate('NextScreenName'); // replace with actual next screen name
 };
 
 

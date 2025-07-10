@@ -22,21 +22,7 @@ const EmergencyContact = ({ navigation }) => {
                   
                     <Text style={styles.heading}>Emergency Contacts </Text>
                     <Styling/>
-                    
-                          
-                            
-               {/* <Text style={styles.HeaderStyle}> Emergency Contact Name</Text>
-            <TextInput placeholder="Full Name"
-                placeholderTextColor='grey'
-                mode="outlined"
-                 style={styles.textInputStyle}/>
-
-                 <Text style={styles.HeaderStyle}> Emergency contact Number</Text>
-            <TextInput placeholder="Phone Number"
-                placeholderTextColor='grey'
-                mode="outlined"
-                 style={styles.textInputStyle}/> */}
-
+            
 
                  {/* Emergency Contact Name */}
         <Text style={styles.HeaderStyle}>Emergency Contact Name</Text>
