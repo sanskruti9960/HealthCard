@@ -16,9 +16,10 @@ const PersonalDetails = ({ navigation }) => {
    const { control, handleSubmit, formState: { errors } } = useForm();
   
   const onSubmit = (data) => {
-    console.log(data);
-    navigation.navigate('EmergencyContact'); // replace with actual screen name
-  };
+  Object.keys(data).forEach((key) => handleChange(key, data[key]));
+  navigation.navigate('EmergencyContact');
+};
+
   
 
     // Gender Dropdown
@@ -68,7 +69,8 @@ const PersonalDetails = ({ navigation }) => {
             
                 <Controller
                   control={control}
-                    name="condition"
+                    name="fullName"
+                    defaultValue={formData.fullName}
                       rules={{ required: "Full name is required" }}
                       render={({ field: { onChange, onBlur, value } }) => (
                       <TextInput
@@ -77,17 +79,21 @@ const PersonalDetails = ({ navigation }) => {
                          placeholderTextColor="grey"
                          value={value}
                          onBlur={onBlur}
-                         onChangeText={onChange} />
+                         onChangeText={(text) => {
+                            onChange(text);
+                            handleChange("fullName", text);
+                          }} />
                  )}
             />
-      {errors.condition && <Text style={{ color: 'red', marginLeft: 20 }}>{errors.condition.message}</Text>}
+      {errors.condition && <Text style={{ color: 'red', marginLeft: 20 }}>{errors.fullName.message}</Text>}
                 
                                                  
          {/* Phone Number */}
         <Text style={styles.HeaderStyle}>Phone Number :</Text>
         <Controller
           control={control}
-          name="phoneNumber"
+          name="phone"
+          defaultValue={formData.phone}
           rules={{ required: "Phone number is required" }}
           render={({ field: { onChange, onBlur, value } }) => (
             <TextInput
@@ -97,16 +103,20 @@ const PersonalDetails = ({ navigation }) => {
               keyboardType="phone-pad"
               value={value}
               onBlur={onBlur}
-              onChangeText={onChange}
+              onChangeText={(text) => {
+                  onChange(text);
+                  handleChange("phone", text);
+                }}
             />
           )}
         />
-        {errors.phoneNumber && <Text style={styles.error}>{errors.phoneNumber.message}</Text>}
+        {errors.phoneNumber && <Text style={styles.error}>{errors.phone.message}</Text>}
               {/* Birth Date */}
         <Text style={styles.HeaderStyle}>Birth Date :</Text>
         <Controller
           control={control}
           name="birthDate"
+          defaultValue={formData.birthDate}
           render={({ field: { onChange, onBlur, value } }) => (
             <TextInput
               placeholder="DD-MON-YEAR"
@@ -114,7 +124,10 @@ const PersonalDetails = ({ navigation }) => {
               style={styles.textInputStyle}
               value={value}
               onBlur={onBlur}
-              onChangeText={onChange}
+             onChangeText={(text) => {
+                onChange(text);
+                handleChange("birthDate", text);
+              }}
             />
           )}
         />

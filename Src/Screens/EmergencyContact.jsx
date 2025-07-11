@@ -1,20 +1,19 @@
 import React,{useState,useEffect} from "react";
 import {Text,View,TouchableOpacity,StyleSheet,ScrollView,Title,TextInput, } from 'react-native';
-import {  Button,  Divider, Card, } from "react-native-paper";
-import Icon from 'react-native-vector-icons/FontAwesome6'
-import DropDownPicker from "react-native-dropdown-picker";
 import Styling from "./Styling";
-import FormContext from "./FormContext";
+import { useForm as useFormContext } from "./FormContext";
 import { useForm, Controller } from "react-hook-form";
 
 const EmergencyContact = ({ navigation }) => {
-  const { formData, handleChange } = useForm();
-   const { control, handleSubmit, formState: { errors } } = useForm();
+  const { formData, handleChange } =useFormContext();
+   const { control, handleSubmit, formState: { errors } } = useForm( );
   
   const onSubmit = (data) => {
-    console.log(data);
-    navigation.navigate('MedicalInfo'); // replace with actual screen name
-  };
+  Object.keys(data).forEach((key) => handleChange(key, data[key]));
+
+  navigation.navigate('MedicalInfo');
+};
+
   
     return(
         <ScrollView nestedScrollEnabled={true} contentContainerStyle={styles.container}>
@@ -28,7 +27,8 @@ const EmergencyContact = ({ navigation }) => {
         <Text style={styles.HeaderStyle}>Emergency Contact Name</Text>
         <Controller
           control={control}
-          name="contactName"
+          name="emergencyName"
+         defaultValue={formData.emergencyName}
           rules={{ required: "Contact name is required" }}
           render={({ field: { onChange, onBlur, value } }) => (
             <TextInput
@@ -36,26 +36,30 @@ const EmergencyContact = ({ navigation }) => {
               placeholderTextColor="grey"
               style={styles.textInputStyle}
               onBlur={onBlur}
-              onChangeText={onChange}
               value={value}
+              onChangeText={(text) => {
+                onChange(text);
+                handleChange("emergencyName", text);
+              }}
             />
           )}
         />
-        {errors.contactName && (
-          <Text style={styles.error}>{errors.contactName.message}</Text>
+        {errors.emergencyName && (
+          <Text style={styles.error}>{errors.emergencyName.message}</Text>
         )}
 
         {/* Emergency Contact Number */}
         <Text style={styles.HeaderStyle}>Emergency Contact Number</Text>
         <Controller
           control={control}
-          name="contactNumber"
+          name="emergencyPhone"
+          defaultValue={formData.emergencyPhone}
           rules={{
             required: "Phone number is required",
-            pattern: {
-              value: /^[0-9]{10}$/,
-              message: "Enter a valid 10-digit number",
-            },
+            // pattern: {
+            //   value: /^[0-9]{10}$/,
+            //   message: "Enter a valid 10-digit number",
+            // },
           }}
           render={({ field: { onChange, onBlur, value } }) => (
             <TextInput
@@ -63,14 +67,17 @@ const EmergencyContact = ({ navigation }) => {
               placeholderTextColor="grey"
               style={styles.textInputStyle}
               onBlur={onBlur}
-              onChangeText={onChange}
               value={value}
               keyboardType="phone-pad"
+              onChangeText={(text) => {
+                onChange(text);
+                handleChange("emergencyPhone", text);
+              }}
             />
           )}
         />
-        {errors.contactNumber && (
-          <Text style={styles.error}>{errors.contactNumber.message}</Text>
+        {errors.emergencyPhone && (
+          <Text style={styles.error}>{errors.emergencyPhone.message}</Text>
         )}
 
 
@@ -79,7 +86,8 @@ const EmergencyContact = ({ navigation }) => {
 
                  <Controller
                   control={control}
-                   name="Relation"
+                   name="emergencyRelation"
+                  defaultValue={formData.emergencyRelation} 
                    render={({ field: { onChange, onBlur, value } }) => (
                    <TextInput
                     style={styles.textInputStyle}
@@ -87,7 +95,10 @@ const EmergencyContact = ({ navigation }) => {
                       placeholderTextColor="grey"
                        value={value}
                        onBlur={onBlur}
-                        onChangeText={onChange} />
+                        onChangeText={(text) => {
+                onChange(text);
+                handleChange("emergencyRelation", text);
+              }} />
                      )}
                      />
                 
@@ -97,26 +108,14 @@ const EmergencyContact = ({ navigation }) => {
       <View style={styles.buttonRow}>
           <TouchableOpacity
             style={styles.btnStyle}
-            onPress={() => navigation.navigate("PersonalDetails")}
-          >
-            <Text style={{ textAlign: "center", color: "#0A66C2", fontWeight: "bold",marginLeft:-150, }}>
-              Previous
-            </Text>
+            onPress={() => navigation.navigate("PersonalDetails")}>
+            <Text style={styles.btnTextLeft}>Previous</Text>
           </TouchableOpacity>
 
-          {/* <TouchableOpacity
-            style={styles.btnStyle}
-            onPress={() => navigation.navigate("MedicalInfo")}
-          >
-            <Text style={{ textAlign: "center", color: "#0A66C2", fontWeight: "500" }}>
-              Skip
-            </Text>
-          </TouchableOpacity> */}
-
-          <TouchableOpacity style={styles.btnStyle} onPress={handleSubmit(onSubmit)}>
-            <Text style={{ textAlign: "center", color: "#0A66C2", fontWeight: "bold",marginRight:-150, }}>
-              Next
-            </Text>
+          
+          <TouchableOpacity style={styles.btnStyle} 
+            onPress={handleSubmit(onSubmit)}>
+            <Text style={styles.btnTextRight}>Next</Text>
           </TouchableOpacity>
 
 
@@ -204,5 +203,23 @@ const styles=StyleSheet.create({
     alignSelf: "center",
     justifyContent: "center",
     marginTop: 40,
+  },
+  btnText: {
+    textAlign: "center",
+    color: "#0A66C2",
+    fontWeight: "bold",
+  },
+  btnTextLeft: {
+    textAlign: "center",
+    color: "#0A66C2",
+    fontWeight: "bold",
+    marginLeft: -150,
+  },
+  btnTextRight: {
+    textAlign: "center",
+    color: "#0A66C2",
+    fontWeight: "bold",
+    fontSize: 14,
+    marginRight: -150,
   },
 })

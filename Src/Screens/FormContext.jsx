@@ -17,6 +17,7 @@ export const FormProvider = ({ children }) => {
     pastSurgery: '',
     insuranceProvider: '',
     policyNumber: '',
+    insuranceContact:'',
   });
 
   const handleChange = (field, value) => {
