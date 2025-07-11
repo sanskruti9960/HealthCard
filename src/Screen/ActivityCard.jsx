@@ -177,7 +177,7 @@ const ActivityCard = () => {
         style={({ pressed }) => [
              HomeStyle.rectangle,
           {
-            backgroundColor: pressed ? '#d6f0fa' : 'white',
+            backgroundColor: pressed ? 'white' : 'white',
             transform: [{ scale: pressed ? 1 : 0.95 }],
             elevation: pressed ? 5 : 3,
          },
@@ -193,7 +193,7 @@ const ActivityCard = () => {
           <FontAwesome5 name="spa" size={18} color="#0d6e9c" style={HomeStyle.Card_icon} />
         </View>
         <LottieView
-          source={require('../img/sleeplotie.json')} // Replace with your actual lottie
+          source={require('../img/medicine.json')} // Replace with your actual lottie
           autoPlay
           loop
            style={{

@@ -117,8 +117,4 @@ dependencies {
         implementation jscFlavor
     }
 }
-<<<<<<< HEAD
-apply from: file("../../node_modules/react-native-vector-icons/fonts.gradle")
-=======
 apply from: "../../node_modules/react-native-vector-icons/fonts.gradle"
->>>>>>> origin/User_Info

@@ -2,10 +2,10 @@
 import { Text, View } from 'react-native'
 import React from 'react'
 import HomeScreen from './src/Screen/HomeScreen'
-import PersonalDetails from './Src/Screens/PersonalDetails'
-import EmergencyContact from "./Src/Screens/EmergencyContact";
-import MedicalInfo from "./Src/Screens/MedicalInfo";
-import { FormProvider } from "./Src/Screens/FormContext";
+import PersonalDetails from './src/Screens/PersonalDetails';
+import EmergencyContact from './src/Screens/EmergencyContact';
+import MedicalInfo from './src/Screens/MedicalInfo';
+import { FormProvider } from './src/Screens/FormContext';
 
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';

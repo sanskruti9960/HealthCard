@@ -158,7 +158,7 @@ const onSubmit = (data) => {
             <Text style={styles.btnText}>Skip</Text>
           </TouchableOpacity> */}
 
-          <TouchableOpacity style={styles.btnStyle} onPress={handleSubmit(onSubmit)}>
+          <TouchableOpacity style={styles.btnStyle}  onPress={() => navigation.navigate("HomeScreen")} >
             <Text style={styles.btnTextRight}>Next</Text>
           </TouchableOpacity>
                         </View>
