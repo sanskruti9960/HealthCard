@@ -85,7 +85,7 @@ const PersonalDetails = ({ navigation }) => {
                           }} />
                  )}
             />
-      {errors.condition && <Text style={{ color: 'red', marginLeft: 20 }}>{errors.fullName.message}</Text>}
+      {errors.fullName && <Text style={{ color: 'red', marginLeft: 20 }}>{errors.fullName.message}</Text>}
                 
                                                  
          {/* Phone Number */}
@@ -110,7 +110,7 @@ const PersonalDetails = ({ navigation }) => {
             />
           )}
         />
-        {errors.phoneNumber && <Text style={styles.error}>{errors.phone.message}</Text>}
+        {errors.phone && <Text style={styles.error}>{errors.phone.message}</Text>}
               {/* Birth Date */}
         <Text style={styles.HeaderStyle}>Birth Date :</Text>
         <Controller
