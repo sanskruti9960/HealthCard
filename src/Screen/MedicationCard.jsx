@@ -10,8 +10,15 @@ import {
    KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-
+import { useNavigation } from '@react-navigation/native';
 const MedicationModal = () => {
+
+  const navigation = useNavigation();
+  // navigate to medication card
+  const schedulepg = () => {
+    navigation.navigate('Setschedulepg');
+  };
+
   // State to manage modal visibility and medication name
   const [modalVisible, setModalVisible] = useState(false);
   const [medicationName, setMedicationName] = useState('');
@@ -211,10 +218,8 @@ const [text, setText] = useState('Select type');
     }}
     disabled={!isFormComplete} // disable press when form is incomplete
     onPress={() => {
-      if (isFormComplete) {
-        // Proceed to next screen or action
-        console.log('Form is complete, moving to next step');
-      }
+      if (isFormComplete) schedulepg();
+      
     }}
   >
     <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 18, textAlign: 'center' }}>

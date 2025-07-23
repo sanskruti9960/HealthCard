@@ -6,10 +6,16 @@ import SleepTracker from "./SleepTracker"
 import LottieView from 'lottie-react-native';
 import SleepWakeTimeModal from '../compoenents/SleepWakeTimeModal';
 import MedicationCard from "./MedicationCard"
+import { useNavigation } from '@react-navigation/native';
 
 const { width } = Dimensions.get('window');
 
 const ActivityCard = () => {
+   const navigation = useNavigation();
+  // navigate to medication card
+   const medcard = () => {
+    navigation.navigate('MedicationCard');
+  };
 
   // sleep card values passed to sleep tracker
   const [modalSleep, setmodalSleep] = useState(false)
@@ -83,7 +89,7 @@ const ActivityCard = () => {
       >
         <View style={{ flexDirection: 'row', }}>
           <Text style={HomeStyle.Card_title}>sleep Tracker</Text>
-          <FontAwesome5 name='moon' size={25} color="#E6A72F" style={HomeStyle.Card_icon} />
+          <FontAwesome5 name='moon' size={20} color="#E6A72F" style={HomeStyle.Card_icon} />
         </View>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <SleepTracker sleepmodaldata={sleepmodaldata} />
@@ -173,7 +179,7 @@ const ActivityCard = () => {
 
       {/* medicine intake card */}
  <Pressable
-     
+     onPress={() => medcard()}
         style={({ pressed }) => [
              HomeStyle.rectangle,
           {
@@ -225,7 +231,7 @@ const HomeStyle = StyleSheet.create({
   },
   Card_title: {
     marginLeft: 13,
-    fontSize: 20,
+    fontSize: 14,
     fontWeight: 'bold',
     marginTop: 10
   },

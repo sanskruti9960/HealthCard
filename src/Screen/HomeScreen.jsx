@@ -9,8 +9,11 @@ import Dailycheckout from "../compoenents/Dailycheckout"
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
 import Svg, { Path } from 'react-native-svg'
 
-const HomeScreen = () => {
-
+const HomeScreen = ({navigation}) => {
+  const Insurance = () => {
+    navigation.navigate('MultiplePolicy');
+  };
+ 
   return (
     // main container
     <View style={HomeStyle.main}>
@@ -133,7 +136,7 @@ const HomeScreen = () => {
           </View>
 
           <View style={HomeStyle.fac_singleIcon}>
-            <TouchableOpacity style={HomeStyle.fac_iconId}>
+            <TouchableOpacity style={HomeStyle.fac_iconId} onPress={()=>Insurance()}>
               <FontAwesome5 name="id-card" size={28} color="#A9445B" />
             </TouchableOpacity>
             <Text style={{ textAlign: 'center' }}>Insurance{"\n"} ID</Text>
