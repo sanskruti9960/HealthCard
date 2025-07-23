@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useState} from "react";
 import {
   View,
   Text,
@@ -7,23 +7,28 @@ import {
   SectionList,
   StatusBar,
   Image,
+  Alert,
+  Button,
 } from "react-native";
 import Feather from "react-native-vector-icons/Feather";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import EvilIcons from "react-native-vector-icons/EvilIcons";
 import FontAwesome6 from "react-native-vector-icons/FontAwesome6";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
+import PrivacyPolicyModal from '../Components/PrivacyPolicyModal';
+import LogoutModal from '../Components/LogoutModal';
 
-
-const ProfileScreen = () => {
-
+const ProfileScreen = ({ navigation }) => {
+  const [isPrivacyVisible, setPrivacyVisible] = useState(false);
+  const [isLogoutVisible, setLogoutVisible] = useState(false);
   return (
     <View style={style.Screen}>
-     
-      {/* Header */}
-      <View style={{flexDirection:'row'}}>
 
-        <TouchableOpacity style={{postion:'static'}}>
+      {/* Header */}
+      <View style={{ flexDirection: 'row' }}>
+
+        <TouchableOpacity style={{ postion: 'static' }}
+        onPress={() => Alert.alert('Back to Home screen')}>
           <Ionicons
             style={style.backIcon}
             name={"chevron-back"}
@@ -31,7 +36,7 @@ const ProfileScreen = () => {
             color="#000"
           />
         </TouchableOpacity>
-         <Text style={{marginTop:13, padding:5,fontSize:22, fontWeight:600, textAlign:'center'}}>Settings</Text>
+        <Text style={{ marginTop: 13, padding: 5, fontSize: 22, fontWeight: 600, textAlign: 'center' }}>Settings</Text>
       </View>
 
       {/* Main White Card */}
@@ -40,25 +45,31 @@ const ProfileScreen = () => {
         <View style={style.bodySection}>
           <TouchableOpacity>
             <Image
-              source={{ uri: 'https://image.lexica.art/full_jpg/a6c473a6-51e3-4679-88bd-31efa77a3599' }} for web images
+              source={require('../Images/DocImg.jpeg')}
               style={style.avatarImage}
             />
           </TouchableOpacity>
 
           <View style={style.namerow}>
             <Text style={style.nameText}>Sarthak Adhav</Text>
-            <TouchableOpacity>
-              <Feather style={style.editIcon}
+            <TouchableOpacity
+              style={style.editIcon}
+              onPress={() => Alert.alert('Edit Profile')}
+            >
+              <Feather
                 name={"edit"}
                 size={16}
-                color="#000" />
+                color="#000"
+              />
             </TouchableOpacity>
           </View>
         </View>
 
         {/* QR Section */}
         <View style={style.qrCodeSection}>
-          <TouchableOpacity style={style.box}>
+          <TouchableOpacity style={style.box}
+            onPress={() => Alert.alert('View QR Code to edit')}
+          >
             <FontAwesome6
               name="qrcode"
               size={28}
@@ -66,18 +77,20 @@ const ProfileScreen = () => {
             <Text style={style.boxText}>Edit QR</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={style.box}>
+          <TouchableOpacity style={style.box}
+            onPress={() => navigation.navigate('EmergencyContactScreen')}>
             <Ionicons
               name="call"
               size={28}
               color="#83B4FF" />
-            <Text style={style.boxText}>Edit Contacts</Text>
+            <Text style={style.boxText}>Contacts</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       <View style={{ paddingHorizontal: 10 }}>
-        <TouchableOpacity style={style.settingsSection}>
+        <TouchableOpacity style={style.settingsSection}
+          onPress={() => navigation.navigate('ChangePasswordScreen')}>
           <MaterialIcons
             name="edit"
             size={19}
@@ -87,18 +100,21 @@ const ProfileScreen = () => {
           <Text style={style.SettingsText}>Change Password</Text>
         </TouchableOpacity>
       </View>
+
       <View style={{ paddingHorizontal: 10 }}>
-        <TouchableOpacity style={style.settingsSection}>
+        <TouchableOpacity style={style.settingsSection}
+          onPress={() => navigation.navigate('NotificationScreen')}>
           <MaterialIcons
-            name="notifications-none"
+            name="notifications"
             size={19}
             color="#000"
             style={{ marginLeft: 8 }}
           />
-          <Text style={style.SettingsText}>Notfication Settings</Text>
+          <Text style={style.SettingsText}>Notification</Text>
         </TouchableOpacity>
       </View>
-      <View style={{ paddingHorizontal: 10 }}>
+
+      {/* <View style={{ paddingHorizontal: 10 }}>
         <TouchableOpacity style={style.settingsSection}>
           <MaterialIcons
             name="language"
@@ -108,9 +124,11 @@ const ProfileScreen = () => {
           />
           <Text style={style.SettingsText}>Language</Text>
         </TouchableOpacity>
-      </View>
+      </View> */}
+
       <View style={{ paddingHorizontal: 10 }}>
-        <TouchableOpacity style={style.settingsSection}>
+        <TouchableOpacity style={style.settingsSection}
+          onPress={() => Alert.alert('Contact Us information')}>
           <MaterialIcons
             name="mail"
             size={19}
@@ -120,8 +138,12 @@ const ProfileScreen = () => {
           <Text style={style.SettingsText}>Contact Us</Text>
         </TouchableOpacity>
       </View>
+
       <View style={{ paddingHorizontal: 10 }}>
-        <TouchableOpacity style={style.settingsSection}>
+        <TouchableOpacity
+          style={style.settingsSection}
+          onPress={() => setPrivacyVisible(true)}
+        >
           <MaterialIcons
             name="privacy-tip"
             size={19}
@@ -130,17 +152,31 @@ const ProfileScreen = () => {
           />
           <Text style={style.SettingsText}>Privacy Policy</Text>
         </TouchableOpacity>
+
+        {/* Modal visible only when triggered */}
+        <PrivacyPolicyModal
+          visible={isPrivacyVisible}
+          onClose={() => setPrivacyVisible(false)}
+        />
       </View>
+
+
       <View style={{ paddingHorizontal: 10 }}>
-        <TouchableOpacity style={[style.settingsSection, { justifyContent: 'center' }]}>
+        <TouchableOpacity style={[style.settingsSection, { justifyContent: 'center' }]}
+          onPress={() => setLogoutVisible(true)}>
           <Text style={{ color: 'red', fontWeight: '500', fontSize: 16 }}>
             Logout
           </Text>
-
         </TouchableOpacity>
+
+        {/* Modal visible only when triggered */}
+        <LogoutModal
+          visible={isLogoutVisible}
+          onClose={() => setLogoutVisible(false)}
+        />
       </View>
 
-
+      <StatusBar barStyle="dark-content" backgroundColor="#f0f0f0" />
     </View>
   );
 };
@@ -150,7 +186,7 @@ export default ProfileScreen;
 const style = StyleSheet.create({
   Screen: {
     flex: 1,
-    backgroundColor: '#f2f2f2',
+    backgroundColor: '#f0f0f0',
   },
   backIcon: {
     paddingVertical: 15,

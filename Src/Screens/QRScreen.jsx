@@ -2,7 +2,6 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import Ionicons from "react-native-vector-icons/Ionicons";
 import Feather from "react-native-vector-icons/Feather";
-
 import QRCode from 'react-native-qrcode-svg';
 //*******************************************Work In Progress*****************************************************
 const QRCodeScreen = () => {
@@ -26,13 +25,18 @@ const QRCodeScreen = () => {
         }}>My QR Code</Text>
       </View>
 
-      <Image
+      {/* <Image
         source={require('../Images/QR.png')}
         style={style.image}
-      />
+      /> */}
       <View style={style.QRcard}>
         {/* <Text style={style.title}>My Emergency QR</Text> */}
-        <QRCode value={qrString} size={230} />
+        <QRCode
+          value="qrString"
+          size={200}
+          color="#7B75F5"           // Purple QR lines
+          backgroundColor="#FFFFFF" // Background
+        />
       </View>
 
       <View style={style.btn}>
@@ -58,7 +62,7 @@ export default QRCodeScreen;
 const style = StyleSheet.create({
   Screen: {
     flex: 1,
-    backgroundColor: '#f2f2f2',
+    backgroundColor: '#fff',
   },
   title: {
     fontSize: 20,
@@ -70,7 +74,7 @@ const style = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 20,
-    backgroundColor: '#f2f2f2',
+    backgroundColor: '#fff',
   },
   backButton: {
     position: 'absolute',
@@ -84,7 +88,7 @@ const style = StyleSheet.create({
     justifyContent: 'center',
     width: '80%',
     height: '40%',
-    backgroundColor: '#f2f2f2',
+    backgroundColor: '#fff',
     borderRadius: 50,
     borderWidth: 2,
   },
@@ -101,9 +105,9 @@ const style = StyleSheet.create({
     marginTop: 15,
   },
   qrbtn: {
-    backgroundColor: '#4a90e2',
+    backgroundColor: '#7B75F5',
     alignSelf: 'center',
-    justifyContent:'space-around',
+    justifyContent: 'space-around',
     width: 160,
     height: 50,
     flexDirection: 'row',

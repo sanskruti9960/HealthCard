@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "573783723317",
+    "project_id": "healthcard-56ede",
+    "storage_bucket": "healthcard-56ede.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:573783723317:android:a98c56c035ee201646907c",
+        "android_client_info": {
+          "package_name": "com.healthcardapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyARQRbwgGEHZusK1Ile1s8No4ubzI4b6ME"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
