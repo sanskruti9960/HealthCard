@@ -14,9 +14,9 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const { height } = Dimensions.get('window');
 
-const Onboard = () => {
+const Onboard = ({navigation}) => {
   const [step, setStep] = useState(0);
-  const [showSignup, setShowSignup] = useState(false);
+
 
   const screens = [
     {
@@ -43,8 +43,8 @@ const Onboard = () => {
     if (step < screens.length - 1) {
       setStep(prev => prev + 1);
     } else {
-      setShowSignup(true);
-    }
+    navigation.navigate('Signup'); // 👈 navigate on final step
+  }
   };
 
   const prevStep = () => {
@@ -53,7 +53,7 @@ const Onboard = () => {
     }
   };
 
-  if (showSignup) return <Signup />;
+ 
 
   const { image, title, subtitle, cropOffset } = screens[step];
 
@@ -63,7 +63,8 @@ const Onboard = () => {
 
       {step > 0 && (
         <TouchableOpacity onPress={prevStep} style={styles.backButton}>
-    <Ionicons name="arrow-back" size={24} color="blue" />
+ <Ionicons name="arrow-back" size={24} color="blue" />
+
 
         </TouchableOpacity>
       )}

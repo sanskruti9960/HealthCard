@@ -1,20 +1,25 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import Onboard1 from './src/Screens/Onboard1';
-import Signup from './src/Screens/Signup';
-import Login from './src/Screens/Login';
-import ForgotPassword from './src/Screens/ForgotPassword';
+import { View } from 'react-native';
+import ForgotPassword from './src/Screens/ForgotPassword.jsx';
+import Onboard from './src/Screens/Onboard.jsx';
+import Signup from './src/Screens/Signup.jsx';
+import Login from './src/Screens/Login.jsx';
+import OtpVerification from './src/Screens/OtpVerification.jsx';
+
 const Stack = createNativeStackNavigator();
 
 const App = () => {
   return (
+   
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Onboard1" screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Onboard1" component={Onboard1} />
+      <Stack.Navigator initialRouteName="Onboard" screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Onboard" component={Onboard} />
         <Stack.Screen name="Signup" component={Signup} />
           <Stack.Screen name="Login" component={Login} />
           <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
+        <Stack.Screen name="OtpVerification" component={OtpVerification} />
       </Stack.Navigator>
     </NavigationContainer>
   );

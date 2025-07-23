@@ -12,109 +12,152 @@ import {
   Dimensions,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import LottieView from 'lottie-react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import Animation2 from './img/Animation2.json'
 
 const { width } = Dimensions.get('window');
 
-const Login = () => {
+const Login = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [errors, setErrors] = useState({});
+
+  const validate = () => {
+    let valid = true;
+    let newErrors = {};
+
+    if (!email.trim()) {
+      newErrors.email = 'Email is required.';
+      valid = false;
+    }
+
+    if (!password.trim()) {
+      newErrors.password = 'Password is required.';
+      valid = false;
+    }
+
+    setErrors(newErrors);
+    return valid;
+  };
+
+  const handleLogin = () => {
+    const isValid = validate();
+    if (isValid) {
+      // Proceed with login (dummy for now)
+      console.log('Login success');
+    } else {
+      console.log('Validation failed');
+    }
+  };
 
   return (
-    <LinearGradient
-      colors={['#f0f4ff', '#ffffff']}
-      style={{ flex: 1 }}
-    >
+    <LinearGradient colors={['#f0f4ff', '#ffffff']} style={{ flex: 1 }}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView contentContainerStyle={styles.scrollContainer}>
-          
-          {/* 🔷 Header Image */}
+          {/* Header Image */}
           <Image
-            source={{ uri: 'https://i.pinimg.com/736x/99/35/ce/9935ce5f3b1d6cb6bc86287cd927d03e.jpg' }}
+            source={{
+              uri: 'https://i.pinimg.com/736x/99/35/ce/9935ce5f3b1d6cb6bc86287cd927d03e.jpg',
+            }}
             style={styles.headerImage}
           />
 
-          {/* Optional intro text */}
+          {/* Intro Text */}
           <View style={styles.headerTextContainer}>
             <Text style={styles.headerText}>Your emergency access, simplified.</Text>
           </View>
 
-          {/* 🔘 Card Container */}
+          {/* Card Container */}
           <View style={styles.container}>
-            {/* ✅ Lottie Animation */}
-              <LottieView
-          source={Animation2}
-          autoPlay
-          loop
-         
-              style={styles.lottie}
-            />
-
             <Text style={styles.title}>
               Welcome <Text style={styles.highlight}>Back</Text>
             </Text>
 
-            {/* Subtitle + QR Icon */}
+            {/* Subtitle Row */}
             <View style={styles.subtitleRow}>
               <Text style={styles.subtitle}>Login to your account</Text>
-              <Ionicons
-                name="qr-code-outline"
-                size={22}
-                color="#1C75BC"
-                style={styles.qrIcon}
-              />
+              <Ionicons name="qr-code-outline" size={22} color="#1C75BC" style={styles.qrIcon} />
             </View>
 
             {/* Email Field */}
-            <View style={styles.inputContainer}>
+            <View style={[
+              styles.inputContainer,
+              errors.email && { borderColor: 'red' }
+            ]}>
               <Ionicons name="mail-outline" size={20} color="#666" style={styles.icon} />
               <TextInput
                 placeholder="Email or Phone Number"
                 placeholderTextColor="#aaa"
                 style={styles.input}
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={text => {
+                  setEmail(text);
+                  if (errors.email) setErrors({ ...errors, email: undefined });
+                }}
               />
             </View>
+            {errors.email && (
+              <Text style={styles.errorText}>{errors.email}</Text>
+            )}
 
             {/* Password Field */}
-            <View style={styles.inputContainer}>
+            <View style={[
+              styles.inputContainer,
+              errors.password && { borderColor: 'red' }
+            ]}>
               <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.icon} />
               <TextInput
                 placeholder="Password"
                 placeholderTextColor="#aaa"
                 style={styles.input}
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={text => {
+                  setPassword(text);
+                  if (errors.password) setErrors({ ...errors, password: undefined });
+                }}
                 secureTextEntry
               />
             </View>
+            {errors.password && (
+              <Text style={styles.errorText}>{errors.password}</Text>
+            )}
 
             {/* Forgot Password */}
-            <TouchableOpacity style={styles.forgotContainer}>
+            <TouchableOpacity
+              style={styles.forgotContainer}
+              onPress={() => navigation.navigate('ForgotPassword')}
+            >
               <Text style={styles.forgotText}>Forgot Password?</Text>
             </TouchableOpacity>
 
             {/* Login Button */}
-            <TouchableOpacity style={styles.loginButton}>
+            <TouchableOpacity
+              style={[
+                styles.loginButton,
+                (!email || !password) && styles.disabledButton
+              ]}
+              onPress={handleLogin}
+            >
               <Text style={styles.buttonText}>Login</Text>
             </TouchableOpacity>
 
             {/* Google Login Button */}
             <TouchableOpacity style={styles.googleButton}>
-              <Ionicons name="logo-google" size={20} color="#1C75BC" style={{ marginRight: 8 }} />
+              <Image
+                source={{
+                  uri: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT-S3qWcvePdfZilsn8f2X1KXTC6vZ0xjQPgQ&s',
+                }}
+                style={styles.googleIcon}
+              />
               <Text style={styles.googleText}>Continue with Google</Text>
             </TouchableOpacity>
 
-            {/* Footer */}
+            {/* Footer Text */}
             <View style={styles.footerText}>
               <Text style={styles.footer}>Don't have an account?</Text>
-              <TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
                 <Text style={styles.signupLink}> Sign up</Text>
               </TouchableOpacity>
             </View>
@@ -160,13 +203,6 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     marginHorizontal: 20,
     marginTop: 0,
-  },
-  lottie: {
-    width: 100,
-    height: 100,
-    alignSelf: 'center',
-    marginBottom: -10,
-    marginTop: -20,
   },
   title: {
     fontSize: 28,
@@ -227,6 +263,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
+  disabledButton: {
+    backgroundColor: '#ccc',
+  },
   buttonText: {
     color: 'white',
     fontSize: 16,
@@ -235,17 +274,21 @@ const styles = StyleSheet.create({
   googleButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#1C75BC',
-    borderRadius: 12,
-    paddingVertical: 12,
     justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
     marginBottom: 20,
   },
+  googleIcon: {
+    width: 35,
+    height: 20,
+    marginRight: 5,
+  },
   googleText: {
-    color: '#1C75BC',
+    color: 'gray',
+    fontSize: 16,
     fontWeight: 'bold',
-    fontSize: 14,
   },
   footerText: {
     flexDirection: 'row',
@@ -261,12 +304,11 @@ const styles = StyleSheet.create({
     color: '#1C75BC',
     fontWeight: 'bold',
   },
-  lottie: {
-  width: 100,
-  height: 100,
-  alignSelf: 'center',
-  marginBottom: -10,
-  marginTop: -20,
-},
-
+  errorText: {
+    color: 'red',
+    fontSize: 13,
+    marginBottom: 8,
+    marginLeft: 8,
+    alignSelf: 'flex-start',
+  },
 });
