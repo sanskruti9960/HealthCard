@@ -2,12 +2,12 @@ import React from 'react';
 import { View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import DoctorSuggestionScreen from './Src/Screens/DoctorSuggestionScreen'
-import EmergencyContactScreen from './Src/Screens/EmergencyContactScreen'
-import QRScreen from './Src/Screens/QRScreen'
-import ProfileScreen from './Src/Screens/ProfileScreen'
-import NotificationScreen from './Src/Screens/NotificationScreen'
-import ChangePasswordScreen from './Src/Screens/ChangePasswordScreen'
+import DoctorSuggestionScreen from './Src/Screen/DoctorSuggestionScreen'
+import EmergencyContactScreen from './Src/Screen/EmergencyContactScreen'
+import QRScreen from './Src/Screen/QRScreen'
+import ProfileScreen from './Src/Screen/ProfileScreen'
+import NotificationScreen from './Src/Screen/NotificationScreen'
+import ChangePasswordScreen from './Src/Screen/ChangePasswordScreen'
 
 const Stack = createNativeStackNavigator();
 const App = () => {

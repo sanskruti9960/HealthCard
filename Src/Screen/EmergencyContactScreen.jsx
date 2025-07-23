@@ -10,6 +10,8 @@ import { collection, addDoc, getDocs, } from 'firebase/firestore';
 import { db } from "../firebaseConfig";
 import { useEffect } from 'react';
 
+
+
 const saveContactToFirebase = async (userId, contact) => {
   try {
     // Firestore collection path
@@ -27,9 +29,12 @@ const Emergencycontact = ({ navigation }) => {
   const [newName, setNewName] = useState('');
   const [newPhone, setNewPhone] = useState('');
   const [newRelation, setNewRelation] = useState('');
+  const [nameError, setNameError] = useState('');
+  const [phoneError, setPhoneError] = useState('');
+  const [relationError, setRelationError] = useState('');
 
 
-   useEffect(() => {
+  useEffect(() => {
     fetchContactsFromFirebase("user123"); // Replace with real user ID later
   }, []);
 
@@ -134,8 +139,8 @@ const Emergencycontact = ({ navigation }) => {
           </View>
         </View>
       </Modal>
-
-      {/* ➕ Floating Add Button */}
+      
+      {/* Floating Action Button to Add Contact */}
       <TouchableOpacity
         style={style.fab}
         onPress={() => setAddModalVisible(true)}
@@ -154,51 +159,94 @@ const Emergencycontact = ({ navigation }) => {
             <Text style={style.modalTitle}>Add New Contact</Text>
 
             <TextInput
-              placeholder="Name"
-              style={style.input}
+              style={[style.input, nameError && style.errorInput]}
+              placeholder="Enter name"
               value={newName}
-              onChangeText={setNewName}
+              onChangeText={(text) => {
+                setNewName(text);
+                if (text.trim()) setNameError('');
+              }}
             />
+            {nameError ? <Text style={style.errorText}>{nameError}</Text> : null}
+
             <TextInput
-              placeholder="Phone"
-              style={style.input}
-              keyboardType="phone-pad"
+              style={[style.input, phoneError && style.errorInput]}
+              placeholder="Enter phone number"
+              keyboardType="numeric"
               value={newPhone}
-              onChangeText={setNewPhone}
+              onChangeText={(text) => {
+                setNewPhone(text);
+                if (text.trim()) setPhoneError('');
+              }}
             />
+            {phoneError ? <Text style={style.errorText}>{phoneError}</Text> : null}
+
             <TextInput
-              placeholder="Relation"
-              style={style.input}
+              style={[style.input, relationError && style.errorInput]}
+              placeholder="Enter relation"
               value={newRelation}
-              onChangeText={setNewRelation}
+              onChangeText={(text) => {
+                setNewRelation(text);
+                if (text.trim()) setRelationError('');
+              }}
             />
+            {relationError ? <Text style={style.errorText}>{relationError}</Text> : null}
+
+
 
             <View style={[style.modalButtons, { marginTop: 16 }]}>
               <TouchableOpacity
                 style={[style.modalBtn, { backgroundColor: '#1b47d2' }]}
                 onPress={() => {
-                  if (newName && newPhone) {
-                    const newContact = {
-                      id: Date.now().toString(),
-                      name: newName,
-                      phone: newPhone,
-                      relation: newRelation || 'Unknown',
-                    };
+                  let isValid = true;
+                  const phoneRegex = /^[0-9]{10}$/;
 
-                    // 1️⃣ Add to local list
-                    setEmergencyContacts(prev => [...prev, newContact]);
-
-                    // 2️⃣ Save to Firebase (replace 'user123' with your real user ID from auth later)
-                    saveContactToFirebase("user123", newContact);
-
-                    // 3️⃣ Reset form & close modal
-                    setAddModalVisible(false);
-                    setNewName('');
-                    setNewPhone('');
-                    setNewRelation('');
+                  // Name Validation
+                  if (!newName.trim()) {
+                    setNameError('Name is required');
+                    isValid = false;
                   } else {
-                    alert('Name and phone are required');
+                    setNameError('');
                   }
+
+                  // Phone Validation
+                  if (!newPhone.trim()) {
+                    setPhoneError('Phone number is required');
+                    isValid = false;
+                  } else if (!phoneRegex.test(newPhone)) {
+                    setPhoneError('Enter a valid 10-digit phone number');
+                    isValid = false;
+                  } else {
+                    setPhoneError('');
+                  }
+
+                  // Optional: Relation Validation
+                  if (!newRelation.trim()) {
+                    setRelationError('Relation is required');
+                    isValid = false;
+                  } else {
+                    setRelationError('');
+                  }
+
+                  if (!isValid) return;
+
+                  const newContact = {
+                    id: Date.now().toString(),
+                    name: newName.trim(),
+                    phone: newPhone.trim(),
+                    relation: newRelation.trim(),
+                  };
+
+                  setEmergencyContacts(prev => [...prev, newContact]);
+                  saveContactToFirebase("user123", newContact);
+
+                  setAddModalVisible(false);
+                  setNewName('');
+                  setNewPhone('');
+                  setNewRelation('');
+                  setNameError('');
+                  setPhoneError('');
+                  setRelationError('');
                 }}
 
               >
@@ -339,10 +387,23 @@ const style = StyleSheet.create({
   },
   input: {
     width: '100%',
+    height: 48,
     borderWidth: 1,
     borderColor: '#ccc',
-    borderRadius: 10,
-    padding: 10,
-    marginTop: 10,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    fontSize: 16,
+    backgroundColor: '#fff',
+    marginBottom: 4,
+  },
+  errorInput: {
+    borderColor: 'red',
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 13,
+    marginBottom: 8,
+    marginLeft: 4,
   },
 });
+
