@@ -18,6 +18,12 @@ import QRScreen from './Src/Screen/QRScreen'
 import ProfileScreen from './Src/Screen/ProfileScreen'
 import NotificationScreen from './Src/Screen/NotificationScreen'
 import ChangePasswordScreen from './Src/Screen/ChangePasswordScreen'
+// siiddhi
+import ForgotPassword from './Src/SiddhiScreens/ForgotPassword.jsx';
+import Onboard from './Src/SiddhiScreens/Onboard.jsx';
+import Signup from './Src/SiddhiScreens/Signup.jsx';
+import Login from './Src/SiddhiScreens/Login.jsx';
+import OtpVerification from './Src/SiddhiScreens/OtpVerification.jsx';
 
 import { db } from "./Src/firebaseConfig"; // adjust path as needed
 import notifee, { AndroidImportance } from '@notifee/react-native';
@@ -44,7 +50,7 @@ const App = () => {
   return (
     <FormProvider>
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="HomeScreen">
+      <Stack.Navigator initialRouteName="Onboard">
         <Stack.Screen name="HomeScreen" component={HomeScreen} options={{ headerShown: false }} />
         <Stack.Screen name="MedicationCard" component={MedicationCard} options={{ headerShown: false }} />
         <Stack.Screen name="Setschedulepg" component={Setschedulepg} />
@@ -61,6 +67,12 @@ const App = () => {
          <Stack.Screen name="QRScreen" component={QRScreen} />
           <Stack.Screen name="NotificationScreen" component={NotificationScreen} />
           <Stack.Screen name="ChangePasswordScreen" component={ChangePasswordScreen} />
+      {/* siidhi */}
+         <Stack.Screen name="Onboard" component={Onboard} />
+        <Stack.Screen name="Signup" component={Signup} />
+          <Stack.Screen name="Login" component={Login} />
+          <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
+        <Stack.Screen name="OtpVerification" component={OtpVerification} />
       </Stack.Navigator>
     </NavigationContainer>
     </FormProvider>
