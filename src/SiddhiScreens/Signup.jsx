@@ -24,9 +24,9 @@ const Signup = ({ navigation }) => {
 
   const validate = () => {
     const newErrors = {};
-    if (!fullName.trim()) newErrors.fullName = 'Full name is required';
-    if (!email.trim()) newErrors.email = 'Email is required';
-    if (!password.trim()) newErrors.password = 'Password is required';
+    if (!fullName.trim()) newErrors.fullName = 'Full name is required*';
+    if (!email.trim()) newErrors.email = 'Email is required*';
+    if (!password.trim()) newErrors.password = 'Password is required*';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     padding: 20,
-    backgroundColor: 'white',
+    backgroundColor: '#fff',
     paddingBottom: 40,
   },
   topAnimation: {

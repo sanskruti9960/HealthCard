@@ -10,6 +10,7 @@ import {
   Platform,
   Image,
   Dimensions,
+  Alert,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
@@ -26,12 +27,12 @@ const Login = ({ navigation }) => {
     let newErrors = {};
 
     if (!email.trim()) {
-      newErrors.email = 'Email is required.';
+      newErrors.email = 'Email is required*';
       valid = false;
     }
 
     if (!password.trim()) {
-      newErrors.password = 'Password is required.';
+      newErrors.password = 'Password is required*';
       valid = false;
     }
 
@@ -42,7 +43,7 @@ const Login = ({ navigation }) => {
   const handleLogin = () => {
     const isValid = validate();
     if (isValid) {
-      // Proceed with login (dummy for now)
+      Alert.alert('Success', 'Login Successful'); // ✅ Success Alert
       console.log('Login success');
     } else {
       console.log('Validation failed');
@@ -50,7 +51,7 @@ const Login = ({ navigation }) => {
   };
 
   return (
-    <LinearGradient colors={['#f0f4ff', '#ffffff']} style={{ flex: 1 }}>
+    <LinearGradient colors={['#f0f4ff', '#fff']} style={{ flex: 1 }}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
