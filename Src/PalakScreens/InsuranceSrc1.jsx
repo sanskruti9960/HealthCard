@@ -5,6 +5,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons'
 import { useNavigation } from '@react-navigation/native'
 import Tooltip from 'react-native-walkthrough-tooltip'
 import LinearGradient from 'react-native-linear-gradient'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const InsuranceSrc1=({navigation, route})=>{
   const [showTip, setShowTip] = useState(true);
@@ -19,10 +20,46 @@ const InsuranceSrc1=({navigation, route})=>{
     }
   }, [showTip]);
 
-  const onSubmit = (data) => {
-    Object.keys(data).forEach((key) => handleChange(key, data[key]));
-    setModalVisible(true);
-   
+  const onSubmit = async (data) => {
+    try {
+      const existingPolicies = await AsyncStorage.getItem('insurancePolicies');
+      let policies = existingPolicies ? JSON.parse(existingPolicies) : [];
+      
+      const policyObject = {
+        id: route?.params?.policyId || Date.now() + Math.random(),
+        name: data.policyHolderName || data.companyName || 'Policy Holder',
+        policyNumber: data.policyNumber || 'N/A',
+        insuranceType: data.policyType || 'General Insurance',
+        formState: data
+      };
+      
+      // Check if editing existing policy
+      if (route?.params?.fromPreview && route?.params?.policyId) {
+        const existingIndex = policies.findIndex(p => p.id === route.params.policyId);
+        if (existingIndex >= 0) {
+          policies[existingIndex] = policyObject;
+        } else {
+          policies.push(policyObject);
+        }
+      } else {
+        // New policy
+        policies.push(policyObject);
+      }
+      
+      await AsyncStorage.setItem('insurancePolicies', JSON.stringify(policies));
+      setModalVisible(true);
+      
+      // Navigate to preview with policy data
+      setTimeout(() => {
+        navigation.navigate('InsurancePreview', { 
+          formState: data,
+          policyId: policyObject.id,
+          skipSave: true 
+        });
+      }, 2000);
+    } catch (error) {
+      console.log('Error saving policy:', error);
+    }
   };
     
   const [modalVisible, setModalVisible] = useState(false);
@@ -42,6 +79,7 @@ const InsuranceSrc1=({navigation, route})=>{
     companyName: '',
     serviceNumber: '',
     emailOfCompany: '',
+    policyHolderName: '',
     policyNumber: '',
     policyType: '',
     sumInsured: '',
@@ -60,7 +98,29 @@ const InsuranceSrc1=({navigation, route})=>{
   React.useEffect(() => {
     if (route?.params?.formState && route.params?.fromPreview) {
       setFormState(route.params.formState);
-      setIsEditable(true); // Make the form editable if coming from preview
+      setIsEditable(true);
+    } else if (!route?.params?.fromPreview) {
+      // Clear form for new policy creation
+      setFormState({
+        companyName: '',
+        serviceNumber: '',
+        emailOfCompany: '',
+        policyHolderName: '',
+        policyNumber: '',
+        policyType: '',
+        sumInsured: '',
+        policyEndDate: '',
+        policyStartDate: '',
+        nomineeName: '',
+        nomineeRelation: '',
+        nomineePhn: '',
+        claimAmount: '',
+        claimLink: '',
+        claimHelpPhn: '',
+        adharcardNo: '',
+        pancardNo: '',
+      });
+      setIsEditable(true);
     }
   }, [route?.params]);
 
@@ -186,6 +246,22 @@ const InsuranceSrc1=({navigation, route})=>{
             <Card.Content>
               <Text style={styles.HeaderStyle}>POLICY DETAILS</Text>
               <Divider style={styles.divider}/>
+
+               <View style={styles.inputContainer}>
+                <TextInput
+                  label="Policy Holder Name"
+                  value={formState.policyHolderName}
+                  mode="outlined"
+                  disabled={!isEditable}
+                  keyboardType="default"
+                  onChangeText={(text) => handleChange('policyHolderName', text)}
+                  left={<TextInput.Icon icon={() => <Icon name="description" size={20} color="#0A66C2" />} />}
+                  style={styles.paperInput}
+                  outlineColor="#0A66C2"
+                  activeOutlineColor="#0A66C2"
+                  theme={{roundness:15, colors: { primary: '#0A66C2', background: 'white' } }}
+                />
+              </View>
 
               <View style={styles.inputContainer}>
                 <TextInput
@@ -413,6 +489,7 @@ const InsuranceSrc1=({navigation, route})=>{
                   label="Adharcard Number"
                   value={formState.adharcardNo}
                   mode="outlined"
+                  keyboardType="numeric"
                   disabled={!isEditable}
                   onChangeText={(text) => handleChange('adharcardNo', text)}
                   left={<TextInput.Icon icon={() => <Icon name="fingerprint" size={20} color="#0A66C2" />} />}
@@ -428,6 +505,7 @@ const InsuranceSrc1=({navigation, route})=>{
                   label="Pancard Number"
                   value={formState.pancardNo}
                   mode="outlined"
+                  keyboardType="numeric"
                   disabled={!isEditable}
                   onChangeText={(text) => handleChange('pancardNo', text)}
                   left={<TextInput.Icon icon={() => <Icon name="badge" size={20} color="#0A66C2" />} />}
@@ -446,10 +524,8 @@ const InsuranceSrc1=({navigation, route})=>{
               onPress={() => { 
                 onSubmit(formState); 
                 setIsEditable(false);  
-                navigation.navigate('InsurancePreview', { formState });
               }}
             >
-          
                 <Icon name="save" size={20} color="#0A66C2" />
                 <Text style={styles.buttonText}>Save</Text>
             </TouchableOpacity>
@@ -500,9 +576,8 @@ const styles=StyleSheet.create({
     
   },
   dateInput: {
-    backgroundColor: 'white',
-    height:40,
     backgroundColor: '#f0f2f4ff',
+    height: 40,
   },
   keyboardAvoidStyle:{
     flex:1
@@ -671,5 +746,7 @@ const styles=StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
   },
-
+  btnStyle: {
+    padding: 8,
+  },
 })

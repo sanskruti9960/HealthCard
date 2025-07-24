@@ -1,53 +1,54 @@
-import React, { useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar, Alert } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar, RefreshControl } from 'react-native';
 import { Card, Avatar } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import InsuranceSrc1 from './InsuranceSrc1';
 
 const InsurancePreview = ({ navigation, route }) => {
   const { formState } = route.params; // Get the passed form data
-  const hasInitializedFromPreview = useRef(false);
+  const [refreshing, setRefreshing] = useState(false);
   
-  // Save the policy to AsyncStorage when component mounts
+  const onRefresh = async () => {
+    setRefreshing(true);
+    // Simulate refresh delay
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 1000);
+  };
+  
+  // Only save if not coming from a save operation
   useEffect(() => {
-    const savePolicy = async () => {
-      try {
-        // Get existing policies
-        const existingPoliciesJSON = await AsyncStorage.getItem('insurancePolicies');
-        let policies = existingPoliciesJSON ? JSON.parse(existingPoliciesJSON) : [];
-        
-        // Check if this policy already exists (by policyNumber)
-        const existingIndex = policies.findIndex(p => 
-          p.formState && p.formState.policyNumber === formState.policyNumber
-        );
-        
-        // Create policy object with display info
-        const policyObject = {
-          id: existingIndex >= 0 ? policies[existingIndex].id : Date.now(),
-          name: formState.nomineeName || 'Policy Holder',
-          policyNumber: formState.policyNumber || 'Unknown',
-          insuranceType: formState.policyType || 'Insurance Policy',
-          formState: formState
-        };
-        
-        // Update or add the policy
-        if (existingIndex >= 0) {
-          policies[existingIndex] = policyObject;
-        } else {
-          policies.push(policyObject);
+    if (!route.params?.skipSave) {
+      const savePolicy = async () => {
+        try {
+          const existingPoliciesJSON = await AsyncStorage.getItem('insurancePolicies');
+          let policies = existingPoliciesJSON ? JSON.parse(existingPoliciesJSON) : [];
+          
+          const policyObject = {
+            id: route.params?.policyId || Date.now(),
+            name: formState.policyHolderName || 'Policy Holder',
+            policyNumber: formState.policyNumber || 'Unknown',
+            insuranceType: formState.policyType || 'Insurance Policy',
+            formState: formState
+          };
+          
+          const existingIndex = policies.findIndex(p => p.id === policyObject.id);
+          if (existingIndex >= 0) {
+            policies[existingIndex] = policyObject;
+          } else {
+            policies.push(policyObject);
+          }
+          
+          await AsyncStorage.setItem('insurancePolicies', JSON.stringify(policies));
+        } catch (error) {
+          console.log('Error saving policy:', error);
         }
-        
-        // Save back to AsyncStorage
-        await AsyncStorage.setItem('insurancePolicies', JSON.stringify(policies));
-      } catch (error) {
-        console.log('Error saving policy:', error);
-      }
-    };
-    
-    savePolicy();
-  }, [formState]);
+      };
+      
+      savePolicy();
+    }
+  }, [formState, route.params?.skipSave, route.params?.policyId]);
 
   const handleBack = () => {
     navigation.navigate('MultiplePolicy');
@@ -67,6 +68,7 @@ const InsurancePreview = ({ navigation, route }) => {
               navigation.navigate('InsuranceSrc1', {
                 formState,
                 fromPreview: true,
+                policyId: route.params?.policyId,
                 isEditable: true,
               });
             }}
@@ -77,7 +79,17 @@ const InsurancePreview = ({ navigation, route }) => {
         </View>
       </LinearGradient>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#0A66C2']}
+            tintColor="#0A66C2"
+          />
+        }
+      >
         <View style={styles.avatarContainer}>
           <Avatar.Icon 
             size={80} 
@@ -92,10 +104,10 @@ const InsurancePreview = ({ navigation, route }) => {
         <Card style={styles.cardStyle} elevation={4}>
           <Card.Content>
             <View style={styles.container}>
-              {Object.entries(formState).map(([key, value], index) => (
+              {getOrderedFields(formState).map(([key, value], index) => (
                 <View key={key} style={[styles.dataRow, index % 2 === 0 ? styles.evenRow : null]}>
                   <Text style={styles.label}>{formatKey(key)}</Text>
-                  <Text style={styles.value}>{value || '-'}</Text>
+                  <Text style={styles.value}>{value}</Text>
                 </View>
               ))}
             </View>
@@ -132,6 +144,33 @@ const InsurancePreview = ({ navigation, route }) => {
 // 🔤 Convert camelCase to readable labels
 const formatKey = (key) => {
   return key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+};
+
+// 📋 Get fields in specific order with Policy Holder Name before Policy Number
+const getOrderedFields = (formState) => {
+  const fieldOrder = [
+    'companyName',
+    'serviceNumber', 
+    'emailOfCompany',
+    'policyHolderName',  // This will appear before policyNumber
+    'policyNumber',
+    'policyType',
+    'sumInsured',
+    'policyStartDate',
+    'policyEndDate',
+    'nomineeName',
+    'nomineeRelation',
+    'nomineePhn',
+    'claimAmount',
+    'claimLink',
+    'claimHelpPhn',
+    'adharcardNo',
+    'pancardNo'
+  ];
+  
+  return fieldOrder
+    .filter(key => formState[key] && formState[key].toString().trim() !== '')
+    .map(key => [key, formState[key]]);
 };
 
 export default InsurancePreview;

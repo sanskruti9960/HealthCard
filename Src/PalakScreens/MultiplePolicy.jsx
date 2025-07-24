@@ -21,6 +21,7 @@ const MultiplePolicy = () => {
   const navigation=useNavigation();
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedPolicy, setSelectedPolicy] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
   
   const [policies, setPolicies] = useState([])
   
@@ -35,6 +36,12 @@ const MultiplePolicy = () => {
     } catch (error) {
       console.log('Error loading policies:', error);
     }
+  };
+  
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadPolicies();
+    setRefreshing(false);
   };
 
   useEffect(() => {
@@ -54,7 +61,11 @@ const MultiplePolicy = () => {
   };
 
   const handleViewPolicy = (policy) => {
-    navigation.navigate('InsurancePreview', { formState: policy.formState });
+    navigation.navigate('InsurancePreview', { 
+      formState: policy.formState,
+      policyId: policy.id,
+      skipSave: true 
+    });
   };
 
   const handleLongPress = (policy) => {
@@ -137,6 +148,14 @@ const MultiplePolicy = () => {
               )}
               keyExtractor={(item) => item.id.toString()}
               contentContainerStyle={{ paddingBottom: 20 }}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  colors={['#0A66C2']}
+                  tintColor="#0A66C2"
+                />
+              }
             />
           </Card.Content>
         </Card>
