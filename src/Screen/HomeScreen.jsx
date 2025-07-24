@@ -13,6 +13,15 @@ const HomeScreen = ({navigation}) => {
   const Insurance = () => {
     navigation.navigate('MultiplePolicy');
   };
+  const docnav = () => {
+    navigation.navigate('DoctorSuggestionScreen');
+  };
+  const Emergencynav = () => {
+    navigation.navigate('EmergencyContactScreen');
+  };
+  const qrnav = () => {
+    navigation.navigate('QRScreen');
+  };
  
   return (
     // main container
@@ -114,7 +123,8 @@ const HomeScreen = ({navigation}) => {
         <View style={HomeStyle.facility}>
 
           <View style={HomeStyle.fac_singleIcon}>
-            <TouchableOpacity style={HomeStyle.fac_iconCnt}>
+            <TouchableOpacity style={HomeStyle.fac_iconCnt}
+            onPress={()=>Emergencynav()}>
               <MaterialIcons name="add-call" size={30} color="#0d6e9c" />
             </TouchableOpacity>
             <Text style={{ textAlign: 'center' }}>Emergency{"\n"} Contact</Text>
@@ -122,7 +132,8 @@ const HomeScreen = ({navigation}) => {
           </View>
 
           <View style={HomeStyle.fac_singleIcon}>
-            <TouchableOpacity style={HomeStyle.fac_iconCode}>
+            <TouchableOpacity style={HomeStyle.fac_iconCode}
+            onPress={()=>qrnav()}>
               <Ionicons name="qr-code-sharp" size={30} color="#E6A72F" />
             </TouchableOpacity>
             <Text style={{ textAlign: 'center' }}>QR {"\n"}Code</Text>
@@ -145,7 +156,9 @@ const HomeScreen = ({navigation}) => {
         </View>
 
         {/* doctor container */}
-        <TouchableOpacity style={{
+        <TouchableOpacity 
+        onPress={()=>docnav()}
+        style={{
           backgroundColor: '#d6f0fa', paddingLeft: 10, flexDirection: 'row', margin: 10,
           borderRadius: 25, alignItems: 'center', justifyContent: 'space-between', borderLeftWidth: 5,
           borderLeftColor: '#0d6e9c', paddingVertical: 55
@@ -157,14 +170,12 @@ const HomeScreen = ({navigation}) => {
           </View>
 
           <Image
-            source={require('../img/doc.png')}
+            source={require('../img/doc1.png')}
             style={{
               flex: 1,
               height: '230%',
               width: '170%',
               resizeMode: 'contain',
-
-
             }}
           />
 
