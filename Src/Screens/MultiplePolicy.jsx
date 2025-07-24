@@ -21,6 +21,7 @@ const MultiplePolicy = () => {
   const navigation=useNavigation();
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedPolicy, setSelectedPolicy] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
   
   const [policies, setPolicies] = useState([])
   
@@ -35,6 +36,12 @@ const MultiplePolicy = () => {
     } catch (error) {
       console.log('Error loading policies:', error);
     }
+  };
+  
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadPolicies();
+    setRefreshing(false);
   };
 
   useEffect(() => {
@@ -54,7 +61,11 @@ const MultiplePolicy = () => {
   };
 
   const handleViewPolicy = (policy) => {
-    navigation.navigate('InsurancePreview', { formState: policy.formState });
+    navigation.navigate('InsurancePreview', { 
+      formState: policy.formState,
+      policyId: policy.id,
+      skipSave: true 
+    });
   };
 
   const handleLongPress = (policy) => {
@@ -83,7 +94,7 @@ const MultiplePolicy = () => {
       <StatusBar backgroundColor="#0A66C2" barStyle="light-content" />
       <LinearGradient colors={['#0A66C2', '#0A4D92']} style={styles.headerGradient}>
           <View style={styles.headerContainer}>
-            <TouchableOpacity style={styles.btnStyle} onPress={() => navigation.goBack()}>
+            <TouchableOpacity style={styles.btnStyle} onPress={() => navigation.navigate("HomeScreen")}>
               <Icon name="arrow-back" size={24} color="#FFF" />
             </TouchableOpacity>
             <Text style={styles.header}>My Insurance Policies</Text>
@@ -137,6 +148,14 @@ const MultiplePolicy = () => {
               )}
               keyExtractor={(item) => item.id.toString()}
               contentContainerStyle={{ paddingBottom: 20 }}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  colors={['#0A66C2']}
+                  tintColor="#0A66C2"
+                />
+              }
             />
           </Card.Content>
         </Card>
@@ -183,7 +202,7 @@ export default MultiplePolicy;
 const styles = StyleSheet.create({
   viewStyle1: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: 'white',
   },
   backgroundImage: {
     flex: 1,

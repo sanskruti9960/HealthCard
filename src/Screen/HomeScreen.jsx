@@ -32,9 +32,12 @@ const HomeScreen = ({navigation}) => {
         <View style={HomeStyle.profile_name}>
           <Text style={{ fontWeight: "bold", fontSize: 17 }}>Hello!</Text>
           <Text style={{ fontWeight: "bold", fontSize: 20 }}>Sanskruti Bhavsar</Text>
-
+    <TouchableOpacity
+    style={HomeStyle.profile_icon} onPress={
+      navigation.navigate('ProfileScreen') } >
           <Ionicons name="person-circle" size={45} color="skyblue"
-            style={HomeStyle.profile_icon} />
+             />
+            </TouchableOpacity>
         </View>
 
       </View>

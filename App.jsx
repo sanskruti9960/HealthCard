@@ -28,7 +28,6 @@ import OtpVerification from './Src/SiddhiScreens/OtpVerification.jsx';
 import { db } from "./Src/firebaseConfig"; // adjust path as needed
 import notifee, { AndroidImportance } from '@notifee/react-native';
 import { Provider as PaperProvider } from 'react-native-paper';
-import { FormProvider } from './Src/Screens/FormContext'; // adjust path as needed
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 const Stack = createNativeStackNavigator();
@@ -48,7 +47,6 @@ const App = () => {
   }, []);
  
   return (
-    <FormProvider>
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Onboard">
         <Stack.Screen name="HomeScreen" component={HomeScreen} options={{ headerShown: false }} />
@@ -61,7 +59,7 @@ const App = () => {
         <Stack.Screen name="InsurancePreview" component={InsurancePreview} options={{ headerShown: false }} />
         <Stack.Screen name="MedicalInfo" component={MedicalInfo} options={{ headerShown: false }} />
 {/* sarthak */}
-        <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
+        <Stack.Screen name="ProfileScreen" component={ProfileScreen} options={{ headerShown: false }} />
          <Stack.Screen name="DoctorSuggestionScreen" component={DoctorSuggestionScreen} />
          <Stack.Screen name="EmergencyContactScreen" component={EmergencyContactScreen} />
          <Stack.Screen name="QRScreen" component={QRScreen} />
@@ -75,7 +73,6 @@ const App = () => {
         <Stack.Screen name="OtpVerification" component={OtpVerification} />
       </Stack.Navigator>
     </NavigationContainer>
-    </FormProvider>
   );
 }
 

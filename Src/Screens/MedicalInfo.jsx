@@ -1,112 +1,162 @@
-import React,{useState,useEffect} from "react";
-import {Text,View,TouchableOpacity,StyleSheet,ScrollView,Title,TextInput, } from 'react-native';
-import {  Button,  Divider, Card, } from "react-native-paper";
-import Icon from 'react-native-vector-icons/FontAwesome6'
-import DropDownPicker from "react-native-dropdown-picker";
+import React, { useCallback, useEffect } from "react";
+import {
+  Text,
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  TextInput,
+  Keyboard,
+} from "react-native";
+import { Divider } from "react-native-paper";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Styling from "./Styling";
-import { useForm as useFormContext } from "./FormContext";
 import { useForm, Controller } from "react-hook-form";
 
 const MedicalInfo = ({ navigation }) => {
-  const { formData, handleChange } = useFormContext();
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm({
+    defaultValues: {
+      medicalConditions: "",
+      allergies: "",
+      pastSurgery: "",
+      insuranceProvider: "",
+      policyNumber: "",
+      insuranceContact: "",
+    },
+  });
 
-  const { control, handleSubmit, formState: { errors } } = useForm();
+  useEffect(() => {
+    loadData();
+  }, []);
 
-const onSubmit = (data) => {
-  Object.keys(data).forEach((key) => handleChange(key, data[key]));
-  navigation.navigate('HomeScreen'); // replace with your preview screen
-};
+  const loadData = async () => {
+    try {
+      const savedData = await AsyncStorage.getItem('medicalInfo');
+      if (savedData) {
+        const data = JSON.parse(savedData);
+        reset(data);
+      }
+    } catch (error) {
+      console.log('Error loading data:', error);
+    }
+  };
 
+  const getAllFormData = async () => {
+    try {
+      const personalDetails = await AsyncStorage.getItem('personalDetails');
+      const emergencyContact = await AsyncStorage.getItem('emergencyContact');
+      const medicalInfo = await AsyncStorage.getItem('medicalInfo');
+      
+      return {
+        personalDetails: personalDetails ? JSON.parse(personalDetails) : {},
+        emergencyContact: emergencyContact ? JSON.parse(emergencyContact) : {},
+        medicalInfo: medicalInfo ? JSON.parse(medicalInfo) : {},
+      };
+    } catch (error) {
+      console.log('Error getting all form data:', error);
+      return {};
+    }
+  };
 
+  const onSubmit = useCallback(async (data) => {
+    try {
+      await AsyncStorage.setItem('medicalInfo', JSON.stringify(data));
+      
+      // Get all form data for backend integration
+      const allFormData = await getAllFormData();
+      console.log("Complete Form Data:", allFormData);
+      
+      Keyboard.dismiss();
+      navigation.navigate("HomeScreen"); // Replace with the next screen name
+    } catch (error) {
+      console.log('Error saving data:', error);
+    }
+  }, [navigation]);
 
-    return(
-        <ScrollView nestedScrollEnabled={true} contentContainerStyle={styles.container}>
-           <View style={styles.viewStyle}>
-                    <Text style={styles.heading}>Medical Information </Text>
-                    
-                         <Divider/>
-                          <View style={styles.viewStyle}>
-                        
-                                <Styling/>
+  const handlePrevious = useCallback(() => {
+    navigation.navigate("EmergencyContact");
+  }, [navigation]);
 
-                          <Text style={styles.HeaderStyle}>  Existing Medical Condition</Text>
-                              <Controller
-                                control={control}
-                                name="medicalConditions"
-                                defaultValue={formData.medicalConditions}
-                                rules={{ required: "Medical condition is required" }}
-                                render={({ field: { onChange, onBlur, value } }) => (
-                                  <TextInput
-                                    style={styles.textInputStyle}
-                                    placeholder="e.g. Asthma, Diabetes/None"
-                                    placeholderTextColor="grey"
-                                    value={value}
-                                    onBlur={onBlur}
-                                    onChangeText={(text) => {
-                                      onChange(text);
-                                      handleChange("medicalConditions", text);
-                                    }}
-                                  />
-                                )}
-                              />
-               {errors.medicalConditions && <Text style={{ color: 'red', marginLeft: 20 }}>{errors.medicalConditions.message}</Text>}
-
-                                 <Text style={styles.HeaderStyle}>  Allergies</Text>
-                                 <Controller
-                                 control={control}
-                                 name="allergies"
-                                 defaultValue={formData.allergies}
-                                 render={({ field: { onChange, onBlur, value } }) => (
-                                 <TextInput
-                                      style={styles.textInputStyle}
-                                      placeholder="eg: Pollen,Milk,Dust"
-                                      placeholderTextColor="grey"
-                                      value={value}
-                                      onBlur={onBlur}
-                                      onChangeText={(text) => {
-                                      onChange(text);
-                                      handleChange("allergies", text);
-                                    }}
-                                    />
-                                  )}
-                                    />
-
-                                <Text style={styles.HeaderStyle}>  Past Surgeries</Text>
-                                <Controller
-                                  control={control}
-                                  name="pastSurgery"
-                                  defaultValue={formData.pastSurgery}
-                                  render={({ field: { onChange, onBlur, value } }) => (
-                                    <TextInput
-                                      style={styles.textInputStyle}
-                                      placeholder="If any"
-                                      placeholderTextColor="grey"
-                                      value={value}
-                                      onBlur={onBlur}
-                                       onChangeText={(text) => {
-                                      onChange(text);
-                                      handleChange("pastSurgery", text);
-                                    }}
-                                    />
-                                  )}
-                                    />
-               
-                          </View>
-                          <Divider/>
-                
-        {/* made 2nd card for medical information */}
-            
-        <Text style={styles.heading}>Medical Insurance </Text>
-                                            
-        <Divider/>
+  return (
+    <ScrollView nestedScrollEnabled={true} contentContainerStyle={styles.container}>
       <View style={styles.viewStyle}>
-                         
+        <Text style={styles.heading}>Medical Information</Text>
+        <Divider />
+        <View style={styles.viewStyle}>
+          <Styling />
+
+          {/* Medical Conditions */}
+          <Text style={styles.HeaderStyle}>Existing Medical Condition</Text>
+          <Controller
+            control={control}
+            name="medicalConditions"
+            rules={{ required: "Medical condition is required" }}
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                style={styles.textInputStyle}
+                placeholder="e.g. Asthma, Diabetes / None"
+                placeholderTextColor="grey"
+                value={value}
+                onBlur={onBlur}
+                onChangeText={onChange}
+              />
+            )}
+          />
+          {errors.medicalConditions && (
+            <Text style={styles.error}>
+              {errors.medicalConditions.message}
+            </Text>
+          )}
+
+          {/* Allergies */}
+          <Text style={styles.HeaderStyle}>Allergies</Text>
+          <Controller
+            control={control}
+            name="allergies"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                style={styles.textInputStyle}
+                placeholder="e.g. Pollen, Milk, Dust"
+                placeholderTextColor="grey"
+                value={value}
+                onBlur={onBlur}
+                onChangeText={onChange}
+              />
+            )}
+          />
+
+          {/* Past Surgery */}
+          <Text style={styles.HeaderStyle}>Past Surgeries</Text>
+          <Controller
+            control={control}
+            name="pastSurgery"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                style={styles.textInputStyle}
+                placeholder="If any"
+                placeholderTextColor="grey"
+                value={value}
+                onBlur={onBlur}
+                onChangeText={onChange}
+              />
+            )}
+          />
+        </View>
+
+        <Divider />
+        <Text style={styles.heading}>Medical Insurance</Text>
+        <Divider />
+
         {/* Insurance Provider */}
-        <Text style={styles.HeaderStyle}>Insurance Provider</Text>
+        <Text style={styles.HeaderStyle}>Insurance Provider Company:</Text>
         <Controller
           control={control}
           name="insuranceProvider"
-          defaultValue={formData.insuranceProvider}
           rules={{ required: "Provider is required" }}
           render={({ field: { onChange, onBlur, value } }) => (
             <TextInput
@@ -115,25 +165,20 @@ const onSubmit = (data) => {
               style={styles.textInputStyle}
               onBlur={onBlur}
               value={value}
-              onChangeText={(text) => {
-                  onChange(text);
-                  handleChange("insuranceProvider", text);
-                 }}
-
+              onChangeText={onChange}
             />
           )}
         />
         {errors.insuranceProvider && (
           <Text style={styles.error}>{errors.insuranceProvider.message}</Text>
         )}
-                                                                
 
-      {/* Policy Number (Optional) */}
+        {/* Policy Number (Optional) */}
         <Text style={styles.HeaderStyle}>Policy Number</Text>
         <Controller
           control={control}
           name="policyNumber"
-          defaultValue={formData.policyNumber}
+          rules={{ required: "Policy number is required" }}
           render={({ field: { onChange, onBlur, value } }) => (
             <TextInput
               placeholder="Policy no."
@@ -141,21 +186,19 @@ const onSubmit = (data) => {
               style={styles.textInputStyle}
               onBlur={onBlur}
               value={value}
-               onChangeText={(text) => {
-                  onChange(text);
-                  handleChange("policyNumber", text);
-                 }}
-
+              onChangeText={onChange}
             />
           )}
         />
+        {errors.policyNumber && (
+          <Text style={styles.error}>{errors.policyNumber.message}</Text>
+        )}
 
         {/* Contact for Insurance Claims (Optional) */}
         <Text style={styles.HeaderStyle}>Contact for Insurance Claims</Text>
         <Controller
           control={control}
           name="insuranceContact"
-          defaultValue={formData.insuranceContact}
           render={({ field: { onChange, onBlur, value } }) => (
             <TextInput
               placeholder="Contact no."
@@ -163,125 +206,112 @@ const onSubmit = (data) => {
               style={styles.textInputStyle}
               onBlur={onBlur}
               value={value}
-              onChangeText={(text) => {
-        onChange(text);
-        handleChange("insuranceContact", text);
-      }}
+              onChangeText={onChange}
             />
           )}
         />
 
-
-       <View style={styles.buttonContainer}>
+        {/* Buttons */}
+        <View style={styles.buttonContainer}>
           <TouchableOpacity
             style={styles.btnStyle}
-            onPress={() => navigation.navigate("EmergencyContact")}>
+            onPress={handlePrevious}
+          >
             <Text style={styles.btnTextLeft}>Previous</Text>
           </TouchableOpacity>
 
-
-          <TouchableOpacity style={styles.btnStyle} onPress={handleSubmit(onSubmit)}>
+          <TouchableOpacity 
+            style={styles.btnStyle} 
+            onPress={handleSubmit(onSubmit)}
+            activeOpacity={0.7}
+          >
             <Text style={styles.btnTextRight}>Next</Text>
           </TouchableOpacity>
-                        </View>
-                        </View>
-                        
-                    </View>
-                  
-        </ScrollView>
-               
+        </View>
+      </View>
+    </ScrollView>
+  );
+};
 
-    )
-}
-export default MedicalInfo
-const styles=StyleSheet.create({
-    container: {
+export default MedicalInfo;
+
+const styles = StyleSheet.create({
+  container: {
     padding: 16,
-    backgroundColor:'white'//'#F5F7FA'
-  
+    backgroundColor: "white",
   },
   card: {
     padding: 16,
     borderRadius: 12,
     elevation: 3,
     backgroundColor: "#fff",
-    marginBottom:20,
+    marginBottom: 20,
   },
-  
-   heading: {
+  heading: {
     marginBottom: 16,
     fontSize: 22,
     fontWeight: "bold",
     textAlign: "center",
-    marginTop:10,
-    color:'#0A66C2',
+    marginTop: 10,
+    color: "#0A66C2",
   },
-    viewStyle:{
-      flex:1,
-    backgroundColor:'white',
-
-    },
-      HeaderStyle : {
-      fontWeight:'500',
-        fontSize:16,
-       marginTop:12,
-       color:"#333",
-       marginBottom:10,
-       margin:20
-
-    },
-//#E5E4E2
-    textInputStyle :{
-        color:'black',
-        backgroundColor:'#F5F5F5',
-        padding:10,
-        marginTop:5,
-        marginBottom:10,
-        borderRadius:10,
-        height:40,
-        width:"90%",
-        alignSelf:'center',
-    },
-    btnStyle:{
-      backgroundColor:"white",
-      alignSelf:'flex-end',
-      textAlign:'center',
-      padding:7,
-      margin:13,
-      marginTop:40,
-      marginBottom:40,
-      borderRadius:15,
-      height:35,
-      width:70,
-
-    },
-     error: {
-    color: "red",
+  viewStyle: {
+    flex: 1,
+    backgroundColor: "white",
+  },
+  HeaderStyle: {
+    fontWeight: "500",
+    fontSize: 16,
+    marginTop: 12,
+    color: "#333",
     marginBottom: 10,
-    marginLeft: 25,
+    margin: 20,
+  },
+  textInputStyle: {
+    color: "black",
+    backgroundColor: "#F5F5F5",
+    padding: 10,
+    marginTop: 5,
+    marginBottom: 10,
+    borderRadius: 10,
+    height: 40,
+    width: "90%",
+    alignSelf: "center",
+  },
+  btnStyle: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    minWidth: 80,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  error: {
+    color: "#ff3b30",
+    fontSize: 14,
+    marginLeft: 20,
+    marginTop: -5,
+    marginBottom: 10,
   },
   btnText: {
-    textAlign: "center",
     color: "#0A66C2",
     fontWeight: "bold",
+    fontSize: 16,
   },
   btnTextLeft: {
-    textAlign: "center",
     color: "#0A66C2",
     fontWeight: "bold",
-    marginLeft: -150,
+    fontSize: 16,
   },
   btnTextRight: {
-    textAlign: "center",
     color: "#0A66C2",
     fontWeight: "bold",
-    fontSize: 14,
-    marginRight: -150,
+    fontSize: 16,
   },
   buttonContainer: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    alignSelf: "center",
-    justifyContent: "center",
+    justifyContent: "space-between",
+    marginTop: 40,
+    paddingHorizontal: 20,
   },
-})
+});
