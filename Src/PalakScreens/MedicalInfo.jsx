@@ -24,9 +24,8 @@ const MedicalInfo = ({ navigation }) => {
       medicalConditions: "",
       allergies: "",
       pastSurgery: "",
-      insuranceProvider: "",
-      policyNumber: "",
-      insuranceContact: "",
+      chronicIllnesses: "",
+      familyMedicalHistory: "",
     },
   });
 
@@ -48,13 +47,9 @@ const MedicalInfo = ({ navigation }) => {
 
   const getAllFormData = async () => {
     try {
-      const personalDetails = await AsyncStorage.getItem('personalDetails');
-      const emergencyContact = await AsyncStorage.getItem('emergencyContact');
-      const medicalInfo = await AsyncStorage.getItem('medicalInfo');
+       const medicalInfo = await AsyncStorage.getItem('medicalInfo');
       
       return {
-        personalDetails: personalDetails ? JSON.parse(personalDetails) : {},
-        emergencyContact: emergencyContact ? JSON.parse(emergencyContact) : {},
         medicalInfo: medicalInfo ? JSON.parse(medicalInfo) : {},
       };
     } catch (error) {
@@ -72,7 +67,7 @@ const MedicalInfo = ({ navigation }) => {
       console.log("Complete Form Data:", allFormData);
       
       Keyboard.dismiss();
-      navigation.navigate("ScreenName"); // Replace with the next screen name
+      navigation.navigate("StartInsuranceFile"); // Replace with the next screen name
     } catch (error) {
       console.log('Error saving data:', error);
     }
@@ -82,13 +77,30 @@ const MedicalInfo = ({ navigation }) => {
     navigation.navigate("EmergencyContact");
   }, [navigation]);
 
+  const handleSkip = useCallback(async () => {
+    try {
+      // Get current form values without validation
+      const currentValues = control._formValues;
+      await AsyncStorage.setItem('medicalInfo', JSON.stringify(currentValues));
+      
+      Keyboard.dismiss();
+      navigation.navigate("StartInsuranceFile");
+    } catch (error) {
+      console.log('Error saving data on skip:', error);
+      // Navigate anyway even if save fails
+      navigation.navigate("StartInsuranceFile");
+    }
+  }, [navigation, control]);
+
   return (
     <ScrollView nestedScrollEnabled={true} contentContainerStyle={styles.container}>
       <View style={styles.viewStyle}>
+       
         <Text style={styles.heading}>Medical Information</Text>
+
         <Divider />
         <View style={styles.viewStyle}>
-          <Styling />
+           <Styling />
 
           {/* Medical Conditions */}
           <Text style={styles.HeaderStyle}>Existing Medical Condition</Text>
@@ -131,6 +143,7 @@ const MedicalInfo = ({ navigation }) => {
           />
 
           {/* Past Surgery */}
+         
           <Text style={styles.HeaderStyle}>Past Surgeries</Text>
           <Controller
             control={control}
@@ -146,70 +159,40 @@ const MedicalInfo = ({ navigation }) => {
               />
             )}
           />
+
+           <Text style={styles.HeaderStyle}>Any Chronic Illness</Text>
+          <Controller
+            control={control}
+            name="chronicIllnesses"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                style={styles.textInputStyle}
+                placeholder="If any"
+                placeholderTextColor="grey"
+                value={value}
+                onBlur={onBlur}
+                onChangeText={onChange}
+              />
+            )}
+          />
+
+          <Text style={styles.HeaderStyle}>Any Family Medical History</Text>
+          <Controller
+            control={control}
+            name="familyMedicalHistory"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                style={styles.textInputStyle}
+                placeholder="If any"
+                placeholderTextColor="grey"
+                value={value}
+                onBlur={onBlur}
+                onChangeText={onChange}
+              />
+            )}
+          />
         </View>
 
-        <Divider />
-        <Text style={styles.heading}>Medical Insurance</Text>
-        <Divider />
-
-        {/* Insurance Provider */}
-        <Text style={styles.HeaderStyle}>Insurance Provider Company:</Text>
-        <Controller
-          control={control}
-          name="insuranceProvider"
-          rules={{ required: "Provider is required" }}
-          render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-              placeholder="Name"
-              placeholderTextColor="grey"
-              style={styles.textInputStyle}
-              onBlur={onBlur}
-              value={value}
-              onChangeText={onChange}
-            />
-          )}
-        />
-        {errors.insuranceProvider && (
-          <Text style={styles.error}>{errors.insuranceProvider.message}</Text>
-        )}
-
-        {/* Policy Number (Optional) */}
-        <Text style={styles.HeaderStyle}>Policy Number</Text>
-        <Controller
-          control={control}
-          name="policyNumber"
-          rules={{ required: "Policy number is required" }}
-          render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-              placeholder="Policy no."
-              placeholderTextColor="grey"
-              style={styles.textInputStyle}
-              onBlur={onBlur}
-              value={value}
-              onChangeText={onChange}
-            />
-          )}
-        />
-        {errors.policyNumber && (
-          <Text style={styles.error}>{errors.policyNumber.message}</Text>
-        )}
-
-        {/* Contact for Insurance Claims (Optional) */}
-        <Text style={styles.HeaderStyle}>Contact for Insurance Claims</Text>
-        <Controller
-          control={control}
-          name="insuranceContact"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-              placeholder="Contact no."
-              placeholderTextColor="grey"
-              style={styles.textInputStyle}
-              onBlur={onBlur}
-              value={value}
-              onChangeText={onChange}
-            />
-          )}
-        />
 
         {/* Buttons */}
         <View style={styles.buttonContainer}>
@@ -218,6 +201,14 @@ const MedicalInfo = ({ navigation }) => {
             onPress={handlePrevious}
           >
             <Text style={styles.btnTextLeft}>Previous</Text>
+          </TouchableOpacity>
+
+           <TouchableOpacity 
+            style={styles.btnStyle} 
+            onPress={handleSkip}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.btnTextRight}>Skip</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -244,7 +235,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     elevation: 3,
-    backgroundColor: "#fff",
+    backgroundColor: "white",
     marginBottom: 20,
   },
   heading: {
