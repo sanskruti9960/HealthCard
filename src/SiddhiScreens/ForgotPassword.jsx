@@ -12,10 +12,6 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import Ionicons from 'react-native-vector-icons/Ionicons';
-
-import { auth } from "../firebaseconfig"; // ✅ Import your Firebase auth instance
-import { sendPasswordResetEmail } from "firebase/auth"; // ✅ Import this from Firebase
-
 const ForgotPassword = () => {
   const [emailOrPhone, setEmailOrPhone] = useState("");
   const navigation = useNavigation();
@@ -29,7 +25,7 @@ const ForgotPassword = () => {
     }
 
     try {
-      await sendPasswordResetEmail(auth, email);
+      await firebase.auth().sendPasswordResetEmail(email);
       Alert.alert("Success", `Password reset email sent to ${email}`);
       navigation.goBack();
     } catch (error) {
@@ -144,3 +140,5 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
 });
+
+

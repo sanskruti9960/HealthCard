@@ -14,11 +14,13 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
-
+import { getAuth, signInWithEmailAndPassword } from '@react-native-firebase/auth';
+import { getFirestore, doc, getDoc } from '@react-native-firebase/firestore';
 const { width } = Dimensions.get('window');
 
 const Login = ({ navigation }) => {
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState({});
 
@@ -31,6 +33,14 @@ const Login = ({ navigation }) => {
       valid = false;
     }
 
+    if (!phone.trim()) {
+      newErrors.phone = 'Phone number is required*';
+      valid = false;
+    } else if (!/^\d{10}$/.test(phone)) {
+      newErrors.phone = 'Enter a valid 10-digit phone number';
+      valid = false;
+    }
+
     if (!password.trim()) {
       newErrors.password = 'Password is required*';
       valid = false;
@@ -40,13 +50,56 @@ const Login = ({ navigation }) => {
     return valid;
   };
 
-  const handleLogin = () => {
-    const isValid = validate();
-    if (isValid) {
-      Alert.alert('Success', 'Login Successful'); // ✅ Success Alert
-      console.log('Login success');
-    } else {
-      console.log('Validation failed');
+  const handleLogin = async () => {
+    if (!validate()) return;
+
+    // Normalize phone number: remove non-digits, take last 10 digits
+    const normalizePhone = (num) => num.replace(/\D/g, '').slice(-10);
+    const enteredPhone = normalizePhone(phone);
+
+    try {
+      // 1. Sign in with Firebase Auth (modular API)
+      const auth = getAuth();
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const uid = userCredential.user.uid;
+
+      // 2. Fetch user data from Firestore (modular API)
+      const firestore = getFirestore();
+      const userDocRef = doc(firestore, 'Siddhi', uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (!userDoc.exists) {
+        Alert.alert('Error', 'No user data found in Firestore.');
+        return;
+      }
+
+      const userData = userDoc.data();
+      const storedPhone = userData.phone ? normalizePhone(userData.phone) : '';
+
+      // 3. Compare phone number from Firestore with entered one
+      if (storedPhone !== enteredPhone) {
+        Alert.alert('Phone Mismatch', 'The phone number does not match our records.');
+        return;
+      }
+
+      // 4. Navigate to OTP screen with phone + UID
+      navigation.navigate('OtpVerification', {
+        uid: uid,
+        phone: userData.phone,
+        from: 'login', // to tell OTP screen this is from login
+      });
+
+    } catch (error) {
+      console.error('Login Error:', error);
+      let message = error.message;
+
+      if (error.code === 'auth/user-not-found') {
+        message = 'No account found with this email.';
+      } else if (error.code === 'auth/wrong-password') {
+        message = 'Incorrect password.';
+      }
+
+      Alert.alert('Login Failed', message);
     }
   };
 
@@ -57,39 +110,30 @@ const Login = ({ navigation }) => {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView contentContainerStyle={styles.scrollContainer}>
-          {/* Header Image */}
           <Image
             source={{
               uri: 'https://i.pinimg.com/736x/99/35/ce/9935ce5f3b1d6cb6bc86287cd927d03e.jpg',
             }}
             style={styles.headerImage}
           />
-
-          {/* Intro Text */}
           <View style={styles.headerTextContainer}>
             <Text style={styles.headerText}>Your emergency access, simplified.</Text>
           </View>
 
-          {/* Card Container */}
           <View style={styles.container}>
             <Text style={styles.title}>
               Welcome <Text style={styles.highlight}>Back</Text>
             </Text>
-
-            {/* Subtitle Row */}
             <View style={styles.subtitleRow}>
               <Text style={styles.subtitle}>Login to your account</Text>
               <Ionicons name="qr-code-outline" size={22} color="#1C75BC" style={styles.qrIcon} />
             </View>
 
-            {/* Email Field */}
-            <View style={[
-              styles.inputContainer,
-              errors.email && { borderColor: 'red' }
-            ]}>
+            {/* Email */}
+            <View style={[styles.inputContainer, errors.email && { borderColor: 'red' }]}>
               <Ionicons name="mail-outline" size={20} color="#666" style={styles.icon} />
               <TextInput
-                placeholder="Email or Phone Number"
+                placeholder="Email"
                 placeholderTextColor="#aaa"
                 style={styles.input}
                 value={email}
@@ -99,15 +143,27 @@ const Login = ({ navigation }) => {
                 }}
               />
             </View>
-            {errors.email && (
-              <Text style={styles.errorText}>{errors.email}</Text>
-            )}
+            {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
 
-            {/* Password Field */}
-            <View style={[
-              styles.inputContainer,
-              errors.password && { borderColor: 'red' }
-            ]}>
+            {/* Phone */}
+            <View style={[styles.inputContainer, errors.phone && { borderColor: 'red' }]}>
+              <Ionicons name="call-outline" size={20} color="#666" style={styles.icon} />
+              <TextInput
+                placeholder="Phone Number"
+                placeholderTextColor="#aaa"
+                style={styles.input}
+                keyboardType="phone-pad"
+                value={phone}
+                onChangeText={text => {
+                  setPhone(text);
+                  if (errors.phone) setErrors({ ...errors, phone: undefined });
+                }}
+              />
+            </View>
+            {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
+
+            {/* Password */}
+            <View style={[styles.inputContainer, errors.password && { borderColor: 'red' }]}>
               <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.icon} />
               <TextInput
                 placeholder="Password"
@@ -121,11 +177,8 @@ const Login = ({ navigation }) => {
                 secureTextEntry
               />
             </View>
-            {errors.password && (
-              <Text style={styles.errorText}>{errors.password}</Text>
-            )}
+            {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
 
-            {/* Forgot Password */}
             <TouchableOpacity
               style={styles.forgotContainer}
               onPress={() => navigation.navigate('ForgotPassword')}
@@ -133,18 +186,16 @@ const Login = ({ navigation }) => {
               <Text style={styles.forgotText}>Forgot Password?</Text>
             </TouchableOpacity>
 
-            {/* Login Button */}
             <TouchableOpacity
               style={[
                 styles.loginButton,
-                (!email || !password) && styles.disabledButton
+                (!email || !password || !phone) && styles.disabledButton,
               ]}
               onPress={handleLogin}
             >
               <Text style={styles.buttonText}>Login</Text>
             </TouchableOpacity>
 
-            {/* Google Login Button */}
             <TouchableOpacity style={styles.googleButton}>
               <Image
                 source={{
@@ -155,7 +206,6 @@ const Login = ({ navigation }) => {
               <Text style={styles.googleText}>Continue with Google</Text>
             </TouchableOpacity>
 
-            {/* Footer Text */}
             <View style={styles.footerText}>
               <Text style={styles.footer}>Don't have an account?</Text>
               <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
@@ -170,6 +220,9 @@ const Login = ({ navigation }) => {
 };
 
 export default Login;
+
+
+
 
 const styles = StyleSheet.create({
   scrollContainer: {
