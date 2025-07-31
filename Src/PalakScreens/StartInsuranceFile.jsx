@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   Text,
   View,
@@ -12,8 +12,11 @@ import { Divider } from "react-native-paper";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Styling from "./Styling";
 import { useForm, Controller } from "react-hook-form";
+import FirestoreService from '../Services/FirestoreService';
+
 
 const StartInsuranceFile = ({ navigation }) => {
+  const [userId, setUserId] = useState(null);
 
      const {
         control,
@@ -29,18 +32,46 @@ const StartInsuranceFile = ({ navigation }) => {
       });
 
   useEffect(() => {
-    loadData();
+    initializeUser();
   }, []);
 
-  const loadData = async () => {
+  const initializeUser = async () => {
     try {
-      const savedData = await AsyncStorage.getItem('StartInsuranceFile');
-      if (savedData) {
-        const data = JSON.parse(savedData);
-        reset(data);
+      const id = await FirestoreService.getUserId();
+      setUserId(id);
+      loadData(id);
+    } catch (error) {
+      console.log('Error initializing user:', error);
+    }
+  };
+
+  const loadData = async (userIdParam = userId) => {
+    if (!userIdParam) return;
+    try {
+      const userData = await FirestoreService.getUserDataByType(userIdParam, 'insuranceInfo');
+      if (userData) {
+        const { id, userId: uid, dataType, createdAt, updatedAt, ...formData } = userData;
+        reset(formData);
+        console.log('Loaded insurance info from Firestore');
+      } else {
+        const savedData = await AsyncStorage.getItem('StartInsuranceFile');
+        if (savedData) {
+          const data = JSON.parse(savedData);
+          reset(data);
+          console.log('Loaded insurance info from AsyncStorage');
+        }
       }
     } catch (error) {
-      console.log('Error loading data:', error);
+      console.log('Error loading insurance info:', error);
+      try {
+        const savedData = await AsyncStorage.getItem('StartInsuranceFile');
+        if (savedData) {
+          const data = JSON.parse(savedData);
+          reset(data);
+        }
+      } catch (fallbackError) {
+        console.log('Fallback load also failed:', fallbackError);
+      }
     }
   };
 
@@ -61,46 +92,48 @@ const StartInsuranceFile = ({ navigation }) => {
     try {
       await AsyncStorage.setItem('StartInsuranceFile', JSON.stringify(data));
       
-      // Get all form data for backend integration
-      const allFormData = await getAllFormData();
-      console.log("Complete Form Data:", allFormData);
+      const docId = await FirestoreService.saveUserData(userId, 'insuranceInfo', data);
       
+      console.log('Insurance info saved to Firestore with ID:', docId);
       Keyboard.dismiss();
-      navigation.navigate("MedicalReportPreview"); // Replace with the next screen name
+      navigation.navigate("MedicalReportPreview");
     } catch (error) {
-      console.log('Error saving data:', error);
+      console.log('Error saving insurance info:', error);
+      navigation.navigate("MedicalReportPreview");
     }
-  }, [navigation]);
+  }, [navigation, userId]);
 
    const handlePrevious = useCallback(async () => {
       try {
-        // Save current form values before navigating
         const currentValues = control._formValues;
         await AsyncStorage.setItem('StartInsuranceFile', JSON.stringify(currentValues));
         
+        const docId = await FirestoreService.saveUserData(userId, 'insuranceInfo', currentValues);
+        
+        console.log('Insurance info (previous) saved to Firestore with ID:', docId);
         Keyboard.dismiss();
         navigation.navigate("MedicalInfo");
       } catch (error) {
-        console.log('Error saving data on previous:', error);
-        // Navigate anyway even if save fails
+        console.log('Error saving insurance info on previous:', error);
         navigation.navigate("MedicalInfo");
       }
-    }, [navigation, control]);
+    }, [navigation, control, userId]);
 
     const handleSkip = useCallback(async () => {
       try {
-        // Save current form values without validation
         const currentValues = control._formValues;
         await AsyncStorage.setItem('StartInsuranceFile', JSON.stringify(currentValues));
         
+        const docId = await FirestoreService.saveUserData(userId, 'insuranceInfo', currentValues);
+        
+        console.log('Insurance info (skipped) saved to Firestore with ID:', docId);
         Keyboard.dismiss();
         navigation.navigate("MedicalReportPreview");
       } catch (error) {
-        console.log('Error saving data on skip:', error);
-        // Navigate anyway even if save fails
+        console.log('Error saving insurance info on skip:', error);
         navigation.navigate("MedicalReportPreview");
       }
-    }, [navigation, control]);
+    }, [navigation, control, userId]);
   
   return (
           
@@ -277,7 +310,7 @@ const styles = StyleSheet.create({
   buttonContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 40,
+    marginTop: 200,
     paddingHorizontal: 20,
   },
 });

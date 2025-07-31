@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   Text,
   View,
@@ -12,8 +12,10 @@ import { Divider } from "react-native-paper";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Styling from "./Styling";
 import { useForm, Controller } from "react-hook-form";
+import FirestoreService from '../Services/FirestoreService';
 
 const MedicalInfo = ({ navigation }) => {
+  const [userId, setUserId] = useState(null);
   const {
     control,
     handleSubmit,
@@ -30,18 +32,54 @@ const MedicalInfo = ({ navigation }) => {
   });
 
   useEffect(() => {
-    loadData();
+    initializeUser();
   }, []);
 
-  const loadData = async () => {
+  const initializeUser = async () => {
     try {
-      const savedData = await AsyncStorage.getItem('medicalInfo');
-      if (savedData) {
-        const data = JSON.parse(savedData);
-        reset(data);
+      const id = await FirestoreService.getUserId();
+      setUserId(id);
+      loadData(id);
+    } catch (error) {
+      console.log('Error initializing user:', error);
+    }
+  };
+
+  const loadData = async (userIdParam = userId) => {
+    if (!userIdParam) return;
+    try {
+      const userData = await FirestoreService.getUserDataByType(userIdParam, 'medicalInfo');
+      if (userData) {
+        const { id, userId: uid, dataType, createdAt, updatedAt, ...allData } = userData;
+        // Filter only medical form fields
+        const medicalFormData = {
+          medicalConditions: allData.medicalConditions || '',
+          allergies: allData.allergies || '',
+          pastSurgery: allData.pastSurgery || '',
+          chronicIllnesses: allData.chronicIllnesses || '',
+          familyMedicalHistory: allData.familyMedicalHistory || ''
+        };
+        reset(medicalFormData);
+        console.log('Loaded medical info from Firestore');
+      } else {
+        const savedData = await AsyncStorage.getItem('medicalInfo');
+        if (savedData) {
+          const data = JSON.parse(savedData);
+          reset(data);
+          console.log('Loaded medical info from AsyncStorage');
+        }
       }
     } catch (error) {
-      console.log('Error loading data:', error);
+      console.log('Error loading medical info:', error);
+      try {
+        const savedData = await AsyncStorage.getItem('medicalInfo');
+        if (savedData) {
+          const data = JSON.parse(savedData);
+          reset(data);
+        }
+      } catch (fallbackError) {
+        console.log('Fallback load also failed:', fallbackError);
+      }
     }
   };
 
@@ -62,16 +100,16 @@ const MedicalInfo = ({ navigation }) => {
     try {
       await AsyncStorage.setItem('medicalInfo', JSON.stringify(data));
       
-      // Get all form data for backend integration
-      const allFormData = await getAllFormData();
-      console.log("Complete Form Data:", allFormData);
+      const docId = await FirestoreService.saveUserData(userId, 'medicalInfo', data);
       
+      console.log('Medical info saved to Firestore with ID:', docId);
       Keyboard.dismiss();
-      navigation.navigate("StartInsuranceFile"); // Replace with the next screen name
+      navigation.navigate("StartInsuranceFile");
     } catch (error) {
-      console.log('Error saving data:', error);
+      console.log('Error saving medical info:', error);
+      navigation.navigate("StartInsuranceFile");
     }
-  }, [navigation]);
+  }, [navigation, userId]);
 
   const handlePrevious = useCallback(() => {
     navigation.navigate("EmergencyContact");
@@ -79,18 +117,19 @@ const MedicalInfo = ({ navigation }) => {
 
   const handleSkip = useCallback(async () => {
     try {
-      // Get current form values without validation
       const currentValues = control._formValues;
       await AsyncStorage.setItem('medicalInfo', JSON.stringify(currentValues));
       
+      const docId = await FirestoreService.saveUserData(userId, 'medicalInfo', currentValues);
+      
+      console.log('Medical info (skipped) saved to Firestore with ID:', docId);
       Keyboard.dismiss();
       navigation.navigate("StartInsuranceFile");
     } catch (error) {
-      console.log('Error saving data on skip:', error);
-      // Navigate anyway even if save fails
+      console.log('Error saving medical info on skip:', error);
       navigation.navigate("StartInsuranceFile");
     }
-  }, [navigation, control]);
+  }, [navigation, control, userId]);
 
   return (
     <ScrollView nestedScrollEnabled={true} contentContainerStyle={styles.container}>
@@ -262,8 +301,6 @@ const styles = StyleSheet.create({
     color: "black",
     backgroundColor: "#F5F5F5",
     padding: 10,
-    marginTop: 5,
-    marginBottom: 10,
     borderRadius: 10,
     height: 40,
     width: "90%",
@@ -302,7 +339,7 @@ const styles = StyleSheet.create({
   buttonContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 40,
+    marginTop: 80,
     paddingHorizontal: 20,
   },
 });

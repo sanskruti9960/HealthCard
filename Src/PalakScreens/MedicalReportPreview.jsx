@@ -2,10 +2,12 @@ import { StyleSheet, Text, View, TouchableOpacity, ScrollView, RefreshControl} f
 import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LinearGradient from 'react-native-linear-gradient';
-import { Card } from 'react-native-paper';
+import { Button, Card } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import FirestoreService from '../Services/FirestoreService';
 
 const MedicalReportPreview = ({ navigation }) => {
+ const [userId, setUserId] = useState(null);
  const [medicalInfo, setMedicalInfo] = useState({});
  const [refreshing, setRefreshing] = useState(false);
  const [loading, setLoading] = useState(true);
@@ -21,8 +23,18 @@ const MedicalReportPreview = ({ navigation }) => {
  
 
   useEffect(() => {
-    fetchMedicalData();
+    initializeUser();
   }, []);
+
+  const initializeUser = async () => {
+    try {
+      const id = await FirestoreService.getUserId();
+      setUserId(id);
+      fetchMedicalData(id);
+    } catch (error) {
+      console.log('Error initializing user:', error);
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
@@ -34,25 +46,49 @@ const MedicalReportPreview = ({ navigation }) => {
     };
   }, [navigation]);
     
-const fetchMedicalData = async()=>{
+const fetchMedicalData = async(userIdParam = userId)=>{
+   if (!userIdParam) return;
    try {
       setLoading(true);
       setError(null);
-      const savedData = await AsyncStorage.getItem('medicalInfo');
-      if (savedData) {
-        const parsedData = JSON.parse(savedData);
-        if (parsedData && typeof parsedData === 'object') {
-          setMedicalInfo(parsedData);
+      
+      // Try to fetch from Firestore first
+      const userData = await FirestoreService.getUserDataByType(userIdParam, 'medicalInfo');
+      if (userData) {
+        const { id, userId: uid, dataType, createdAt, updatedAt, ...medicalData } = userData;
+        setMedicalInfo(medicalData);
+        console.log('Loaded medical data from Firestore for report');
+      } else {
+        // Fallback to AsyncStorage
+        const savedData = await AsyncStorage.getItem('medicalInfo');
+        if (savedData) {
+          const parsedData = JSON.parse(savedData);
+          if (parsedData && typeof parsedData === 'object') {
+            setMedicalInfo(parsedData);
+            console.log('Loaded medical data from AsyncStorage for report');
+          } else {
+            setMedicalInfo({});
+          }
         } else {
           setMedicalInfo({});
         }
-      } else {
-        setMedicalInfo({});
       }
     } catch (error) {
       console.log('Error loading medical info:', error);
       setError('Failed to load medical data');
-      setMedicalInfo({});
+      // Try AsyncStorage as final fallback
+      try {
+        const savedData = await AsyncStorage.getItem('medicalInfo');
+        if (savedData) {
+          const parsedData = JSON.parse(savedData);
+          setMedicalInfo(parsedData);
+        } else {
+          setMedicalInfo({});
+        }
+      } catch (fallbackError) {
+        console.log('Final fallback also failed:', fallbackError);
+        setMedicalInfo({});
+      }
     } finally {
       setLoading(false);
     }
@@ -87,6 +123,7 @@ const fetchMedicalData = async()=>{
 
       <ScrollView
        showsVerticalScrollIndicator={false}
+       decelerationRate={'fast'}
               refreshControl={
                 <RefreshControl
                   refreshing={refreshing}
@@ -140,6 +177,9 @@ const fetchMedicalData = async()=>{
           >
             <Icon name="edit" size={20} color="#0A66C2" />
             <Text style={styles.editButtonText}>Edit Medical Info</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('MultiplePolicy')} style={styles.actionButton}>
+            <Text>next</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
