@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, Alert } from 'react-native';
 import { saveReminderToFirestore } from '../services/firestoreSrevice';
 import { triggerTestNotification } from '../utils/Notifications';
 import notifee from '@notifee/react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons'; // or Feather, Ionicons, etc.
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons'; 
 
 const ReminderSetupScreen = () => {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);

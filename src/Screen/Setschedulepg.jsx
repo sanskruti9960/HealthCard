@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState ,useEffect} from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,19 @@ import {
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Platform } from 'react-native';
-import RemainderSetupScreen from './ReminderSetupScreen';
+import { db } from '../firebaseConfig';
+import { collection, addDoc } from 'firebase/firestore';
+
+// ========remainder ======
+
+import { saveReminderToFirestore } from '../Services/firestoreSrevice';
+import { scheduleReminder } from '../utils/Notifications';
+import notifee from '@notifee/react-native';
+import { AndroidImportance } from '@notifee/react-native';
+
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons'; 
+
+// ==========================
 
 export default function SetScheduleScreen() {
   const [selectedOption, setSelectedOption] = useState('');
@@ -157,6 +169,102 @@ const decreaseTablet = (index) => {
   }
 };
 
+// ===========remainder=========
+
+
+useEffect(() => {
+  const createChannel = async () => {
+    await notifee.requestPermission();
+
+    await notifee.createChannel({
+      id: 'medication-reminders',
+      name: 'Medication Reminders',
+      importance: AndroidImportance.HIGH,
+      sound: 'default',
+      vibration: true,
+      lights: true,
+    });
+  };
+
+  createChannel();
+}, []);
+
+ const [notificationsEnabled, setNotificationsEnabled] = useState(true)
+  const toggleNotifications = async () => {
+  const newState = !notificationsEnabled;
+  setNotificationsEnabled(newState);
+
+  if (newState) {
+    // 🔔 ENABLE all reminders (re-schedule them)
+   const userId = "testUser123"; // 🔁 Replace with actual user ID
+const medicationName = "Paracetamol"; // replace with input or selection
+
+    await scheduleReminder(userId); // Reschedules all reminders
+    Alert.alert('Notifications Enabled');
+  } else {
+    // 🔕 DISABLE all reminders
+    await notifee.cancelAllNotifications();
+    Alert.alert('Notifications Disabled');
+  }
+};
+function convertTo24Hour(time) {
+  const [timePart, modifier] = time.split(" ");
+  let [hours, minutes] = timePart.split(":").map(Number);
+
+  if (modifier === "PM" && hours !== 12) hours += 12;
+  if (modifier === "AM" && hours === 12) hours = 0;
+
+  return `${hours}:${minutes.toString().padStart(2, '0')}`;
+}
+
+ const handleSave = async () => {
+  console.log("🔔 Save button pressed");
+console.log(createTriggerNotification);
+
+
+
+// Set this in `timeInputs` or hardcode temporarily
+const convertedTimes = [convertTo24Hour];
+
+  const userId = "testUser123"; // replace with actual user ID
+  const medicationName = "Paracetamol"; // replace with input
+
+  const reminder = {
+    userId: userId,
+    name: medicationName,
+    frequency: selectedOption, // "Every day", "Every X days", or "Every week"
+    intervalDays: selectedOption === "Every X days" ? customDays : null,
+    weekdays: selectedOption === "Every week" ? selectedWeekDays : [],
+    times: convertedTimes, // ["8:00 AM", "2:00 PM"]
+    dosages: tabletCounts, // [1, 2]
+     startDate: new Date(),
+    createdAt: new Date(),
+  };
+// 🔔 Display immediate test notification
+
+
+
+await scheduleReminder(reminder);
+  await saveReminderToFirestore(reminder);
+  try {
+    console.log("📦 Saving to Firestore:", reminder);
+    await addDoc(collection(db, 'reminders'), reminder);  // ✅ Now it's defined
+    console.log("✅ Saved to Firestore");
+    console.log("🕒 Scheduled test time:", timeString);
+console.log("📅 Current time:", new Date().toString());
+
+    console.log("⏰ Scheduling reminder...");
+    await scheduleReminder(reminder);
+    console.log("✅ Reminder scheduled");
+
+    Alert.alert("Reminder Saved", `Reminder for ${reminder.name} has been saved.`);
+  } catch (e) {
+    console.error("❌ Error during save:", e);
+    Alert.alert("Error", e.message);
+  }
+};
+
+// =================closse remainder========================
   return (
     <View style={styles.container}>
         <KeyboardAvoidingView
@@ -374,7 +482,44 @@ const decreaseTablet = (index) => {
 
        {/* remainder of the screen  */}
 
-      <RemainderSetupScreen  />
+       
+       <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              paddingHorizontal: 20,
+              paddingVertical: 12,
+              backgroundColor: '#f9f9f9',
+              borderRadius: 12,
+              marginTop: 10,
+            }}
+          >
+            <Text style={{ fontSize: 16, fontWeight: '600', color: '#333' }}>
+              Get reminder to take medicine
+            </Text>
+      
+            <TouchableOpacity onPress={toggleNotifications}>
+              <Icon
+                name={notificationsEnabled ? 'bell-ring' : 'bell-off'}
+                size={28}
+                color={notificationsEnabled ? '#4CAF50' : '#F44336'}
+              />
+            </TouchableOpacity>
+          </View>
+      
+      
+            <TouchableOpacity
+              onPress={handleSave}
+              style={{ backgroundColor: '#4CAF50', padding: 12, borderRadius: 8 }}
+            >
+              <Text style={{ color: 'white', textAlign: 'center' }}>save remainder</Text>
+            </TouchableOpacity>
+      
+   {/* =======================================    */}
+
+
+
  </ScrollView>
   </KeyboardAvoidingView>
       <TouchableOpacity style={styles.nextButton}>

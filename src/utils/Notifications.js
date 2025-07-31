@@ -1,21 +1,36 @@
 // utils/Notifications.js
-import notifee from '@notifee/react-native';
+import notifee, { AndroidImportance } from '@notifee/react-native';
 import moment from 'moment';
 
 export const scheduleReminder = async (reminder) => {
   const { frequency, times, weekdays, interval, startDate, name, medicationId } = reminder;
-
-  const channelId = await notifee.createChannel({
-    id: 'medication-reminders',
-    name: 'Medication Reminders',
-  });
+  const channelId = 'medication-reminders';
 
   for (let i = 0; i < times.length; i++) {
     const [hour, minute] = times[i].split(":").map(Number);
     const notificationTime = moment().hour(hour).minute(minute).second(0);
 
-    if (frequency === "daily") {
-      
+    await notifee.displayNotification({
+      title: '💊 Test Notification',
+      body: 'Heads-up should popup now!',
+      android: {
+        channelId: 'medication-reminders',
+        importance: AndroidImportance.HIGH,
+        smallIcon: 'ic_launcher',
+        pressAction: { id: 'default' },
+        sound: 'default',
+        fullScreenAction: { id: 'default' }, // optional
+      },
+    });
+
+
+
+    const normalizedFrequency = frequency.toLowerCase().replace(/\s+/g, '_');
+    // So "Every day" → "every_day"
+
+
+    if (normalizedFrequency === "every_day") {
+
       await notifee.createTriggerNotification(
         {
           title: '💊 Medication Reminder',
@@ -35,7 +50,7 @@ export const scheduleReminder = async (reminder) => {
       );
     }
 
-    if (frequency === "weekly") {
+    if (normalizedFrequency === "every_week") {
       for (let day of weekdays) {
         const dayOffset = getNextWeekdayOffset(day);
         const scheduledTime = moment()
@@ -64,7 +79,7 @@ export const scheduleReminder = async (reminder) => {
       }
     }
 
-    if (frequency === "every_x_days" && interval) {
+    if (normalizedFrequency === "every_x_days" && interval) {
       const start = moment(startDate).hour(hour).minute(minute).second(0);
 
       await notifee.createTriggerNotification(

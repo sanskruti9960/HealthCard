@@ -8,9 +8,14 @@ import ActivityCard from "./ActivityCard"
 import Dailycheckout from "../compoenents/Dailycheckout"
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
 import Svg, { Path } from 'react-native-svg'
+import { useNavigation } from '@react-navigation/native';
 
 const HomeScreen = () => {
+  const navigation = useNavigation();
 
+  const heartratenav = () => {
+    navigation.navigate('Measure');
+  };
   return (
     // main container
     <View style={HomeStyle.main}>
@@ -186,6 +191,7 @@ const HomeScreen = () => {
           <View style={HomeStyle.row}>
             {/* heart rate card */}
             <Dailycheckout
+            onPress={heartratenav}
               title="Heart Rate"
               value="72"
               unit="bpm"
