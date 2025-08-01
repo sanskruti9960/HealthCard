@@ -1,9 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import LottieView from 'lottie-react-native';
-import Icon1 from './Icon2.json'
-
-
 
 const Styling = () => {
   return (
@@ -13,7 +10,7 @@ const Styling = () => {
         source={require('./Icon2.json')}  // Path to your JSON file
         autoPlay
         loop={false}
-        style={{ width: 270, height: 270 }}
+        style={{ width: 250, height: 250 }}
       />
     </View>
   );
