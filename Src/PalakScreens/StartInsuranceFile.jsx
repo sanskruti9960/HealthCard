@@ -10,9 +10,9 @@ import {
 } from "react-native";
 import { Divider } from "react-native-paper";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Styling from "./Styling";
+import Styling from "../Screens/Styling";
 import { useForm, Controller } from "react-hook-form";
-import FirestoreService from '../Services/FirestoreService';
+import FirestoreService from '../Services/firestoreSrevice';
 
 
 const StartInsuranceFile = ({ navigation }) => {
@@ -96,10 +96,10 @@ const StartInsuranceFile = ({ navigation }) => {
       
       console.log('Insurance info saved to Firestore with ID:', docId);
       Keyboard.dismiss();
-      navigation.navigate("MedicalReportPreview");
+      navigation.navigate("HomeScreen");
     } catch (error) {
       console.log('Error saving insurance info:', error);
-      navigation.navigate("MedicalReportPreview");
+      navigation.navigate("HomeScreen");
     }
   }, [navigation, userId]);
 
@@ -128,10 +128,10 @@ const StartInsuranceFile = ({ navigation }) => {
         
         console.log('Insurance info (skipped) saved to Firestore with ID:', docId);
         Keyboard.dismiss();
-        navigation.navigate("MedicalReportPreview");
+        navigation.navigate("HomeScreen");
       } catch (error) {
         console.log('Error saving insurance info on skip:', error);
-        navigation.navigate("MedicalReportPreview");
+        navigation.navigate("HomeScreen");
       }
     }, [navigation, control, userId]);
   

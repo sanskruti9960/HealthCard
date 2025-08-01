@@ -1,4 +1,4 @@
-import { StyleSheet, 
+  import { StyleSheet, 
   Text, 
   TouchableOpacity, 
   View, FlatList,

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   Text,
   View,
@@ -10,10 +10,12 @@ import {
 } from "react-native";
 import { Divider } from "react-native-paper";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Styling from "./Styling";
+import Styling from "../Screens/Styling";
 import { useForm, Controller } from "react-hook-form";
+import FirestoreService from '../Services/firestoreSrevice';
 
 const MedicalInfo = ({ navigation }) => {
+  const [userId, setUserId] = useState(null);
   const {
     control,
     handleSubmit,
@@ -24,37 +26,68 @@ const MedicalInfo = ({ navigation }) => {
       medicalConditions: "",
       allergies: "",
       pastSurgery: "",
-      insuranceProvider: "",
-      policyNumber: "",
-      insuranceContact: "",
+      chronicIllnesses: "",
+      familyMedicalHistory: "",
     },
   });
 
   useEffect(() => {
-    loadData();
+    initializeUser();
   }, []);
 
-  const loadData = async () => {
+  const initializeUser = async () => {
     try {
-      const savedData = await AsyncStorage.getItem('medicalInfo');
-      if (savedData) {
-        const data = JSON.parse(savedData);
-        reset(data);
+      const id = await FirestoreService.getUserId();
+      setUserId(id);
+      loadData(id);
+    } catch (error) {
+      console.log('Error initializing user:', error);
+    }
+  };
+
+  const loadData = async (userIdParam = userId) => {
+    if (!userIdParam) return;
+    try {
+      const userData = await FirestoreService.getUserDataByType(userIdParam, 'medicalInfo');
+      if (userData) {
+        const { id, userId: uid, dataType, createdAt, updatedAt, ...allData } = userData;
+        // Filter only medical form fields
+        const medicalFormData = {
+          medicalConditions: allData.medicalConditions || '',
+          allergies: allData.allergies || '',
+          pastSurgery: allData.pastSurgery || '',
+          chronicIllnesses: allData.chronicIllnesses || '',
+          familyMedicalHistory: allData.familyMedicalHistory || ''
+        };
+        reset(medicalFormData);
+        console.log('Loaded medical info from Firestore');
+      } else {
+        const savedData = await AsyncStorage.getItem('medicalInfo');
+        if (savedData) {
+          const data = JSON.parse(savedData);
+          reset(data);
+          console.log('Loaded medical info from AsyncStorage');
+        }
       }
     } catch (error) {
-      console.log('Error loading data:', error);
+      console.log('Error loading medical info:', error);
+      try {
+        const savedData = await AsyncStorage.getItem('medicalInfo');
+        if (savedData) {
+          const data = JSON.parse(savedData);
+          reset(data);
+        }
+      } catch (fallbackError) {
+        console.log('Fallback load also failed:', fallbackError);
+      }
     }
   };
 
   const getAllFormData = async () => {
     try {
-      const personalDetails = await AsyncStorage.getItem('personalDetails');
-      const emergencyContact = await AsyncStorage.getItem('emergencyContact');
-      const medicalInfo = await AsyncStorage.getItem('medicalInfo');
+       const medicalInfo = await AsyncStorage.getItem('medicalInfo');
       
       return {
-        personalDetails: personalDetails ? JSON.parse(personalDetails) : {},
-        emergencyContact: emergencyContact ? JSON.parse(emergencyContact) : {},
         medicalInfo: medicalInfo ? JSON.parse(medicalInfo) : {},
       };
     } catch (error) {
@@ -67,28 +100,46 @@ const MedicalInfo = ({ navigation }) => {
     try {
       await AsyncStorage.setItem('medicalInfo', JSON.stringify(data));
       
-      // Get all form data for backend integration
-      const allFormData = await getAllFormData();
-      console.log("Complete Form Data:", allFormData);
+      const docId = await FirestoreService.saveUserData(userId, 'medicalInfo', data);
       
+      console.log('Medical info saved to Firestore with ID:', docId);
       Keyboard.dismiss();
-      navigation.navigate("HomeScreen"); // Replace with the next screen name
+      navigation.navigate("StartInsuranceFile");
     } catch (error) {
-      console.log('Error saving data:', error);
+      console.log('Error saving medical info:', error);
+      navigation.navigate("StartInsuranceFile");
     }
-  }, [navigation]);
+  }, [navigation, userId]);
 
   const handlePrevious = useCallback(() => {
     navigation.navigate("EmergencyContact");
   }, [navigation]);
 
+  const handleSkip = useCallback(async () => {
+    try {
+      const currentValues = control._formValues;
+      await AsyncStorage.setItem('medicalInfo', JSON.stringify(currentValues));
+      
+      const docId = await FirestoreService.saveUserData(userId, 'medicalInfo', currentValues);
+      
+      console.log('Medical info (skipped) saved to Firestore with ID:', docId);
+      Keyboard.dismiss();
+      navigation.navigate("StartInsuranceFile");
+    } catch (error) {
+      console.log('Error saving medical info on skip:', error);
+      navigation.navigate("StartInsuranceFile");
+    }
+  }, [navigation, control, userId]);
+
   return (
     <ScrollView nestedScrollEnabled={true} contentContainerStyle={styles.container}>
       <View style={styles.viewStyle}>
+       
         <Text style={styles.heading}>Medical Information</Text>
+
         <Divider />
         <View style={styles.viewStyle}>
-          <Styling />
+           <Styling />
 
           {/* Medical Conditions */}
           <Text style={styles.HeaderStyle}>Existing Medical Condition</Text>
@@ -131,6 +182,7 @@ const MedicalInfo = ({ navigation }) => {
           />
 
           {/* Past Surgery */}
+         
           <Text style={styles.HeaderStyle}>Past Surgeries</Text>
           <Controller
             control={control}
@@ -146,70 +198,40 @@ const MedicalInfo = ({ navigation }) => {
               />
             )}
           />
+
+           <Text style={styles.HeaderStyle}>Any Chronic Illness</Text>
+          <Controller
+            control={control}
+            name="chronicIllnesses"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                style={styles.textInputStyle}
+                placeholder="If any"
+                placeholderTextColor="grey"
+                value={value}
+                onBlur={onBlur}
+                onChangeText={onChange}
+              />
+            )}
+          />
+
+          <Text style={styles.HeaderStyle}>Any Family Medical History</Text>
+          <Controller
+            control={control}
+            name="familyMedicalHistory"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                style={styles.textInputStyle}
+                placeholder="If any"
+                placeholderTextColor="grey"
+                value={value}
+                onBlur={onBlur}
+                onChangeText={onChange}
+              />
+            )}
+          />
         </View>
 
-        <Divider />
-        <Text style={styles.heading}>Medical Insurance</Text>
-        <Divider />
-
-        {/* Insurance Provider */}
-        <Text style={styles.HeaderStyle}>Insurance Provider Company:</Text>
-        <Controller
-          control={control}
-          name="insuranceProvider"
-          rules={{ required: "Provider is required" }}
-          render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-              placeholder="Name"
-              placeholderTextColor="grey"
-              style={styles.textInputStyle}
-              onBlur={onBlur}
-              value={value}
-              onChangeText={onChange}
-            />
-          )}
-        />
-        {errors.insuranceProvider && (
-          <Text style={styles.error}>{errors.insuranceProvider.message}</Text>
-        )}
-
-        {/* Policy Number (Optional) */}
-        <Text style={styles.HeaderStyle}>Policy Number</Text>
-        <Controller
-          control={control}
-          name="policyNumber"
-          rules={{ required: "Policy number is required" }}
-          render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-              placeholder="Policy no."
-              placeholderTextColor="grey"
-              style={styles.textInputStyle}
-              onBlur={onBlur}
-              value={value}
-              onChangeText={onChange}
-            />
-          )}
-        />
-        {errors.policyNumber && (
-          <Text style={styles.error}>{errors.policyNumber.message}</Text>
-        )}
-
-        {/* Contact for Insurance Claims (Optional) */}
-        <Text style={styles.HeaderStyle}>Contact for Insurance Claims</Text>
-        <Controller
-          control={control}
-          name="insuranceContact"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-              placeholder="Contact no."
-              placeholderTextColor="grey"
-              style={styles.textInputStyle}
-              onBlur={onBlur}
-              value={value}
-              onChangeText={onChange}
-            />
-          )}
-        />
 
         {/* Buttons */}
         <View style={styles.buttonContainer}>
@@ -218,6 +240,14 @@ const MedicalInfo = ({ navigation }) => {
             onPress={handlePrevious}
           >
             <Text style={styles.btnTextLeft}>Previous</Text>
+          </TouchableOpacity>
+
+           <TouchableOpacity 
+            style={styles.btnStyle} 
+            onPress={handleSkip}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.btnTextRight}>Skip</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -244,7 +274,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     elevation: 3,
-    backgroundColor: "#fff",
+    backgroundColor: "white",
     marginBottom: 20,
   },
   heading: {
@@ -271,8 +301,6 @@ const styles = StyleSheet.create({
     color: "black",
     backgroundColor: "#F5F5F5",
     padding: 10,
-    marginTop: 5,
-    marginBottom: 10,
     borderRadius: 10,
     height: 40,
     width: "90%",
@@ -311,7 +339,7 @@ const styles = StyleSheet.create({
   buttonContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 40,
+    marginTop: 80,
     paddingHorizontal: 20,
   },
 });

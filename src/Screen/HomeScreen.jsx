@@ -22,6 +22,13 @@ const HomeScreen = ({navigation}) => {
   const qrnav = () => {
     navigation.navigate('QRScreen');
   };
+  const medrepo = () => {
+    navigation.navigate('MedicalReportPreview');
+  };
+ 
+  const profiles = () => {
+    navigation.navigate('ProfileScreen');
+  };
  
   return (
     // main container
@@ -33,15 +40,16 @@ const HomeScreen = ({navigation}) => {
           <Text style={{ fontWeight: "bold", fontSize: 17 }}>Hello!</Text>
           <Text style={{ fontWeight: "bold", fontSize: 20 }}>Sanskruti Bhavsar</Text>
     <TouchableOpacity
-    style={HomeStyle.profile_icon} onPress={
-      navigation.navigate('ProfileScreen') } >
+    style={HomeStyle.profile_icon}
+     onPress={()=>profiles()} >
           <Ionicons name="person-circle" size={45} color="skyblue"
              />
             </TouchableOpacity>
         </View>
 
       </View>
-      <ScrollView style={HomeStyle.main} contentContainerStyle={{ paddingBottom: 20 }}>
+      <ScrollView style={HomeStyle.main} contentContainerStyle={{ paddingBottom: 20 }}
+      decelerationRate='fast'>
 
         {/* stpes progress bar */}
 
@@ -143,7 +151,8 @@ const HomeScreen = ({navigation}) => {
           </View>
 
           <View style={HomeStyle.fac_singleIcon}>
-            <TouchableOpacity style={HomeStyle.fac_iconRep}>
+            <TouchableOpacity style={HomeStyle.fac_iconRep}
+            onPress={()=>medrepo()}>
               <MaterialIcons name="medical-information" size={30} color="#0DBAC6" />
             </TouchableOpacity>
             <Text style={{ textAlign: 'center' }}>Medical {"\n"}Reports</Text>

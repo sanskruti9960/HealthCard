@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import LinearGradient from 'react-native-linear-gradient';
 import { Button, Card } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import FirestoreService from '../Services/FirestoreService';
+import FirestoreService from '../Services/firestoreSrevice';
 
 const MedicalReportPreview = ({ navigation }) => {
  const [userId, setUserId] = useState(null);
@@ -178,9 +178,7 @@ const fetchMedicalData = async(userIdParam = userId)=>{
             <Icon name="edit" size={20} color="#0A66C2" />
             <Text style={styles.editButtonText}>Edit Medical Info</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate('MultiplePolicy')} style={styles.actionButton}>
-            <Text>next</Text>
-          </TouchableOpacity>
+        
         </View>
       </ScrollView>
     </View>
