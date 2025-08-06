@@ -7,12 +7,12 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { firestore } from '../firebaseConfig';
+import { firestore } from '../firechifile/firebaseConfig';
 
 const OtpVerification = () => {
   const route = useRoute();
@@ -21,6 +21,9 @@ const OtpVerification = () => {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [verifying, setVerifying] = useState(false);
   const [resending, setResending] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
+  const [modalType, setModalType] = useState("success"); // 'success' or 'error'
   const inputs = useRef([]);
 
   const handleChange = (text, index) => {
@@ -37,12 +40,16 @@ const OtpVerification = () => {
  const handleVerifyOtp = async () => {
   const enteredOtp = otp.join('');
   if (enteredOtp.length < 6) {
-    Alert.alert('Error', 'Please enter all 6 digits of the OTP.');
+    setModalType('error');
+    setModalMessage('Please enter all 6 digits of the OTP.');
+    setModalVisible(true);
     return;
   }
 
   if (enteredOtp !== '121612') {
-    Alert.alert('Invalid OTP', 'The OTP entered is incorrect.');
+    setModalType('error');
+    setModalMessage('The OTP entered is incorrect.');
+    setModalVisible(true);
     return;
   }
 
@@ -50,46 +57,44 @@ const OtpVerification = () => {
 
   try {
       if (route.params?.from === 'signup') {
-        const { uid, fullName, email, phone } = route.params;
+        const { uid, fullName, email, phone, password } = route.params;
 
         const userData = {
           userid: uid,
           fullName,
           email,
           phone,
+          password,
           createdAt: new Date().toISOString(),
         };
 
         await firestore().collection('Siddhi').doc(uid).set(userData);
-        Alert.alert('Signup Success', 'Your account has been created.', [
-          {
-            text: 'OK',
-            onPress: () => navigation.replace('Onboard1'),
-          },
-        ]);
+        setModalType('success');
+        setModalMessage('Your account has been created.');
+        setModalVisible(true);
       } else {
-        Alert.alert('Login Success', 'Welcome back!', [
-          {
-            text: 'OK',
-            onPress: () => navigation.replace('Home'),
-          },
-        ]);
+        setModalType('success');
+        setModalMessage('Welcome back!');
+        setModalVisible(true);
       }
   } catch (error) {
     console.error('OTP Verification Error:', error);
-    Alert.alert('Error', 'Something went wrong while verifying OTP.');
+    setModalType('error');
+    setModalMessage('Something went wrong while verifying OTP.');
+    setModalVisible(true);
   } finally {
     setVerifying(false);
   }
 };
-
 
   const handleResendOtp = () => {
     setResending(true);
     setTimeout(() => {
       setOtp(['', '', '', '', '', '']);
       inputs.current[0]?.focus();
-      Alert.alert('OTP Resent', 'Mock resend successful (123456).');
+      setModalType('success');
+      setModalMessage('Mock resend successful (123456).');
+      setModalVisible(true);
       setResending(false);
     }, 1000);
   };
@@ -138,6 +143,33 @@ const OtpVerification = () => {
           {resending ? 'Resending...' : 'Resend OTP'}
         </Text>
       </TouchableOpacity>
+
+      {/* Modal for alerts */}
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={[styles.modalTitle, modalType === 'success' ? styles.modalTitleSuccess : styles.modalTitleError]}>
+              {modalType === 'success' ? 'Success' : 'Error'}
+            </Text>
+            <Text style={styles.modalMessage}>{modalMessage}</Text>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => {
+                setModalVisible(false);
+                if (modalType === 'success' && route.params?.from === 'signup') navigation.replace('Onboard1');
+                if (modalType === 'success' && route.params?.from !== 'signup') navigation.replace('Home');
+              }}
+            >
+              <Text style={styles.modalButtonText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 };
@@ -191,6 +223,48 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontSize: 18,
+    fontWeight: 'bold',
+  },
+  // Add modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    backgroundColor: '#fff',
+    width: '80%',
+    borderRadius: 10,
+    padding: 20,
+    elevation: 10,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  modalTitleSuccess: {
+    color: '#1C75BC',
+  },
+  modalTitleError: {
+    color: '#d9534f',
+  },
+  modalMessage: {
+    fontSize: 14,
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  modalButton: {
+    backgroundColor: '#1C75BC',
+    paddingVertical: 10,
+    paddingHorizontal: 25,
+    borderRadius: 8,
+  },
+  modalButtonText: {
+    color: '#fff',
     fontWeight: 'bold',
   },
 });

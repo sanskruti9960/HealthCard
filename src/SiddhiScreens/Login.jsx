@@ -10,7 +10,7 @@ import {
   Platform,
   Image,
   Dimensions,
-  Alert,
+  Modal,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
@@ -23,6 +23,9 @@ const Login = ({ navigation }) => {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState({});
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
+  const [modalType, setModalType] = useState('error'); // 'success' or 'error'
 
   const validate = () => {
     let valid = true;
@@ -69,7 +72,9 @@ const Login = ({ navigation }) => {
       const userDoc = await getDoc(userDocRef);
 
       if (!userDoc.exists) {
-        Alert.alert('Error', 'No user data found in Firestore.');
+        setModalType('error');
+        setModalMessage('No user data found in Firestore.');
+        setModalVisible(true);
         return;
       }
 
@@ -78,7 +83,9 @@ const Login = ({ navigation }) => {
 
       // 3. Compare phone number from Firestore with entered one
       if (storedPhone !== enteredPhone) {
-        Alert.alert('Phone Mismatch', 'The phone number does not match our records.');
+        setModalType('error');
+        setModalMessage('The phone number does not match our records.');
+        setModalVisible(true);
         return;
       }
 
@@ -99,7 +106,9 @@ const Login = ({ navigation }) => {
         message = 'Incorrect password.';
       }
 
-      Alert.alert('Login Failed', message);
+      setModalType('error');
+      setModalMessage(message);
+      setModalVisible(true);
     }
   };
 
@@ -130,27 +139,29 @@ const Login = ({ navigation }) => {
             </View>
 
             {/* Email */}
-            <View style={[styles.inputContainer, errors.email && { borderColor: 'red' }]}>
-              <Ionicons name="mail-outline" size={20} color="#666" style={styles.icon} />
+            <View style={[styles.inputContainer, errors.email && styles.errorInputContainer]}>
+              <Ionicons name="mail-outline" size={20} color="#1C75BC" style={styles.icon} />
               <TextInput
                 placeholder="Email"
-                placeholderTextColor="#aaa"
+                placeholderTextColor="#b0c4de"
                 style={styles.input}
                 value={email}
                 onChangeText={text => {
                   setEmail(text);
                   if (errors.email) setErrors({ ...errors, email: undefined });
                 }}
+                autoCapitalize="none"
+                keyboardType="email-address"
               />
             </View>
             {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
 
             {/* Phone */}
-            <View style={[styles.inputContainer, errors.phone && { borderColor: 'red' }]}>
-              <Ionicons name="call-outline" size={20} color="#666" style={styles.icon} />
+            <View style={[styles.inputContainer, errors.phone && styles.errorInputContainer]}>
+              <Ionicons name="call-outline" size={20} color="#1C75BC" style={styles.icon} />
               <TextInput
                 placeholder="Phone Number"
-                placeholderTextColor="#aaa"
+                placeholderTextColor="#b0c4de"
                 style={styles.input}
                 keyboardType="phone-pad"
                 value={phone}
@@ -158,16 +169,17 @@ const Login = ({ navigation }) => {
                   setPhone(text);
                   if (errors.phone) setErrors({ ...errors, phone: undefined });
                 }}
+                maxLength={10}
               />
             </View>
             {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
 
             {/* Password */}
-            <View style={[styles.inputContainer, errors.password && { borderColor: 'red' }]}>
-              <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.icon} />
+            <View style={[styles.inputContainer, errors.password && styles.errorInputContainer]}>
+              <Ionicons name="lock-closed-outline" size={20} color="#1C75BC" style={styles.icon} />
               <TextInput
                 placeholder="Password"
-                placeholderTextColor="#aaa"
+                placeholderTextColor="#b0c4de"
                 style={styles.input}
                 value={password}
                 onChangeText={text => {
@@ -187,23 +199,10 @@ const Login = ({ navigation }) => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[
-                styles.loginButton,
-                (!email || !password || !phone) && styles.disabledButton,
-              ]}
+              style={[styles.loginButton, (!email || !password || !phone) && styles.disabledButton]}
               onPress={handleLogin}
             >
               <Text style={styles.buttonText}>Login</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.googleButton}>
-              <Image
-                source={{
-                  uri: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT-S3qWcvePdfZilsn8f2X1KXTC6vZ0xjQPgQ&s',
-                }}
-                style={styles.googleIcon}
-              />
-              <Text style={styles.googleText}>Continue with Google</Text>
             </TouchableOpacity>
 
             <View style={styles.footerText}>
@@ -213,6 +212,29 @@ const Login = ({ navigation }) => {
               </TouchableOpacity>
             </View>
           </View>
+
+          {/* Modal for alerts */}
+          <Modal
+            visible={modalVisible}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setModalVisible(false)}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContainer}>
+                <Text style={[styles.modalTitle, modalType === 'success' ? styles.modalTitleSuccess : styles.modalTitleError]}>
+                  {modalType === 'success' ? 'Success' : 'Error'}
+                </Text>
+                <Text style={styles.modalMessage}>{modalMessage}</Text>
+                <TouchableOpacity
+                  style={styles.modalButton}
+                  onPress={() => setModalVisible(false)}
+                >
+                  <Text style={styles.modalButtonText}>OK</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
         </ScrollView>
       </KeyboardAvoidingView>
     </LinearGradient>
@@ -251,9 +273,9 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 16,
     elevation: 8,
-    shadowColor: '#000',
+    shadowColor: '#1C75BC',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.13,
     shadowRadius: 6,
     marginHorizontal: 20,
     marginTop: 0,
@@ -285,21 +307,30 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f1f1f1',
-    borderRadius: 90,
-    paddingHorizontal: 10,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#ddd',
+    backgroundColor: '#f8fbff',
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    marginBottom: 14,
+    borderWidth: 1.5,
+    borderColor: '#e3eafc',
+    shadowColor: '#1C75BC',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 4,
+  },
+  errorInputContainer: {
+    borderColor: 'red',
   },
   icon: {
-    marginRight: 8,
+    marginRight: 10,
   },
   input: {
     flex: 1,
-    height: 45,
-    fontSize: 14,
+    height: 48,
+    fontSize: 15,
     color: '#222',
+    backgroundColor: 'transparent',
+    paddingLeft: 2,
   },
   forgotContainer: {
     alignItems: 'flex-end',
@@ -312,37 +343,23 @@ const styles = StyleSheet.create({
   },
   loginButton: {
     backgroundColor: '#1C75BC',
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: 15,
+    borderRadius: 14,
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 18,
+    shadowColor: '#1C75BC',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.13,
+    shadowRadius: 6,
   },
   disabledButton: {
     backgroundColor: '#ccc',
   },
   buttonText: {
     color: 'white',
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: 'bold',
-  },
-  googleButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 20,
-  },
-  googleIcon: {
-    width: 35,
-    height: 20,
-    marginRight: 5,
-  },
-  googleText: {
-    color: 'gray',
-    fontSize: 16,
-    fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
   footerText: {
     flexDirection: 'row',
@@ -361,8 +378,50 @@ const styles = StyleSheet.create({
   errorText: {
     color: 'red',
     fontSize: 13,
-    marginBottom: 8,
-    marginLeft: 8,
+    marginBottom: 6,
+    marginLeft: 12,
     alignSelf: 'flex-start',
+  },
+  // Add modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    backgroundColor: '#fff',
+    width: '80%',
+    borderRadius: 10,
+    padding: 20,
+    elevation: 10,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  modalTitleSuccess: {
+    color: '#1C75BC',
+  },
+  modalTitleError: {
+    color: '#d9534f',
+  },
+  modalMessage: {
+    fontSize: 14,
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  modalButton: {
+    backgroundColor: '#1C75BC',
+    paddingVertical: 10,
+    paddingHorizontal: 25,
+    borderRadius: 8,
+  },
+  modalButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
