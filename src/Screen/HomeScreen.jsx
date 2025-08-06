@@ -1,5 +1,5 @@
-import { Text, View, TouchableOpacity, Image, ScrollView } from 'react-native'
-import React, { useState } from 'react'
+import { Text, View, TouchableOpacity, Image, ScrollView,ActivityIndicator } from 'react-native'
+import React, { useState,useEffect } from 'react'
 import Ionicons from "react-native-vector-icons/Ionicons"
 import MaterialIcons from "react-native-vector-icons/MaterialIcons"
 import FontAwesome5 from "react-native-vector-icons/FontAwesome5"
@@ -8,14 +8,40 @@ import ActivityCard from "./ActivityCard"
 import Dailycheckout from "../compoenents/Dailycheckout"
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
 import Svg, { Path } from 'react-native-svg'
-import { useNavigation } from '@react-navigation/native';
+import { doc, getDoc } from 'firebase/firestore';
+import auth from '@react-native-firebase/auth';
+import { db } from '../firebaseConfig'; // your firebase config file
 
 const HomeScreen = () => {
-  const navigation = useNavigation();
+  
+  // ===============for database of name , prfileimage =================
+ const [fullName, setFullName] = useState('');
+      const user = auth().currentUser;
 
-  const heartratenav = () => {
-    navigation.navigate('Measure');
+useEffect(() => {
+  const fetchUserData = async () => {
+          const userId = user.uid;
+    try {
+      const docRef = doc(db, 'Siddhi', userId);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const userData = docSnap.data();
+        setFullName(userData.fullName || '');
+      } else {
+        console.log('No such user!');
+      }
+    } catch (error) {
+      console.error('Error getting user data:', error);
+    }
   };
+
+  fetchUserData();
+}, []);
+
+
+ 
+  // =====================================================
   return (
     // main container
     <View style={HomeStyle.main}>
@@ -23,13 +49,16 @@ const HomeScreen = () => {
       <View style={HomeStyle.Topbar}>
 
         <View style={HomeStyle.profile_name}>
-          <Text style={{ fontWeight: "bold", fontSize: 17 }}>Hello!</Text>
-          <Text style={{ fontWeight: "bold", fontSize: 20 }}>Sanskruti Bhavsar</Text>
+          <Text style={{ fontWeight: "500", fontSize: 19 , marginLeft:10,}}>{`👋 Hello, ${fullName} `}</Text>
 
-          <Ionicons name="person-circle" size={45} color="skyblue"
-            style={HomeStyle.profile_icon} />
+  <Ionicons
+    name="person-circle"
+    size={45}
+    color="skyblue"
+    style={HomeStyle.profile_icon}
+  />
+
         </View>
-
       </View>
       <ScrollView style={HomeStyle.main} contentContainerStyle={{ paddingBottom: 20 }}>
 
@@ -191,10 +220,9 @@ const HomeScreen = () => {
           <View style={HomeStyle.row}>
             {/* heart rate card */}
             <Dailycheckout
-            onPress={heartratenav}
+            
               title="Heart Rate"
-              value="72"
-              unit="bpm"
+               subtitle="Check your BPM"
               backgroundColor='#F8E7EC'
             >
               <Image
@@ -216,8 +244,7 @@ const HomeScreen = () => {
             {/* blood pressure card */}
             <Dailycheckout
               title="BP Tracker"
-              value="120/80"
-              unit="mmHg"
+               subtitle="Track your heart’s pressure"
               backgroundColor='#E3E6FA'
             >    <Image
                 source={require('../img/pressure.png')}
@@ -241,12 +268,11 @@ const HomeScreen = () => {
             {/* blood  oxygen card */}
             <Dailycheckout
               title="Blood Oxygen"
-              value="90%"
-              unit="SpO₂"
+               subtitle="See how well you breathe"
               backgroundColor='#EAEAFB'
 
             > <Image
-                source={{ uri: 'https://static.vecteezy.com/system/resources/previews/026/112/390/non_2x/blood-donation-concept-blood-test-or-analysis-clinical-laboratory-examination-tiny-volunteers-with-nurses-donating-blood-in-hospital-health-care-modern-flat-cartoon-style-illustration-vector.jpg' }}
+                source={require('../img/oxy.png')}
                 style={{
 
                   width: 100,
@@ -265,12 +291,11 @@ const HomeScreen = () => {
             {/* water card   */}
             <Dailycheckout
               title="Water Intake"
-              value="1.5"
-              unit="L"
+               subtitle="Log your daily water"
               backgroundColor='#d6f0fa'
 
             > <Image
-                source={require('../img/water.jpg')}
+                source={require('../img/water.png')}
                 style={{
 
                   width: 100,

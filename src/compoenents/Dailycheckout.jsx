@@ -2,7 +2,7 @@
 import React, { Children } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 
-export default function HealthCard({ title, backgroundColor, value, unit, onPress, children }) {
+export default function HealthCard({ title, backgroundColor, subtitle, onPress, children }) {
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [
 
@@ -15,7 +15,7 @@ export default function HealthCard({ title, backgroundColor, value, unit, onPres
 
     ]}>
       <Text style={styles.title}>{title}</Text>
-      <Text style={styles.value}>{value} <Text style={styles.unit}>{unit}</Text></Text>
+      <Text style={styles.subtitle}>{subtitle || 'Tap to explore'}</Text>
       {children}
     </Pressable>
   );
@@ -37,18 +37,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 10,
   },
-  value: {
-    fontSize: 22,
-    fontWeight: '700',
-    marginTop: 5,
-  },
-  unit: {
-    fontSize: 14,
-    fontWeight: '400',
-    color: '#555',
-  },
   lottie: {
     width: 60,
     height: 60,
   },
+  subtitle: {
+  fontSize: 12,
+  fontWeight: '450',
+  color: '#666',
+  marginTop: 5,
+},
+
 });
