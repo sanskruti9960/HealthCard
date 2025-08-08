@@ -1,34 +1,87 @@
-import React, {useState} from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
+  Modal,
   Text,
   TouchableOpacity,
   StyleSheet,
-  SectionList,
   StatusBar,
   Image,
   Alert,
   Button,
+  TextInput,
+  
 } from "react-native";
+import ImageCropPicker from 'react-native-image-crop-picker';
 import Feather from "react-native-vector-icons/Feather";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import EvilIcons from "react-native-vector-icons/EvilIcons";
 import FontAwesome6 from "react-native-vector-icons/FontAwesome6";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
-import PrivacyPolicyModal from '../Components/PrivacyPolicyModal';
 import LogoutModal from '../Components/LogoutModal';
-
-const ProfileScreen = ({ navigation }) => {
-  const [isPrivacyVisible, setPrivacyVisible] = useState(false);
+import { db } from "../firebaseConfig";
+import {getDoc, doc, setDoc } from 'firebase/firestore';
+  const ProfileScreen = ({ navigation }) => {
   const [isLogoutVisible, setLogoutVisible] = useState(false);
+  const [profileImage, setProfileImage] = useState('');
+  const [modalVisible, setModalVisible] = useState(false); //modal for image selection
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [fullName, setFullName] = useState('');
+
+  const userId = 'aPfMrCGlhhXDMyZWqJ0plGMflLg1'; // Replace with dynamic ID if needed
+  // const userId = auth().currentUser?.uid;
+
+  const handleImagePress = () => {
+    setModalVisible(true);
+  };
+
+  const selectFromGallery = async () => {
+    try {
+      const image = await ImageCropPicker.openPicker({
+        width: 300,
+        height: 300,
+        cropping: true,
+        cropperCircleOverlay: true,
+        compressImageQuality: 0.8,
+      });
+      if (image?.path) {
+        console.log('Selected Image:', image.path);
+        setProfileImage(image.path);
+        setModalVisible(false);
+      }
+    } catch (error) {
+      console.log('Gallery cancelled or failed:', error);
+    }
+  };
+
+  useEffect(() => {
+    const fetchUserName = async () => {
+      try {
+        const docRef = doc(db, 'Siddhi', userId);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          const userData = docSnap.data();
+          setFullName(userData.fullName); //Set the name to state
+        } else {
+          console.log('No such user!');
+        }
+      } catch (error) {
+        console.error('Error getting user data:', error);
+      }
+    };
+    fetchUserName();
+  }, []);
+
   return (
     <View style={style.Screen}>
 
-      {/* Header */}
-      <View style={{ flexDirection: 'row' }}>
+      <StatusBar barStyle="dark-content" backgroundColor="#f0f0f0" />
 
-        <TouchableOpacity style={{ postion: 'static' }}
-        onPress={() => Alert.alert('Back to Home screen')}>
+      <View style={{ flexDirection: 'row' }}>
+        <TouchableOpacity
+          style={{ postion: 'static' }}
+          onPress={() => Alert.alert('Back to Home screen')}
+        >
           <Ionicons
             style={style.backIcon}
             name={"chevron-back"}
@@ -36,105 +89,91 @@ const ProfileScreen = ({ navigation }) => {
             color="#000"
           />
         </TouchableOpacity>
-        <Text style={{ marginTop: 13, padding: 5, fontSize: 22, fontWeight: 600, textAlign: 'center' }}>Settings</Text>
+        <Text style={{ marginTop: 13, padding: 5, fontSize: 22, fontWeight: 600, textAlign: 'center' }}>
+          Settings
+        </Text>
       </View>
 
-      {/* Main White Card */}
       <View style={style.cardWrapper}>
-        {/* Body Section */}
         <View style={style.bodySection}>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={handleImagePress}>
             <Image
-              source={require('../Images/DocImg.jpeg')}
+              source={
+                profileImage
+                  ? { uri: profileImage }
+                  : require('../Images/placeholder.png') // use your default image
+              }
               style={style.avatarImage}
             />
           </TouchableOpacity>
 
+          {/* name functionality */}
           <View style={style.namerow}>
-            <Text style={style.nameText}>Sarthak Adhav</Text>
+            {isEditingName ? (
+              <TextInput
+                style={style.nameInput}
+                value={fullName}
+                onChangeText={setFullName}
+                autoFocus
+                onBlur={async () => {
+                  try {
+                    setIsEditingName(false);
+                    if (userId && fullName.trim() !== '') {
+                      await setDoc(
+                        doc(db, 'Siddhi', userId),
+                        { fullName: fullName.trim() },
+                        { merge: true }
+                      );
+                      console.log('Name updated successfully in Firestore');
+                    }
+                  } catch (error) {
+                    console.error('Error updating name:', error);
+                  }
+                }}
+              />
+            ) : (
+              <Text style={style.nameText}>{fullName}</Text>
+            )}
+
             <TouchableOpacity
               style={style.editIcon}
-              onPress={() => Alert.alert('Edit Profile')}
+              onPress={() =>
+                setIsEditingName(true)}
             >
-              <Feather
-                name={"edit"}
-                size={16}
-                color="#000"
-              />
+              <Feather name="edit" size={16} color="#000" />
             </TouchableOpacity>
           </View>
-        </View>
-
-        {/* QR Section */}
-        <View style={style.qrCodeSection}>
-          <TouchableOpacity style={style.box}
-            onPress={() => Alert.alert('View QR Code to edit')}
-          >
-            <FontAwesome6
-              name="qrcode"
-              size={28}
-              color="#83B4FF" />
-            <Text style={style.boxText}>Edit QR</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={style.box}
-            onPress={() => navigation.navigate('EmergencyContactScreen')}>
-            <Ionicons
-              name="call"
-              size={28}
-              color="#83B4FF" />
-            <Text style={style.boxText}>Contacts</Text>
-          </TouchableOpacity>
         </View>
       </View>
 
       <View style={{ paddingHorizontal: 10 }}>
         <TouchableOpacity style={style.settingsSection}
+          onPress={() => navigation.navigate('AccountDetailsScreen')}>
+          <MaterialIcons name="account-circle" size={20} color="#000" style={{ marginLeft: 8 }} />
+          <Text style={style.SettingsText}>Account Details</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={{ paddingHorizontal: 10 }}>
+        <TouchableOpacity style={style.settingsSection}
+          onPress={() => navigation.navigate('QRScreen')}>
+          <FontAwesome6 name="qrcode" size={19} color="#000" style={{ marginLeft: 8 }} />
+          <Text style={style.SettingsText}>QR Code Preview</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={{ paddingHorizontal: 10 }}>
+        <TouchableOpacity style={style.settingsSection}
           onPress={() => navigation.navigate('ChangePasswordScreen')}>
-          <MaterialIcons
-            name="edit"
-            size={19}
-            color="#000"
-            style={{ marginLeft: 8 }}
-          />
+          <MaterialIcons name="edit" size={19} color="#000" style={{ marginLeft: 8 }} />
           <Text style={style.SettingsText}>Change Password</Text>
         </TouchableOpacity>
       </View>
 
       <View style={{ paddingHorizontal: 10 }}>
         <TouchableOpacity style={style.settingsSection}
-          onPress={() => navigation.navigate('NotificationScreen')}>
-          <MaterialIcons
-            name="notifications"
-            size={19}
-            color="#000"
-            style={{ marginLeft: 8 }}
-          />
-          <Text style={style.SettingsText}>Notification</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* <View style={{ paddingHorizontal: 10 }}>
-        <TouchableOpacity style={style.settingsSection}>
-          <MaterialIcons
-            name="language"
-            size={19}
-            color="#000"
-            style={{ marginLeft: 8 }}
-          />
-          <Text style={style.SettingsText}>Language</Text>
-        </TouchableOpacity>
-      </View> */}
-
-      <View style={{ paddingHorizontal: 10 }}>
-        <TouchableOpacity style={style.settingsSection}
           onPress={() => Alert.alert('Contact Us information')}>
-          <MaterialIcons
-            name="mail"
-            size={19}
-            color="#000"
-            style={{ marginLeft: 8 }}
-          />
+          <MaterialIcons name="mail" size={19} color="#000" style={{ marginLeft: 8 }} />
           <Text style={style.SettingsText}>Contact Us</Text>
         </TouchableOpacity>
       </View>
@@ -142,41 +181,75 @@ const ProfileScreen = ({ navigation }) => {
       <View style={{ paddingHorizontal: 10 }}>
         <TouchableOpacity
           style={style.settingsSection}
-          onPress={() => setPrivacyVisible(true)}
+          onPress={() => navigation.navigate('PrivacyPolicyScreen')}
         >
-          <MaterialIcons
-            name="privacy-tip"
-            size={19}
-            color="#000"
-            style={{ marginLeft: 8 }}
-          />
+          <MaterialIcons name="privacy-tip" size={19} color="#000" style={{ marginLeft: 8 }} />
           <Text style={style.SettingsText}>Privacy Policy</Text>
         </TouchableOpacity>
-
-        {/* Modal visible only when triggered */}
-        <PrivacyPolicyModal
+        {/* <PrivacyPolicyModal
           visible={isPrivacyVisible}
           onClose={() => setPrivacyVisible(false)}
-        />
+        /> */}
       </View>
-
 
       <View style={{ paddingHorizontal: 10 }}>
         <TouchableOpacity style={[style.settingsSection, { justifyContent: 'center' }]}
           onPress={() => setLogoutVisible(true)}>
-          <Text style={{ color: 'red', fontWeight: '500', fontSize: 16 }}>
-            Logout
-          </Text>
+          <Text style={{ color: 'red', fontWeight: '500', fontSize: 16 }}>Logout</Text>
         </TouchableOpacity>
-
-        {/* Modal visible only when triggered */}
         <LogoutModal
           visible={isLogoutVisible}
           onClose={() => setLogoutVisible(false)}
         />
       </View>
 
-      <StatusBar barStyle="dark-content" backgroundColor="#f0f0f0" />
+{/* temp buttons to see contact screen and dashboard  */}
+{/* <Button
+  title="cnt screen"
+  onPress={() => navigation.navigate('EmergencyContactScreen')}
+/>
+<Button
+  title="Dashborad"
+  onPress={() => navigation.navigate('Dashboard')}
+/> */}
+
+
+      {/* Modal pop up for adding and removing image */}
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={style.modalOverlay}
+          activeOpacity={1}
+          onPressOut={() => setModalVisible(false)}
+        >
+          <View style={style.modalContainer}>
+            <TouchableOpacity style={style.modalButton} onPress={selectFromGallery} >
+              <Text style={style.modalButtonText}>Add Image</Text>
+
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={style.modalButton}
+              onPress={async () => {
+                // await removeProfileImage(userId);
+                setProfileImage(); // Also remove it from state so UI updates
+                setModalVisible(false);
+              }}
+            >
+              <Text style={style.modalButtonText}>Remove Image</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={style.modalButton} onPress={() => setModalVisible(false)}>
+              <Text style={[style.modalButtonText, { color: 'red' }]}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* modal for editing name here  */}
     </View>
   );
 };
@@ -186,26 +259,21 @@ export default ProfileScreen;
 const style = StyleSheet.create({
   Screen: {
     flex: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: 'white',
   },
   backIcon: {
     paddingVertical: 15,
     paddingHorizontal: 10,
   },
-
-  // Wrapper for the card
   cardWrapper: {
     backgroundColor: '#fff',
     marginHorizontal: 16,
     marginTop: 16,
     borderRadius: 16,
-    // overflow: 'hidden',
     elevation: 1,
   },
-
-  // BODY SECTION
   bodySection: {
-    paddingVertical: 20,
+    paddingVertical: 40,
     paddingHorizontal: 20,
     alignItems: "center",
   },
@@ -214,7 +282,6 @@ const style = StyleSheet.create({
     height: 90,
     borderRadius: 45,
     borderColor: '#1b47d2',
-    // backgroundColor: '#eef6fa',
   },
   namerow: {
     flexDirection: 'row',
@@ -233,34 +300,6 @@ const style = StyleSheet.create({
     elevation: 1,
     marginLeft: 10,
   },
-
-  // QR SECTION
-  qrCodeSection: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 16,
-  },
-  box: {
-    backgroundColor: '#fff',
-    // borderWidth: 0.2,
-    width: "45%",
-    marginBottom: 10,
-    padding: 16,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    elevation: 3,
-  },
-  boxText: {
-    marginTop: 8,
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#333",
-  },
-
-  // SETTINGS SECTION
   settingsSection: {
     paddingVertical: 15,
     flexDirection: 'row',
@@ -268,16 +307,45 @@ const style = StyleSheet.create({
     padding: 10,
     backgroundColor: '#fff',
     borderRadius: 20,
-    // borderWidth: 0.2,
     margin: 10,
     marginBottom: 0,
     elevation: 1,
   },
   SettingsText: {
     fontSize: 16,
-    // fontWeight: '500',
     marginLeft: 10,
     color: '#000',
   },
 
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  modalContainer: {
+    backgroundColor: '#fff',
+    width: 250,
+    borderRadius: 10,
+    padding: 20,
+    elevation: 5,
+  },
+  modalButton: {
+    paddingVertical: 10,
+  },
+  modalButtonText: {
+    fontSize: 16,
+    textAlign: 'center',
+    color: '#333',
+  },
+  modalButtonTextRed: {
+    color: 'red',
+  },
+  nameInput: {
+    fontSize: 18,
+    borderBottomWidth: 1,
+    borderColor: '#ccc',
+    paddingVertical: 2,
+    width: 180,
+  },
 });

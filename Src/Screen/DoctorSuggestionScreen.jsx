@@ -58,7 +58,7 @@ const DoctorSuggestionScreen = ({ navigation }) => {
 
   const scrollRef = useRef(null);
   let currentIndex = 0;
-
+  
   useEffect(() => {
     const interval = setInterval(() => {
       currentIndex = (currentIndex + 1) % recommendationDoctors.length;

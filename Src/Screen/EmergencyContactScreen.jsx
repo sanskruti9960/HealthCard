@@ -1,28 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet, Text, View, FlatList,
-  TouchableOpacity, Modal, Linking, TextInput
+  TouchableOpacity, Modal, Linking, TextInput, ActivityIndicator, Alert
 } from 'react-native';
 import Ionicons from "react-native-vector-icons/Ionicons";
 import FontAwesome from "react-native-vector-icons/FontAwesome";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
-import { collection, addDoc, getDocs, } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, deleteDoc } from 'firebase/firestore';
 import { db } from "../firebaseConfig";
-import { useEffect } from 'react';
+import auth from '@react-native-firebase/auth'; // ✅ Android Firebase Auth
 
-
-
-const saveContactToFirebase = async (userId, contact) => {
+const saveContactToFirebase = async (userId, contact, setLoading) => {
   try {
-    // Firestore collection path
-    const docRef = await addDoc(collection(db, `users/${userId}/emergencyContacts`), contact);
+    setLoading(true);
+    const docRef = await addDoc(collection(db, `Siddhi/${userId}/emergencyContacts`), contact);
     console.log("Contact saved to Firestore with ID:", docRef.id);
+    return docRef.id;
   } catch (error) {
     console.error("Error saving contact:", error);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+const deleteContactFromFirebase = async (userId, contactId) => {
+  try {
+    const contactDocRef = doc(db, `Siddhi/${userId}/emergencyContacts/${contactId}`);
+    await deleteDoc(contactDocRef);
+    console.log("Deleted successfully");
+  } catch (error) {
+    console.error("Error deleting contact:", error);
   }
 };
 
 const Emergencycontact = ({ navigation }) => {
+  const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedContact, setSelectedContact] = useState(null);
   const [addModalVisible, setAddModalVisible] = useState(false);
@@ -32,14 +45,16 @@ const Emergencycontact = ({ navigation }) => {
   const [nameError, setNameError] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [relationError, setRelationError] = useState('');
+  const [emergencyContacts, setEmergencyContacts] = useState([]);
 
+  const userId = "aPfMrCGlhhXDMyZWqJ0plGMflLg1"; // ✅ Authenticated user ID
+  // const userId = auth().currentUser?.uid;
 
   useEffect(() => {
-    fetchContactsFromFirebase("user123"); // Replace with real user ID later
-  }, []);
-
-  // 🔄 Dynamic Contact List
-  const [emergencyContacts, setEmergencyContacts] = useState([]);
+    if (userId) {
+      fetchContactsFromFirebase(userId);
+    }
+  }, [userId]);
 
   const openContactModal = (contact) => {
     setSelectedContact(contact);
@@ -53,64 +68,69 @@ const Emergencycontact = ({ navigation }) => {
 
   const fetchContactsFromFirebase = async (userId) => {
     try {
-      const querySnapshot = await getDocs(collection(db, `users/${userId}/emergencyContacts`));
+      setLoading(true);
+      const querySnapshot = await getDocs(collection(db, `Siddhi/${userId}/emergencyContacts`));
       const contacts = [];
       querySnapshot.forEach((doc) => {
         contacts.push({
-          id: doc.id, // Firestore document ID
-          ...doc.data(), // name, phone, relation
+          id: doc.id,
+          ...doc.data(),
         });
       });
-      setEmergencyContacts(contacts); // ⬅️ Update state
+      setEmergencyContacts(contacts);
     } catch (error) {
       console.error("Error fetching contacts:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
+
   return (
     <View style={style.Screen}>
-      {/* Header */}
       <View style={style.Header}>
-        <TouchableOpacity style={style.backButton}
-          onPress={() => navigation.goBack()}>
+        <TouchableOpacity style={style.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={35} color="#000" />
         </TouchableOpacity>
         <Text style={style.contactstext}>Contacts</Text>
       </View>
 
-      {/* Contact List */}
       <View style={style.contactsList}>
-        <FlatList
-          data={emergencyContacts}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={style.contactRow}
-              onPress={() => openContactModal(item)}
-            >
-              <FontAwesome
-                name="user-circle"
-                size={35}
-                color="grey"
-                style={style.contactavatar}
-              />
-              <View style={style.contactDetails}>
-                <Text style={style.contactName}>{item.name}</Text>
-                <Text style={style.cardValue}>{item.phone}</Text>
-              </View>
-            </TouchableOpacity>
-          )}
-        />
+        {loading ? (
+          <ActivityIndicator size="large" color="#1b47d2" />
+        ) : (
+          <FlatList
+            data={emergencyContacts}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <TouchableOpacity style={style.contactRow} onPress={() => openContactModal(item)}>
+                <View style={style.verticalStrip} /> {/* Blue strip */}
+
+                <FontAwesome name="user-circle" size={30} color="grey" style={style.contactavatar} />
+
+                <View style={style.contactDetails}>
+                  <Text style={style.contactName}>{item.name}</Text>
+                  <Text style={style.cardValue}>{item.relation}</Text>
+                  <Text style={style.cardValue}>{item.phone}</Text>
+                </View>
+              </TouchableOpacity>
+            )}
+          />
+        )}
       </View>
 
-      {/* View Contact Modal */}
-      <Modal
-        visible={modalVisible}
-        transparent
-        animationType="slide"
-      >
+      <Modal visible={modalVisible} transparent animationType="slide">
         <View style={style.modalBackground}>
           <View style={style.modalCard}>
+
+            {/* Optional Image Preview */}
+            {selectedContact?.snap && (
+              <Image
+                source={{ uri: selectedContact.snap }}
+                style={style.modalSnap}
+              />
+            )}
+
             <Text style={style.modalTitle}>{selectedContact?.name}</Text>
             <Text style={style.modalSub}>{selectedContact?.relation}</Text>
             <Text style={style.modalPhone}>{selectedContact?.phone}</Text>
@@ -122,6 +142,24 @@ const Emergencycontact = ({ navigation }) => {
               >
                 <MaterialIcons name="call" size={20} color="#fff" />
                 <Text style={style.modalBtnText}>Call</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[style.modalBtn, { backgroundColor: 'red' }]}
+                onPress={async () => {
+                  if (!userId) return;
+                  try {
+                    await deleteContactFromFirebase(userId, selectedContact?.id);
+                    await fetchContactsFromFirebase(userId);
+                    setModalVisible(false);
+                  } catch (error) {
+                    console.error("Delete failed:", error);
+                    Alert.alert("Error", "Contact could not be deleted.");
+                  }
+                }}
+              >
+                <MaterialIcons name="delete" size={20} color="#fff" />
+                <Text style={style.modalBtnText}>Delete</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -139,21 +177,15 @@ const Emergencycontact = ({ navigation }) => {
           </View>
         </View>
       </Modal>
-      
-      {/* Floating Action Button to Add Contact */}
-      <TouchableOpacity
-        style={style.fab}
-        onPress={() => setAddModalVisible(true)}
-      >
+
+
+      {/* Floating Action Button */}
+      <TouchableOpacity style={style.fab} onPress={() => setAddModalVisible(true)}>
         <Ionicons name="add" size={30} color="#fff" />
       </TouchableOpacity>
 
       {/* Add Contact Modal */}
-      <Modal
-        visible={addModalVisible}
-        transparent
-        animationType="slide"
-      >
+      <Modal visible={addModalVisible} transparent animationType="slide">
         <View style={style.modalBackground}>
           <View style={style.modalCard}>
             <Text style={style.modalTitle}>Add New Contact</Text>
@@ -192,53 +224,41 @@ const Emergencycontact = ({ navigation }) => {
             />
             {relationError ? <Text style={style.errorText}>{relationError}</Text> : null}
 
-
-
             <View style={[style.modalButtons, { marginTop: 16 }]}>
               <TouchableOpacity
                 style={[style.modalBtn, { backgroundColor: '#1b47d2' }]}
-                onPress={() => {
+                onPress={async () => {
                   let isValid = true;
                   const phoneRegex = /^[0-9]{10}$/;
 
-                  // Name Validation
                   if (!newName.trim()) {
                     setNameError('Name is required');
                     isValid = false;
-                  } else {
-                    setNameError('');
-                  }
+                  } else setNameError('');
 
-                  // Phone Validation
                   if (!newPhone.trim()) {
                     setPhoneError('Phone number is required');
                     isValid = false;
                   } else if (!phoneRegex.test(newPhone)) {
                     setPhoneError('Enter a valid 10-digit phone number');
                     isValid = false;
-                  } else {
-                    setPhoneError('');
-                  }
+                  } else setPhoneError('');
 
-                  // Optional: Relation Validation
                   if (!newRelation.trim()) {
                     setRelationError('Relation is required');
                     isValid = false;
-                  } else {
-                    setRelationError('');
-                  }
+                  } else setRelationError('');
 
-                  if (!isValid) return;
+                  if (!isValid || !userId) return;
 
                   const newContact = {
-                    id: Date.now().toString(),
                     name: newName.trim(),
                     phone: newPhone.trim(),
                     relation: newRelation.trim(),
                   };
 
-                  setEmergencyContacts(prev => [...prev, newContact]);
-                  saveContactToFirebase("user123", newContact);
+                  await saveContactToFirebase(userId, newContact, setLoading);
+                  await fetchContactsFromFirebase(userId);
 
                   setAddModalVisible(false);
                   setNewName('');
@@ -248,7 +268,6 @@ const Emergencycontact = ({ navigation }) => {
                   setPhoneError('');
                   setRelationError('');
                 }}
-
               >
                 <Ionicons name="save" size={20} color="#fff" />
                 <Text style={style.modalBtnText}>Save</Text>
@@ -295,7 +314,7 @@ const style = StyleSheet.create({
   },
   contactsList: {
     marginTop: 10,
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
   },
   contactRow: {
     flexDirection: 'row',
@@ -324,54 +343,85 @@ const style = StyleSheet.create({
   // MODAL STYLES
   modalBackground: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    padding: 20,
   },
+
   modalCard: {
-    backgroundColor: '#fff',
-    padding: 24,
-    borderRadius: 20,
     width: '100%',
-    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingVertical: 24,
+    paddingHorizontal: 20,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
   },
+
+  modalSnap: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    alignSelf: 'center',
+    marginBottom: 16,
+    resizeMode: 'cover',
+  },
+
   modalTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#000',
+    fontSize: 22,
+    fontWeight: '700',
+    textAlign: 'center',
+    color: '#222',
   },
+
   modalSub: {
     fontSize: 16,
-    color: '#444',
+    textAlign: 'center',
+    color: '#555',
     marginTop: 4,
   },
+
   modalPhone: {
     fontSize: 16,
+    textAlign: 'center',
     color: '#1b47d2',
-    marginTop: 8,
+    marginTop: 6,
+    marginBottom: 16,
   },
+
   modalButtons: {
     flexDirection: 'row',
-    marginTop: 20,
-    gap: 20,
+    justifyContent: 'space-between',
+    marginBottom: 16,
   },
+
   modalBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+    justifyContent: 'center',
+    paddingVertical: 12,
+    marginHorizontal: 6,
     borderRadius: 10,
   },
+
   modalBtnText: {
     color: '#fff',
+    fontWeight: '600',
     marginLeft: 8,
-    fontWeight: '600',
+    fontSize: 14,
   },
+
   modalCancel: {
-    marginTop: 20,
     color: 'red',
+    fontSize: 16,
     fontWeight: '600',
+    textAlign: 'center',
+    marginTop: 8,
   },
   fab: {
     position: 'absolute',
@@ -405,5 +455,47 @@ const style = StyleSheet.create({
     marginBottom: 8,
     marginLeft: 4,
   },
+  verticalStrip: {
+  width: 5,
+  height: '80%',
+  backgroundColor: '#007BFF', // Blue color
+  borderRadius: 2,
+  marginRight: 10,
+  alignSelf: 'center',
+},
+
+contactRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: '#fff',
+  padding: 12,
+  borderRadius: 10,
+  marginVertical: 6,
+  elevation: 3, // subtle shadow for Android
+  shadowColor: '#000', // iOS shadow
+  shadowOffset: { width: 0, height: 1 },
+  shadowOpacity: 0.1,
+  shadowRadius: 2,
+},
+
+contactavatar: {
+  marginRight: 10,
+},
+
+contactDetails: {
+  flex: 1,
+},
+
+contactName: {
+  fontSize: 16,
+  fontWeight: 'bold',
+  color: '#333',
+},
+
+cardValue: {
+  fontSize: 14,
+  color: '#555',
+},
+
 });
 
