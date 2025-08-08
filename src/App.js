@@ -13,4 +13,4 @@ function App() {
   );
 }
 // This is the main App component that sets up routing for the application
-export default App;
+export default App
