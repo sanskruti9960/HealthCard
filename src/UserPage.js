@@ -3,7 +3,6 @@ import { useParams } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from './Firebase'; // ✅ Make sure this is correctly set up
 
-// this is the UserPage component that fetches and displays user data that scans the Qr code
 const UserPage = () => {
   const { userId } = useParams();
   const [userData, setUserData] = useState(null);

@@ -10,5 +10,3 @@ root.render(
     <App />
   </React.StrictMode>
 );
-
-//this is index.js
