@@ -8,7 +8,7 @@ const Terms = ({ navigation }) => {
 
   const handleAccept = () => {
     if (checked) {
-      navigation.navigate('Home');
+      navigation.navigate('PersonalDetails');
     }
   };
 

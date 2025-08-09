@@ -53,7 +53,7 @@ const PersonalDetails = ({ navigation }) => {
       await AsyncStorage.setItem('personalDetails', JSON.stringify(data));
       Keyboard.dismiss();
       console.log("Form Data: ", data);
-      navigation.navigate("EmergencyContact");
+      navigation.navigate("MainTab");
     } catch (error) {
       console.log('Error saving data:', error);
     }
