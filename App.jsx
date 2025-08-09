@@ -1,36 +1,37 @@
 import { StyleSheet, Text, View } from 'react-native';
 import React,{ useEffect } from 'react';
 
-import HomeScreen from './Src/Screen/HomeScreen'
-import MedicationCard from './Src/Screen/MedicationCard'
-import Setschedulepg from './Src/Screen/Setschedulepg'
-import MultiplePolicy from './Src/Screens/MultiplePolicy';
-import InsuranceSrc1 from './Src/Screens/InsuranceSrc1';
-import InsurancePreview from './Src/Screens/InsurancePreview';
-import ReminderSetupScreen from './Src/Screen/ReminderSetupScreen';
-import PersonalDetails from './Src/Screens/PersonalDetails';
-import EmergencyContact from './Src/Screens/EmergencyContact';
-import MedicalInfo from './Src/Screens/MedicalInfo';
+import HomeScreen from './src/Screen/HomeScreen'
+import MedicationCard from './src/Screen/MedicationCard'
+import Setschedulepg from './src/Screen/Setschedulepg'
+import MultiplePolicy from './src/Screens/MultiplePolicy';
+import InsuranceSrc1 from './src/Screens/InsuranceSrc1';
+import InsurancePreview from './src/Screens/InsurancePreview';
+import ReminderSetupScreen from './src/Screen/ReminderSetupScreen';
+import PersonalDetails from './src/Screens/PersonalDetails';
+import EmergencyContact from './src/Screens/EmergencyContact';
+import MedicalInfo from './src/Screens/MedicalInfo';
 // sarthak
-import DoctorSuggestionScreen from './Src/Screen/DoctorSuggestionScreen'
-import EmergencyContactScreen from './Src/Screen/EmergencyContactScreen'
-import QRScreen from './Src/Screen/QRScreen'
-import ProfileScreen from './Src/Screen/ProfileScreen'
-import NotificationScreen from './Src/Screen/NotificationScreen'
-import ChangePasswordScreen from './Src/Screen/ChangePasswordScreen'
+import DoctorSuggestionScreen from './src/Screen/DoctorSuggestionScreen'
+import EmergencyContactScreen from './src/Screen/EmergencyContactScreen'
+import QRScreen from './src/Screen/QRScreen'
+import ProfileScreen from './src/Screen/ProfileScreen'
+import NotificationScreen from './src/Screen/NotificationScreen'
+import ChangePasswordScreen from './src/Screen/ChangePasswordScreen'
 // siiddhi
-import ForgotPassword from './Src/SiddhiScreens/ForgotPassword.jsx';
-import Onboard from './Src/SiddhiScreens/Onboard.jsx';
-import Signup from './Src/SiddhiScreens/Signup.jsx';
-import Login from './Src/SiddhiScreens/Login.jsx';
-import OtpVerification from './Src/SiddhiScreens/OtpVerification.jsx';
-//palak
-import StartInsuranceFile from './Src/PalakScreens/StartInsuranceFile';
-import MedicalReportPreview from './Src/PalakScreens/MedicalReportPreview.jsx';
-import Terms from './Src/PalakScreens/Terms.jsx';
-import TermsSrc2 from './Src/PalakScreens/TermsSrc2.jsx';
+import ForgotPassword from './src/SiddhiScreens/ForgotPassword.jsx';
+import Onboard from './src/SiddhiScreens/Onboard.jsx';
+import Signup from './src/SiddhiScreens/Signup.jsx';
+import Login from './src/SiddhiScreens/Login.jsx';
+import OtpVerification from './src/SiddhiScreens/OtpVerification.jsx';
 
-import { db } from "./Src/firebaseConfig"; // adjust path as needed
+//palak
+import StartInsuranceFile from './src/PalakScreens/StartInsuranceFile';
+import MedicalReportPreview from './src/PalakScreens/MedicalReportPreview.jsx';
+import Terms from './src/PalakScreens/Terms.jsx';
+import TermsSrc2 from './src/PalakScreens/TermsSrc2.jsx';
+
+import { db } from "./src/firebaseConfig"; // adjust path as needed
 import { Provider as PaperProvider } from 'react-native-paper';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';

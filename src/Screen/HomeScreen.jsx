@@ -7,7 +7,7 @@ import HomeStyle from "../../styles/HomeStyle"
 import ActivityCard from "./ActivityCard"
 import Dailycheckout from "../compoenents/Dailycheckout"
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
-import Svg, { Path } from 'react-native-svg'
+// import Svg, { Path } from 'react-native-svg'
 
 const HomeScreen = ({navigation}) => {
   const Insurance = () => {
