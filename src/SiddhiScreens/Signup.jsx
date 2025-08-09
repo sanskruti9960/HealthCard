@@ -9,87 +9,97 @@ import {
   KeyboardAvoidingView,
   Platform,
   StatusBar,
-  Alert,
+  Modal,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LottieView from 'lottie-react-native';
 import Animation1 from './img/Animation1.json';
-
+import { getAuth, createUserWithEmailAndPassword } from '@react-native-firebase/auth';
 const Signup = ({ navigation }) => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
+  const [phone, setPhone] = useState('');
   const [errors, setErrors] = useState({});
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
+  const [modalType, setModalType] = useState('error'); // 'success' or 'error'
 
   const validate = () => {
     const newErrors = {};
     if (!fullName.trim()) newErrors.fullName = 'Full name is required*';
     if (!email.trim()) newErrors.email = 'Email is required*';
     if (!password.trim()) newErrors.password = 'Password is required*';
+    if (!phone.trim()) newErrors.phone = 'Phone number is required*';
+    else if (!/^\d{10}$/.test(phone)) newErrors.phone = 'Enter valid 10-digit number';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSignup = () => {
-    if (validate()) {
-      Alert.alert('Signup Successful', `Welcome, ${fullName.trim()}!`);
-      navigation.navigate('OtpVerification');
-    }
-  };
+const handleSignup = async () => {
+  if (!validate()) return;
+
+  // Normalize phone number: remove non-digits, take last 10 digits
+  const normalizePhone = (num) => num.replace(/\D/g, '').slice(-10);
+  const normalizedPhone = normalizePhone(phone);
+
+  try {
+    const auth = getAuth();
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const uid = userCredential.user.uid;
+
+    // Pass user info to OTP screen for storing after verification
+    navigation.navigate('OtpVerification', {
+      from: 'signup',
+      uid,
+      fullName,
+      email,
+      phone: normalizedPhone,
+      password
+    });
+
+  } catch (error) {
+    console.error('Signup Error:', error);
+    setModalType('error');
+    setModalMessage(error.message);
+    setModalVisible(true);
+  }
+};
+
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <StatusBar backgroundColor="#F8F9FF" barStyle="dark-content" />
-
         <LottieView source={Animation1} autoPlay loop style={styles.topAnimation} />
-
         <View style={styles.container}>
-          <Text style={styles.title}>
-            Sign <Text style={styles.highlight}>Up</Text>
-          </Text>
+          <Text style={styles.title}>Sign <Text style={styles.highlight}>Up</Text></Text>
           <Ionicons name="qr-code-outline" size={22} color="#1C75BC" style={styles.qrIcon} />
-
           <View style={styles.subtitleRow}>
             <Text style={styles.subtitle}>Create a new account</Text>
           </View>
 
-          {/* Full Name */}
-          <View
-            style={[
-              styles.inputContainer,
-              errors.fullName && styles.errorInputContainer,
-            ]}
-          >
-            <Ionicons name="person-outline" size={20} color="#666" style={styles.icon} />
+          <View style={[styles.inputContainer, errors.fullName && styles.errorInputContainer]}>
+            <Ionicons name="person-outline" size={20} color="#1C75BC" style={styles.icon} />
             <TextInput
               placeholder="Full Name"
-              placeholderTextColor="#aaa"
+              placeholderTextColor="#b0c4de"
               style={styles.input}
               value={fullName}
               onChangeText={text => {
                 setFullName(text);
                 if (errors.fullName) setErrors({ ...errors, fullName: null });
               }}
+              autoCapitalize="words"
             />
           </View>
           {errors.fullName && <Text style={styles.errorText}>{errors.fullName}</Text>}
 
-          {/* Email */}
-          <View
-            style={[
-              styles.inputContainer,
-              errors.email && styles.errorInputContainer,
-            ]}
-          >
-            <Ionicons name="mail-outline" size={20} color="#666" style={styles.icon} />
+          <View style={[styles.inputContainer, errors.email && styles.errorInputContainer]}>
+            <Ionicons name="mail-outline" size={20} color="#1C75BC" style={styles.icon} />
             <TextInput
               placeholder="Email"
-              placeholderTextColor="#aaa"
+              placeholderTextColor="#b0c4de"
               style={styles.input}
               value={email}
               onChangeText={text => {
@@ -102,17 +112,11 @@ const Signup = ({ navigation }) => {
           </View>
           {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
 
-          {/* Password */}
-          <View
-            style={[
-              styles.inputContainer,
-              errors.password && styles.errorInputContainer,
-            ]}
-          >
-            <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.icon} />
+          <View style={[styles.inputContainer, errors.password && styles.errorInputContainer]}>
+            <Ionicons name="lock-closed-outline" size={20} color="#1C75BC" style={styles.icon} />
             <TextInput
               placeholder="Password"
-              placeholderTextColor="#aaa"
+              placeholderTextColor="#b0c4de"
               style={styles.input}
               value={password}
               onChangeText={text => {
@@ -124,18 +128,30 @@ const Signup = ({ navigation }) => {
           </View>
           {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
 
-          {/* Create Account Button */}
+          <View style={[styles.inputContainer, errors.phone && styles.errorInputContainer]}>
+            <Ionicons name="call-outline" size={20} color="#1C75BC" style={styles.icon} />
+            <TextInput
+              placeholder="Phone Number"
+              placeholderTextColor="#b0c4de"
+              style={styles.input}
+              keyboardType="phone-pad"
+              value={phone}
+              onChangeText={text => {
+                setPhone(text);
+                if (errors.phone) setErrors({ ...errors, phone: null });
+              }}
+              maxLength={10}
+            />
+          </View>
+          {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
+
           <TouchableOpacity
-            style={[
-              styles.loginButton,
-              (!fullName || !email || !password) && styles.disabledButton,
-            ]}
+            style={[styles.loginButton, (!fullName || !email || !password || !phone) && styles.disabledButton]}
             onPress={handleSignup}
           >
             <Text style={styles.buttonText}>Create Account</Text>
           </TouchableOpacity>
 
-          {/* Footer */}
           <View style={styles.footerText}>
             <Text style={styles.footer}>Already have an account?</Text>
             <TouchableOpacity onPress={() => navigation.navigate('Login')}>
@@ -144,11 +160,35 @@ const Signup = ({ navigation }) => {
           </View>
         </View>
       </ScrollView>
+
+      {/* Modal for alerts */}
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={[styles.modalTitle, modalType === 'success' ? styles.modalTitleSuccess : styles.modalTitleError]}>
+              {modalType === 'success' ? 'Success' : 'Error'}
+            </Text>
+            <Text style={styles.modalMessage}>{modalMessage}</Text>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => setModalVisible(false)}
+            >
+              <Text style={styles.modalButtonText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 };
 
 export default Signup;
+
 
 const styles = StyleSheet.create({
   scrollContainer: {
@@ -204,24 +244,31 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f1f1f1',
-    borderRadius: 90,
-    paddingHorizontal: 10,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#ddd',
+    backgroundColor: '#f8fbff',
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    marginBottom: 14,
+    borderWidth: 1.5,
+    borderColor: '#e3eafc',
+    shadowColor: '#1C75BC',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 4,
+    elevation: 6,
   },
   errorInputContainer: {
     borderColor: 'red',
   },
   icon: {
-    marginRight: 8,
+    marginRight: 10,
   },
   input: {
     flex: 1,
-    height: 45,
-    fontSize: 14,
+    height: 48,
+    fontSize: 15,
     color: '#222',
+    backgroundColor: 'transparent',
+    paddingLeft: 2,
   },
   errorText: {
     color: 'red',
@@ -257,6 +304,47 @@ const styles = StyleSheet.create({
   signupLink: {
     fontSize: 13,
     color: '#1C75BC',
+    fontWeight: 'bold',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    backgroundColor: '#fff',
+    width: '80%',
+    borderRadius: 10,
+    padding: 20,
+    elevation: 10,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  modalTitleSuccess: {
+    color: '#1C75BC',
+  },
+  modalTitleError: {
+    color: '#d9534f',
+  },
+  modalMessage: {
+    fontSize: 14,
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  modalButton: {
+    backgroundColor: '#1C75BC',
+    paddingVertical: 10,
+    paddingHorizontal: 25,
+    borderRadius: 8,
+  },
+  modalButtonText: {
+    color: '#fff',
     fontWeight: 'bold',
   },
 });
