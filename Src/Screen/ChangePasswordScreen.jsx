@@ -12,9 +12,10 @@ import {
 import firestore from '@react-native-firebase/firestore';
 import Feather from 'react-native-vector-icons/Feather';
 const ChangePasswordScreen = ({ navigation }) => {
-  const userId = "aPfMrCGlhhXDMyZWqJ0plGMflLg1";
+
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [update,updatePassword] = useState ("")
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
@@ -48,7 +49,7 @@ const handlePasswordChange = async () => {
   if (!valid) return;
 
   try {
-    const user = auth().currentUser;
+    const user = "aPfMrCGlhhXDMyZWqJ0plGMflLg1";
 
     if (!user) {
       Alert.alert('Error', 'No authenticated user found.');
@@ -56,15 +57,15 @@ const handlePasswordChange = async () => {
     }
 
     // 🔁 Step 1: Re-authenticate with Email and Password
-    const credential = auth.EmailAuthProvider.credential(user.email, currentPassword);
+    // const credential = auth.EmailAuthProvider.credential(user.email, currentPassword);
 
-    // This works on Android!
-    await user.reauthenticateWithCredential(credential);
+    // // This works on Android!
+    // await user.reauthenticateWithCredential(credential);
 
-    // 🔁 Step 2: Update password in Firebase Auth
-    await user.updatePassword(newPassword);
+    // // 🔁 Step 2: Update password in Firebase Auth
+    // await user.updatePassword(newPassword);
 
-    // 🔁 Step 3: Update password in Firestore
+    // // 🔁 Step 3: Update password in Firestore
     await firestore().collection('Siddhi').doc(user.uid).update({
       password: newPassword,
     });
@@ -191,7 +192,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
   },
   button: {
-    backgroundColor: '#6a1b9a',
+    backgroundColor: '#1C75BC',
     paddingVertical: 12,
     borderRadius: 10,
     marginTop: 10,

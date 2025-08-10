@@ -10,6 +10,10 @@ import Dashboard from './Src/Screen/Dashboard'
 import Ds from './Src/Screen/Ds'
 import AccountDetailsScreen from './Src/Screen/AccountDetailsScreen'
 import PrivacyPolicyScreen from './Src/Screen/PrivacyPolicyScreen'
+import DoctorBookingScreen from './Src/Screen/DoctorBookingScreen'
+import AllRecentVisits from './Src/Screen/AllRecentVisits'
+import DocRecommendationScreen from './Src/Screen/DocRecommendationScreen'
+import Signup from './Src/Screen/Signup'
 
 const Stack = createNativeStackNavigator();
 const App = () => {
@@ -26,6 +30,10 @@ const App = () => {
           <Stack.Screen name="Ds" component={Ds} />
           <Stack.Screen name="AccountDetailsScreen" component={AccountDetailsScreen} />
           <Stack.Screen name="PrivacyPolicyScreen" component={PrivacyPolicyScreen} />
+          <Stack.Screen name="DoctorBookingScreen" component={DoctorBookingScreen} />
+          <Stack.Screen name="AllRecentVisits" component={AllRecentVisits} />
+          <Stack.Screen name="DocRecommendationScreen" component={DocRecommendationScreen} />
+          <Stack.Screen name="Signup" component={Signup} />
           
   
        </Stack.Navigator>

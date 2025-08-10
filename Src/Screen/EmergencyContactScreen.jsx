@@ -6,7 +6,7 @@ import {
 import Ionicons from "react-native-vector-icons/Ionicons";
 import FontAwesome from "react-native-vector-icons/FontAwesome";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
-import { collection, addDoc, getDocs, doc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { db } from "../firebaseConfig";
 import auth from '@react-native-firebase/auth'; // ✅ Android Firebase Auth
 
@@ -14,39 +14,58 @@ const saveContactToFirebase = async (userId, contact, setLoading) => {
   try {
     setLoading(true);
     const docRef = await addDoc(collection(db, `Siddhi/${userId}/emergencyContacts`), contact);
-    console.log("Contact saved to Firestore with ID:", docRef.id);
+    // console.log("Contact saved to Firestore with ID:", docRef.id);
     return docRef.id;
   } catch (error) {
-    console.error("Error saving contact:", error);
+    // console.error("Error saving contact:", error);
   } finally {
     setLoading(false);
   }
 };
 
+const updateContactInFirebase = async (userId, contactId, updatedContact, setLoading) => {
+  try {
+    setLoading(true);
+    const contactDocRef = doc(db, `Siddhi/${userId}/emergencyContacts/${contactId}`);
+    await updateDoc(contactDocRef, updatedContact);
+    // console.log("Contact updated in Firestore");
+  } catch (error) {
+    // console.error("Error updating contact:", error);
+  } finally {
+    setLoading(false);
+  }
+};
 
 const deleteContactFromFirebase = async (userId, contactId) => {
   try {
     const contactDocRef = doc(db, `Siddhi/${userId}/emergencyContacts/${contactId}`);
     await deleteDoc(contactDocRef);
-    console.log("Deleted successfully");
+    // console.log("Deleted successfully");
   } catch (error) {
-    console.error("Error deleting contact:", error);
+    // console.error("Error deleting contact:", error);
   }
 };
 
 const Emergencycontact = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false);
+  //3 modals are used in this screen
+  const [modalVisible, setModalVisible] = useState(false);  //1.onpress contact modal
+  const [addModalVisible, setAddModalVisible] = useState(false);  //2.modal to add new contact
+  const [editModalVisible, setEditModalVisible] = useState(false);  //3.modal to edit contact information
+
+  //below 3 states are for validation purpose
+  const [nameError, setNameError] = useState(''); //1
+  const [phoneError, setPhoneError] = useState(''); //2
+  const [relationError, setRelationError] = useState(''); //3
+  
   const [selectedContact, setSelectedContact] = useState(null);
-  const [addModalVisible, setAddModalVisible] = useState(false);
   const [newName, setNewName] = useState('');
   const [newPhone, setNewPhone] = useState('');
   const [newRelation, setNewRelation] = useState('');
-  const [nameError, setNameError] = useState('');
-  const [phoneError, setPhoneError] = useState('');
-  const [relationError, setRelationError] = useState('');
   const [emergencyContacts, setEmergencyContacts] = useState([]);
-
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContactId, setEditContactId] = useState(null);
+  
   const userId = "aPfMrCGlhhXDMyZWqJ0plGMflLg1"; // ✅ Authenticated user ID
   // const userId = auth().currentUser?.uid;
 
@@ -90,7 +109,7 @@ const Emergencycontact = ({ navigation }) => {
     <View style={style.Screen}>
       <View style={style.Header}>
         <TouchableOpacity style={style.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={35} color="#000" />
+          <Ionicons name="arrow-back" size={30} color="#000" />
         </TouchableOpacity>
         <Text style={style.contactstext}>Contacts</Text>
       </View>
@@ -119,17 +138,10 @@ const Emergencycontact = ({ navigation }) => {
         )}
       </View>
 
+      {/* On press contact modal  */}
       <Modal visible={modalVisible} transparent animationType="slide">
         <View style={style.modalBackground}>
           <View style={style.modalCard}>
-
-            {/* Optional Image Preview */}
-            {selectedContact?.snap && (
-              <Image
-                source={{ uri: selectedContact.snap }}
-                style={style.modalSnap}
-              />
-            )}
 
             <Text style={style.modalTitle}>{selectedContact?.name}</Text>
             <Text style={style.modalSub}>{selectedContact?.relation}</Text>
@@ -137,7 +149,7 @@ const Emergencycontact = ({ navigation }) => {
 
             <View style={style.modalButtons}>
               <TouchableOpacity
-                style={[style.modalBtn, { backgroundColor: '#1b47d2' }]}
+                style={[style.modalBtn, { backgroundColor: '#1C75BC' }]}
                 onPress={() => handleCall(selectedContact?.phone)}
               >
                 <MaterialIcons name="call" size={20} color="#fff" />
@@ -164,7 +176,15 @@ const Emergencycontact = ({ navigation }) => {
 
               <TouchableOpacity
                 style={[style.modalBtn, { backgroundColor: '#555' }]}
-                onPress={() => setModalVisible(false)}
+                onPress={() => {
+                  setEditContactId(selectedContact?.id);
+                  setNewName(selectedContact?.name);
+                  setNewPhone(selectedContact?.phone);
+                  setNewRelation(selectedContact?.relation);
+                  setIsEditing(true);
+                  setModalVisible(false);
+                  setEditModalVisible(true);
+                }}
               >
                 <MaterialIcons name="edit" size={20} color="#fff" />
                 <Text style={style.modalBtnText}>Edit</Text>
@@ -251,14 +271,20 @@ const Emergencycontact = ({ navigation }) => {
 
                   if (!isValid || !userId) return;
 
-                  const newContact = {
+                  const contactData = {
                     name: newName.trim(),
                     phone: newPhone.trim(),
                     relation: newRelation.trim(),
                   };
 
-                  await saveContactToFirebase(userId, newContact, setLoading);
+                  if (isEditing) {
+                    await updateContactInFirebase(userId, editContactId, contactData, setLoading);
+                  } else {
+                    await saveContactToFirebase(userId, contactData, setLoading);
+                  }
+
                   await fetchContactsFromFirebase(userId);
+
 
                   setAddModalVisible(false);
                   setNewName('');
@@ -267,6 +293,8 @@ const Emergencycontact = ({ navigation }) => {
                   setNameError('');
                   setPhoneError('');
                   setRelationError('');
+                  setEditContactId(null);
+                  setIsEditing(false);
                 }}
               >
                 <Ionicons name="save" size={20} color="#fff" />
@@ -276,6 +304,112 @@ const Emergencycontact = ({ navigation }) => {
               <TouchableOpacity
                 style={[style.modalBtn, { backgroundColor: '#555' }]}
                 onPress={() => setAddModalVisible(false)}
+              >
+                <Text style={style.modalBtnText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Edit Conatct Modal */}
+      <Modal visible={editModalVisible} transparent animationType="slide">
+        <View style={style.modalBackground}>
+          <View style={style.modalCard}>
+            <Text style={style.modalTitle}>Edit Contact</Text>
+
+            <TextInput
+              style={[style.input, nameError && style.errorInput]}
+              placeholder="Enter name"
+              value={newName}
+              onChangeText={(text) => {
+                setNewName(text);
+                if (text.trim()) setNameError('');
+              }}
+            />
+            {nameError ? <Text style={style.errorText}>{nameError}</Text> : null}
+
+            <TextInput
+              style={[style.input, phoneError && style.errorInput]}
+              placeholder="Enter phone number"
+              keyboardType="numeric"
+              value={newPhone}
+              onChangeText={(text) => {
+                setNewPhone(text);
+                if (text.trim()) setPhoneError('');
+              }}
+            />
+            {phoneError ? <Text style={style.errorText}>{phoneError}</Text> : null}
+
+            <TextInput
+              style={[style.input, relationError && style.errorInput]}
+              placeholder="Enter relation"
+              value={newRelation}
+              onChangeText={(text) => {
+                setNewRelation(text);
+                if (text.trim()) setRelationError('');
+              }}
+            />
+            {relationError ? <Text style={style.errorText}>{relationError}</Text> : null}
+
+            <View style={[style.modalButtons, { marginTop: 16 }]}>
+              <TouchableOpacity
+                style={[style.modalBtn, { backgroundColor: '#1b47d2' }]}
+                onPress={async () => {
+                  let isValid = true;
+                  const phoneRegex = /^[0-9]{10}$/;
+
+                  if (!newName.trim()) {
+                    setNameError('Name is required');
+                    isValid = false;
+                  } else setNameError('');
+
+                  if (!newPhone.trim()) {
+                    setPhoneError('Phone number is required');
+                    isValid = false;
+                  } else if (!phoneRegex.test(newPhone)) {
+                    setPhoneError('Enter a valid 10-digit phone number');
+                    isValid = false;
+                  } else setPhoneError('');
+
+                  if (!newRelation.trim()) {
+                    setRelationError('Relation is required');
+                    isValid = false;
+                  } else setRelationError('');
+
+                  if (!isValid || !userId) return;
+
+                  const updatedContact = {
+                    name: newName.trim(),
+                    phone: newPhone.trim(),
+                    relation: newRelation.trim(),
+                  };
+
+                  await updateContactInFirebase(userId, editContactId, updatedContact, setLoading);
+                  await fetchContactsFromFirebase(userId);
+
+                  setEditModalVisible(false);
+                  setNewName('');
+                  setNewPhone('');
+                  setNewRelation('');
+                  setNameError('');
+                  setPhoneError('');
+                  setRelationError('');
+                  setEditContactId(null);
+                  setIsEditing(false);
+                }}
+              >
+                <Ionicons name="create" size={20} color="#fff" />
+                <Text style={style.modalBtnText}>Update</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[style.modalBtn, { backgroundColor: '#555' }]}
+                onPress={() => {
+                  setEditModalVisible(false);
+                  setEditContactId(null);
+                  setIsEditing(false);
+                }}
               >
                 <Text style={style.modalBtnText}>Cancel</Text>
               </TouchableOpacity>
@@ -310,7 +444,7 @@ const style = StyleSheet.create({
   backButton: {
     position: 'absolute',
     left: 20,
-    top: '50%',
+    top: '80%',
   },
   contactsList: {
     marginTop: 10,
@@ -362,14 +496,7 @@ const style = StyleSheet.create({
     shadowRadius: 8,
   },
 
-  modalSnap: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    alignSelf: 'center',
-    marginBottom: 16,
-    resizeMode: 'cover',
-  },
+
 
   modalTitle: {
     fontSize: 22,
@@ -388,7 +515,7 @@ const style = StyleSheet.create({
   modalPhone: {
     fontSize: 16,
     textAlign: 'center',
-    color: '#1b47d2',
+    color: '#1C75BC',
     marginTop: 6,
     marginBottom: 16,
   },
@@ -427,7 +554,7 @@ const style = StyleSheet.create({
     position: 'absolute',
     bottom: 30,
     right: 30,
-    backgroundColor: '#1b47d2',
+    backgroundColor: '#1C75BC',
     width: 60,
     height: 60,
     borderRadius: 30,
@@ -456,46 +583,46 @@ const style = StyleSheet.create({
     marginLeft: 4,
   },
   verticalStrip: {
-  width: 5,
-  height: '80%',
-  backgroundColor: '#007BFF', // Blue color
-  borderRadius: 2,
-  marginRight: 10,
-  alignSelf: 'center',
-},
+    width: 5,
+    height: '80%',
+    backgroundColor: '#4D94CC', // Blue color
+    borderRadius: 2,
+    marginRight: 10,
+    alignSelf: 'center',
+  },
 
-contactRow: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  backgroundColor: '#fff',
-  padding: 12,
-  borderRadius: 10,
-  marginVertical: 6,
-  elevation: 3, // subtle shadow for Android
-  shadowColor: '#000', // iOS shadow
-  shadowOffset: { width: 0, height: 1 },
-  shadowOpacity: 0.1,
-  shadowRadius: 2,
-},
+  contactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    padding: 12,
+    borderRadius: 10,
+    marginVertical: 6,
+    elevation: 3, // subtle shadow for Android
+    shadowColor: '#000', // iOS shadow
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
 
-contactavatar: {
-  marginRight: 10,
-},
+  contactavatar: {
+    marginRight: 10,
+  },
 
-contactDetails: {
-  flex: 1,
-},
+  contactDetails: {
+    flex: 1,
+  },
 
-contactName: {
-  fontSize: 16,
-  fontWeight: 'bold',
-  color: '#333',
-},
+  contactName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
 
-cardValue: {
-  fontSize: 14,
-  color: '#555',
-},
+  cardValue: {
+    fontSize: 14,
+    color: '#555',
+  },
 
 });
 

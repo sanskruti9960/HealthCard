@@ -10,7 +10,8 @@ import {
   Alert,
   Button,
   TextInput,
-  
+  ToastAndroid, // for warning mssg
+  Platform
 } from "react-native";
 import ImageCropPicker from 'react-native-image-crop-picker';
 import Feather from "react-native-vector-icons/Feather";
@@ -19,7 +20,8 @@ import FontAwesome6 from "react-native-vector-icons/FontAwesome6";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import LogoutModal from '../Components/LogoutModal';
 import { db } from "../firebaseConfig";
-import {getDoc, doc, setDoc } from 'firebase/firestore';
+import {getDoc, doc, setDoc, deleteField, updateDoc, } from 'firebase/firestore';
+
   const ProfileScreen = ({ navigation }) => {
   const [isLogoutVisible, setLogoutVisible] = useState(false);
   const [profileImage, setProfileImage] = useState('');
@@ -27,7 +29,7 @@ import {getDoc, doc, setDoc } from 'firebase/firestore';
   const [isEditingName, setIsEditingName] = useState(false);
   const [fullName, setFullName] = useState('');
 
-  const userId = 'aPfMrCGlhhXDMyZWqJ0plGMflLg1'; // Replace with dynamic ID if needed
+  const userId = 'ehZZomSJUjdldgJFJ5hCLVYMqkA3'; // Replace with dynamic ID if needed
   // const userId = auth().currentUser?.uid;
 
   const handleImagePress = () => {
@@ -35,23 +37,92 @@ import {getDoc, doc, setDoc } from 'firebase/firestore';
   };
 
   const selectFromGallery = async () => {
-    try {
-      const image = await ImageCropPicker.openPicker({
-        width: 300,
-        height: 300,
-        cropping: true,
-        cropperCircleOverlay: true,
-        compressImageQuality: 0.8,
-      });
-      if (image?.path) {
-        console.log('Selected Image:', image.path);
-        setProfileImage(image.path);
-        setModalVisible(false);
-      }
-    } catch (error) {
-      console.log('Gallery cancelled or failed:', error);
+  try {
+    const image = await ImageCropPicker.openPicker({
+      width: 300,
+      height: 300,
+      cropping: true,
+      cropperCircleOverlay: true,
+      compressImageQuality: 0.8,
+      includeBase64: true, 
+    });
+
+    if (image?.data) {
+      const base64data = `data:${image.mime};base64,${image.data}`;
+
+      // Save immediately to Firestore
+      await saveProfileImageToFirestore(base64data);
+
+      // Update state so it shows instantly
+      setProfileImage(base64data);
+
+      setModalVisible(false);
     }
-  };
+  } catch (error) {
+    console.log('Gallery cancelled or failed:', error);
+  }
+};
+
+//saving pfp to firestore
+const saveProfileImageToFirestore = async (base64Image) => {
+  try {
+    await setDoc(doc(db, "Siddhi", userId), {
+      profileImageBase64: base64Image
+    }, { merge: true });
+showWarning("⚠️ Profile image updated ");
+    
+  } catch (error) {
+   
+  }
+};
+// fetcching pfp to firestore
+const fetchProfileFromFirestore = async () => {
+  try {
+    const docRef = doc(db, "Siddhi", userId);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      if (data.profileImageBase64) {
+        setProfileImage(data.profileImageBase64);
+      }
+    } else {
+    }
+  } catch (error) {
+  
+  }
+};
+useEffect(() => {
+  fetchProfileFromFirestore();
+}, []);
+
+// removing pfp from firestore
+const removeProfileImage = async (userId) => {
+  try {
+    await updateDoc(doc(db, "Siddhi", userId), {
+      profileImageBase64: deleteField()
+    });
+
+    setProfileImage(""); // instantly remove from UI
+    showWarning("⚠️ Profile image removed");
+  } catch (error) {
+    console.error("Error removing profile image:", error);
+  }
+};
+
+//warning after uploding the image
+const showWarning = (message) => {
+  if (Platform.OS === 'android') {
+    ToastAndroid.showWithGravity(
+      message,
+      ToastAndroid.LONG,
+      ToastAndroid.TOP
+    );
+  } else {
+    console.warn(message); // For iOS fallback
+  }
+};
+
 
   useEffect(() => {
     const fetchUserName = async () => {
@@ -63,36 +134,41 @@ import {getDoc, doc, setDoc } from 'firebase/firestore';
           const userData = docSnap.data();
           setFullName(userData.fullName); //Set the name to state
         } else {
-          console.log('No such user!');
+          // console.log('No such user!');
         }
       } catch (error) {
-        console.error('Error getting user data:', error);
+        // console.error('Error getting user data:', error);
       }
     };
     fetchUserName();
   }, []);
 
+  
+
   return (
     <View style={style.Screen}>
 
-      <StatusBar barStyle="dark-content" backgroundColor="#f0f0f0" />
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
-      <View style={{ flexDirection: 'row' }}>
-        <TouchableOpacity
-          style={{ postion: 'static' }}
-          onPress={() => Alert.alert('Back to Home screen')}
-        >
-          <Ionicons
-            style={style.backIcon}
-            name={"chevron-back"}
-            size={35}
-            color="#000"
-          />
-        </TouchableOpacity>
-        <Text style={{ marginTop: 13, padding: 5, fontSize: 22, fontWeight: 600, textAlign: 'center' }}>
-          Settings
-        </Text>
-      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', height: 50 }}>
+  {/* Back Button */}
+  <TouchableOpacity
+    style={{ position: 'absolute', left: 0 }}
+    onPress={() => Alert.alert('Back to Home screen')}
+  >
+    <Ionicons
+      style={style.backIcon}
+      name={"arrow-back"}
+      size={30}
+      color="#000"
+    />
+  </TouchableOpacity>
+
+  {/* Title */}
+  <Text style={{ flex: 1, textAlign: 'center', fontSize: 22, fontWeight: '600' }}>
+    Profile
+  </Text>
+</View>
 
       <View style={style.cardWrapper}>
         <View style={style.bodySection}>
@@ -149,7 +225,7 @@ import {getDoc, doc, setDoc } from 'firebase/firestore';
       <View style={{ paddingHorizontal: 10 }}>
         <TouchableOpacity style={style.settingsSection}
           onPress={() => navigation.navigate('AccountDetailsScreen')}>
-          <MaterialIcons name="account-circle" size={20} color="#000" style={{ marginLeft: 8 }} />
+          <MaterialIcons name="account-circle" size={20} color="#7FBCE5" style={{ marginLeft: 8 }} />
           <Text style={style.SettingsText}>Account Details</Text>
         </TouchableOpacity>
       </View>
@@ -157,7 +233,7 @@ import {getDoc, doc, setDoc } from 'firebase/firestore';
       <View style={{ paddingHorizontal: 10 }}>
         <TouchableOpacity style={style.settingsSection}
           onPress={() => navigation.navigate('QRScreen')}>
-          <FontAwesome6 name="qrcode" size={19} color="#000" style={{ marginLeft: 8 }} />
+          <FontAwesome6 name="qrcode" size={19} color="#7FBCE5" style={{ marginLeft: 8 }} />
           <Text style={style.SettingsText}>QR Code Preview</Text>
         </TouchableOpacity>
       </View>
@@ -165,7 +241,7 @@ import {getDoc, doc, setDoc } from 'firebase/firestore';
       <View style={{ paddingHorizontal: 10 }}>
         <TouchableOpacity style={style.settingsSection}
           onPress={() => navigation.navigate('ChangePasswordScreen')}>
-          <MaterialIcons name="edit" size={19} color="#000" style={{ marginLeft: 8 }} />
+          <MaterialIcons name="edit" size={19} color="#7FBCE5" style={{ marginLeft: 8 }} />
           <Text style={style.SettingsText}>Change Password</Text>
         </TouchableOpacity>
       </View>
@@ -173,7 +249,7 @@ import {getDoc, doc, setDoc } from 'firebase/firestore';
       <View style={{ paddingHorizontal: 10 }}>
         <TouchableOpacity style={style.settingsSection}
           onPress={() => Alert.alert('Contact Us information')}>
-          <MaterialIcons name="mail" size={19} color="#000" style={{ marginLeft: 8 }} />
+          <MaterialIcons name="mail" size={19} color="#7FBCE5" style={{ marginLeft: 8 }} />
           <Text style={style.SettingsText}>Contact Us</Text>
         </TouchableOpacity>
       </View>
@@ -183,13 +259,9 @@ import {getDoc, doc, setDoc } from 'firebase/firestore';
           style={style.settingsSection}
           onPress={() => navigation.navigate('PrivacyPolicyScreen')}
         >
-          <MaterialIcons name="privacy-tip" size={19} color="#000" style={{ marginLeft: 8 }} />
+          <MaterialIcons name="privacy-tip" size={19} color="#7FBCE5" style={{ marginLeft: 8 }} />
           <Text style={style.SettingsText}>Privacy Policy</Text>
         </TouchableOpacity>
-        {/* <PrivacyPolicyModal
-          visible={isPrivacyVisible}
-          onClose={() => setPrivacyVisible(false)}
-        /> */}
       </View>
 
       <View style={{ paddingHorizontal: 10 }}>
@@ -204,14 +276,18 @@ import {getDoc, doc, setDoc } from 'firebase/firestore';
       </View>
 
 {/* temp buttons to see contact screen and dashboard  */}
-{/* <Button
+<Button
   title="cnt screen"
   onPress={() => navigation.navigate('EmergencyContactScreen')}
 />
 <Button
-  title="Dashborad"
-  onPress={() => navigation.navigate('Dashboard')}
-/> */}
+  title="DoctorSuggestionScreen"
+  onPress={() => navigation.navigate('DoctorSuggestionScreen')}
+/>
+<Button
+  title="Signup"
+  onPress={() => navigation.navigate('Signup')}
+/>
 
 
       {/* Modal pop up for adding and removing image */}
@@ -235,7 +311,7 @@ import {getDoc, doc, setDoc } from 'firebase/firestore';
             <TouchableOpacity
               style={style.modalButton}
               onPress={async () => {
-                // await removeProfileImage(userId);
+                await removeProfileImage(userId);
                 setProfileImage(); // Also remove it from state so UI updates
                 setModalVisible(false);
               }}
@@ -263,12 +339,12 @@ const style = StyleSheet.create({
   },
   backIcon: {
     paddingVertical: 15,
-    paddingHorizontal: 10,
+    paddingHorizontal: 20,
   },
   cardWrapper: {
-    backgroundColor: '#fff',
+    backgroundColor: '#F8F8F9',
     marginHorizontal: 16,
-    marginTop: 16,
+    marginTop: 25,
     borderRadius: 16,
     elevation: 1,
   },
@@ -305,7 +381,7 @@ const style = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 10,
-    backgroundColor: '#fff',
+    backgroundColor: '#F8F8F9',
     borderRadius: 20,
     margin: 10,
     marginBottom: 0,
