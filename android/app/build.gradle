@@ -79,9 +79,7 @@ android {
     compileSdk rootProject.ext.compileSdkVersion
 
     namespace "com.internpro"
-        buildFeatures {
-        viewBinding true
-    }
+   
     defaultConfig {
         applicationId "com.internpro"
         minSdkVersion rootProject.ext.minSdkVersion
