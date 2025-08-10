@@ -11,7 +11,7 @@ const HomeStyle = StyleSheet.create({
   },
   profile_icon: {
     position: "absolute",
-    top: 1,
+    top: -11,
     right: 0,
     marginRight: 2
   },
@@ -20,7 +20,7 @@ const HomeStyle = StyleSheet.create({
   },
   Topbar: {
     flexDirection: "row",
-    margin: 10,
+    margin: 12,
     
   },
 
