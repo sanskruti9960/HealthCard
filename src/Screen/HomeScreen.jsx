@@ -1,5 +1,5 @@
-import { Text, View, TouchableOpacity, Image, ScrollView } from 'react-native'
-import React, { useState } from 'react'
+import { Text, View, TouchableOpacity, FlatList, Dimensions, Image, ScrollView, ActivityIndicator } from 'react-native'
+import React, { useState, useRef, useEffect } from 'react'
 import Ionicons from "react-native-vector-icons/Ionicons"
 import MaterialIcons from "react-native-vector-icons/MaterialIcons"
 import FontAwesome5 from "react-native-vector-icons/FontAwesome5"
@@ -7,9 +7,32 @@ import HomeStyle from "../../styles/HomeStyle"
 import ActivityCard from "./ActivityCard"
 import Dailycheckout from "../compoenents/Dailycheckout"
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
-// import Svg, { Path } from 'react-native-svg'
+import Svg, { Path } from 'react-native-svg'
+import { doc, getDoc } from 'firebase/firestore';
+import auth from '@react-native-firebase/auth';
+import { db } from '../firebaseConfig'; // your firebase config file
+const { width } = Dimensions.get('window');
 
-const HomeScreen = ({navigation}) => {
+const cards = [
+  {
+    id: '1',
+    title: 'Get the Best Medical Services',
+    subtitle: 'We provide best quality medical Services without further cost',
+    bgColor: '#d6f0fa',
+    borderColor: '#0d6e9c',
+    image: require('../img/doc1.png'),
+    onPress: () => console.log('Card 1 clicked'),
+  },
+  {
+    id: '2',
+    title: 'Book Your Doctor Instantly',
+    subtitle: 'Find and book the best doctors Now in seconds',
+    bgColor: '#F3E8FF',  // pastel purple background
+    borderColor: '#8A76D1', // deep purple border
+    image: require('../img/doc1.png'),
+  },
+];
+const HomeScreen = ({ navigation }) => {
   const Insurance = () => {
     navigation.navigate('MultiplePolicy');
   };
@@ -25,11 +48,95 @@ const HomeScreen = ({navigation}) => {
   const medrepo = () => {
     navigation.navigate('MedicalReportPreview');
   };
- 
+
   const profiles = () => {
     navigation.navigate('ProfileScreen');
   };
- 
+  // ===============for database of name , prfileimage =================
+  const [fullName, setFullName] = useState('');
+  const user = auth().currentUser;
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const userId = user.uid;
+      try {
+        const docRef = doc(db, 'Siddhi', userId);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          const userData = docSnap.data();
+          setFullName(userData.fullName || '');
+        } else {
+          console.log('No such user!');
+        }
+      } catch (error) {
+        console.error('Error getting user data:', error);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+
+
+  // =====================================================
+  const flatListRef = useRef(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  // Auto scroll effect
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const nextIndex = (currentIndex + 1) % cards.length;
+      flatListRef.current?.scrollToIndex({ index: nextIndex, animated: true });
+      setCurrentIndex(nextIndex);
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [currentIndex]);
+
+  const renderItem = ({ item }) => (
+    <TouchableOpacity
+      onPress={docnav}
+      style={{
+        backgroundColor: item.bgColor,
+        paddingLeft: 10,
+        flexDirection: 'row',
+        marginHorizontal: 10,
+        borderRadius: 25,
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        borderLeftWidth: 5,
+        borderLeftColor: item.borderColor,
+        paddingVertical: 60,
+        width: width * 0.9, overflow: 'hidden',
+      }}
+    >
+      {/* Text section */}
+      <View style={{ flexDirection: 'column', width: '55%' }}>
+        <Text style={{ color: item.borderColor, fontWeight: 'bold', fontSize: 20, marginBottom: 5 }}>
+          {item.title}
+        </Text>
+        <Text style={{ color: 'gray', fontSize: 10 }}>{item.subtitle}</Text>
+      </View>
+
+      {/* Image section */}
+      <View style={{ alignItems: 'center', justifyContent: 'center', flex: 1 }}>
+        <Image
+          source={item.image}
+          style={{
+            height: '250%',
+            width: '120%',
+            resizeMode: 'contain',
+            position: 'absolute',
+            bottom: -105,       // stick to bottom
+            right: 5,
+          }}
+        />
+      </View>
+    </TouchableOpacity>
+
+  );
+  // ==============================================
   return (
     // main container
     <View style={HomeStyle.main}>
@@ -37,19 +144,19 @@ const HomeScreen = ({navigation}) => {
       <View style={HomeStyle.Topbar}>
 
         <View style={HomeStyle.profile_name}>
-          <Text style={{ fontWeight: "bold", fontSize: 17 }}>Hello!</Text>
-          <Text style={{ fontWeight: "bold", fontSize: 20 }}>Sanskruti Bhavsar</Text>
-    <TouchableOpacity
-    style={HomeStyle.profile_icon}
-     onPress={()=>profiles()} >
-          <Ionicons name="person-circle" size={45} color="skyblue"
-             />
-            </TouchableOpacity>
+          <TouchableOpacity
+            style={HomeStyle.profile_icon}
+            onPress={() => profiles()} >
+            <Ionicons name="person-circle" size={45} color="skyblue"
+            />
+          </TouchableOpacity>
+          <Text style={{ fontWeight: "500", fontSize: 19, marginLeft: 10, }}>{`👋 Hello, ${fullName}cutiee `}</Text>
+
         </View>
 
       </View>
-      <ScrollView style={HomeStyle.main} contentContainerStyle={{ paddingBottom: 20 }}
-      decelerationRate='fast'>
+      <ScrollView style={HomeStyle.main} contentContainerStyle={{ paddingBottom: 80 }}
+        decelerationRate='fast'>
 
         {/* stpes progress bar */}
 
@@ -128,14 +235,14 @@ const HomeScreen = ({navigation}) => {
           </View>
         </View>
 
-        <Text style={{ marginTop: 20, fontSize: 20, marginLeft: 10, fontWeight: "bold" }}>service</Text>
+        <Text style={{ marginTop: 20, fontSize: 23, marginLeft: 10, fontWeight: "bold" }}>Service</Text>
 
         {/* four icons  */}
         <View style={HomeStyle.facility}>
 
           <View style={HomeStyle.fac_singleIcon}>
             <TouchableOpacity style={HomeStyle.fac_iconCnt}
-            onPress={()=>Emergencynav()}>
+              onPress={() => Emergencynav()}>
               <MaterialIcons name="add-call" size={30} color="#0d6e9c" />
             </TouchableOpacity>
             <Text style={{ textAlign: 'center' }}>Emergency{"\n"} Contact</Text>
@@ -144,7 +251,7 @@ const HomeScreen = ({navigation}) => {
 
           <View style={HomeStyle.fac_singleIcon}>
             <TouchableOpacity style={HomeStyle.fac_iconCode}
-            onPress={()=>qrnav()}>
+              onPress={() => qrnav()}>
               <Ionicons name="qr-code-sharp" size={30} color="#E6A72F" />
             </TouchableOpacity>
             <Text style={{ textAlign: 'center' }}>QR {"\n"}Code</Text>
@@ -152,14 +259,14 @@ const HomeScreen = ({navigation}) => {
 
           <View style={HomeStyle.fac_singleIcon}>
             <TouchableOpacity style={HomeStyle.fac_iconRep}
-            onPress={()=>medrepo()}>
+              onPress={() => medrepo()}>
               <MaterialIcons name="medical-information" size={30} color="#0DBAC6" />
             </TouchableOpacity>
             <Text style={{ textAlign: 'center' }}>Medical {"\n"}Reports</Text>
           </View>
 
           <View style={HomeStyle.fac_singleIcon}>
-            <TouchableOpacity style={HomeStyle.fac_iconId} onPress={()=>Insurance()}>
+            <TouchableOpacity style={HomeStyle.fac_iconId} onPress={() => Insurance()}>
               <FontAwesome5 name="id-card" size={28} color="#A9445B" />
             </TouchableOpacity>
             <Text style={{ textAlign: 'center' }}>Insurance{"\n"} ID</Text>
@@ -167,143 +274,81 @@ const HomeScreen = ({navigation}) => {
 
         </View>
 
-        {/* doctor container */}
-        <TouchableOpacity 
-        onPress={()=>docnav()}
-        style={{
-          backgroundColor: '#d6f0fa', paddingLeft: 10, flexDirection: 'row', margin: 10,
-          borderRadius: 25, alignItems: 'center', justifyContent: 'space-between', borderLeftWidth: 5,
-          borderLeftColor: '#0d6e9c', paddingVertical: 55
-        }}>
-
-          <View style={{ flexDirection: 'column', }}>
-            <Text style={{ color: "#0d6e9c", fontWeight: 'bold', fontSize: 20, marginBottom: 5 }}>Get the Best {"\n"}Medical Services</Text>
-            <Text style={{ color: "gray", fontSize: 10 }}>we provide best quality medical {'\n'} Services without further cost</Text>
-          </View>
-
-          <Image
-            source={require('../img/doc1.png')}
-            style={{
-              flex: 1,
-              height: '230%',
-              width: '170%',
-              resizeMode: 'contain',
-            }}
-          />
-
-        </TouchableOpacity>
-
-
         {/* activity information container */}
-
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 20, paddingHorizontal: 11 }}>
-          <Text style={{ fontSize: 20, fontWeight: 'bold' }}>Activity</Text>
-
-          <TouchableOpacity>
-            <Text style={{ fontSize: 15, color: '#007AFF' }}>Record</Text>
-          </TouchableOpacity>
+        <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 13 }}>
+          <Text style={{ fontSize: 23, fontWeight: 'bold', marginBottom: 10, fontFamily: "Roboto" }}>Activity</Text>
         </View>
         <ActivityCard />
 
+        {/* doctor container */}
+        <FlatList
+          ref={flatListRef}
+          data={cards}
+          renderItem={renderItem}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          keyExtractor={(item) => item.id}
+        />
+
+
 
         {/* Dailycheckout 4 cards */}
-        <Text style={{ fontSize: 20, fontWeight: 'bold',marginLeft:10 }}>Vital Health Stats</Text>
+        <Text style={{ fontSize: 23, fontWeight: 'bold', marginLeft: 10, marginTop: 25, }}>Vital Health Stats</Text>
         <View style={HomeStyle.container}>
           <View style={HomeStyle.row}>
+
             {/* heart rate card */}
             <Dailycheckout
+              onPress={() => navigation.navigate('MeasureScreen')}
               title="Heart Rate"
-              value="72"
-              unit="bpm"
+              subtitle="Check your BPM"
               backgroundColor='#F8E7EC'
-            >
-              <Image
-                source={require('../img/heart.png')}
-                style={{
-
-                  width: 120,
-                  height: 120,
-                  position: 'absolute',
-                  bottom: 10,
-                  right: 10,
-                  opacity: 0.9,
-                  marginBottom: -27
-                }}
-                resizeMode='contain'
-              />
-            </Dailycheckout>
+              imageSource={require('../img/heart.png')}
+              imageStyle={{
+                width: 120, height: 120,
+                opacity: 0.9,
+              }} />
 
             {/* blood pressure card */}
             <Dailycheckout
+              onPress={() => navigation.navigate('Bloodpress')}
               title="BP Tracker"
-              value="120/80"
-              unit="mmHg"
-              backgroundColor='#E3E6FA'
-            >    <Image
-                source={require('../img/pressure.png')}
-                style={{
-
-                  width: 90,
-                  height: 90,
-                  position: 'absolute',
-                  bottom: 10,
-                  right: 10,
-                  opacity: 0.9,
-                  marginBottom: -10
-                }}
-                resizeMode='contain'
-              />
-            </Dailycheckout>
-
+              subtitle="Track your heart’s pressure"
+              backgroundColor='#d6f0fa'
+              imageSource={require('../img/pressure.png')}
+              imageStyle={{
+                width: 110, height: 110, marginBottom: 5,
+                opacity: 0.9,
+              }}
+            />
           </View>
-          <View style={HomeStyle.row}>
 
+          <View style={HomeStyle.row}>
             {/* blood  oxygen card */}
             <Dailycheckout
+              onPress={() => navigation.navigate('Bloodoxy')}
               title="Blood Oxygen"
-              value="90%"
-              unit="SpO₂"
+              subtitle="See how well you breathe"
               backgroundColor='#EAEAFB'
-
-            > <Image
-                source={{ uri: 'https://static.vecteezy.com/system/resources/previews/026/112/390/non_2x/blood-donation-concept-blood-test-or-analysis-clinical-laboratory-examination-tiny-volunteers-with-nurses-donating-blood-in-hospital-health-care-modern-flat-cartoon-style-illustration-vector.jpg' }}
-                style={{
-
-                  width: 100,
-                  height: 100,
-                  position: 'absolute',
-                  bottom: 10,
-                  right: 10,
-                  opacity: 0.9,
-                  marginBottom: -18
-
-                }}
-                resizeMode='contain'
-              />
-            </Dailycheckout>
+              imageSource={require('../img/oxy.png')}
+              imageStyle={{
+                width: 110, height: 110,
+                opacity: 0.9,
+              }} />
 
             {/* water card   */}
             <Dailycheckout
+              onPress={() => navigation.navigate('Waterintake')}
+
               title="Water Intake"
-              value="1.5"
-              unit="L"
-              backgroundColor='#d6f0fa'
-
-            > <Image
-                source={require('../img/water.jpg')}
-                style={{
-
-                  width: 100,
-                  height: 100,
-                  position: 'absolute',
-                  bottom: 10,
-                  right: 10,
-                  opacity: 0.9,
-                  marginBottom: -13
-                }}
-                resizeMode='contain'
-              />
-            </Dailycheckout>
+              subtitle="Log your daily water"
+              backgroundColor='#E3E6FA'
+              imageSource={require('../img/water.png')}
+              imageStyle={{
+                width: 110, height: 110,
+                opacity: 0.9,
+              }} />
 
           </View>
         </View>

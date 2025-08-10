@@ -11,6 +11,8 @@ import ReminderSetupScreen from './src/Screen/ReminderSetupScreen';
 import PersonalDetails from './src/Screens/PersonalDetails';
 import EmergencyContact from './src/Screens/EmergencyContact';
 import MedicalInfo from './src/Screens/MedicalInfo';
+import Maintab from './src/Screen/Maintab.jsx';
+
 // sarthak
 import DoctorSuggestionScreen from './src/Screen/DoctorSuggestionScreen'
 import EmergencyContactScreen from './src/Screen/EmergencyContactScreen'
@@ -35,6 +37,7 @@ import { db } from "./src/firebaseConfig"; // adjust path as needed
 import { Provider as PaperProvider } from 'react-native-paper';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
 const Stack = createNativeStackNavigator();
 
 const App = () => {
@@ -53,7 +56,7 @@ const App = () => {
  
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Onboard">
+      <Stack.Navigator initialRouteName="Onboard" screenOptions={{ headerShown: false }}>
         <Stack.Screen name="HomeScreen" component={HomeScreen} options={{ headerShown: false }} />
         <Stack.Screen name="MedicationCard" component={MedicationCard} options={{ headerShown: false }} />
         <Stack.Screen name="Setschedulepg" component={Setschedulepg} options={{ headerShown: false }} />
@@ -63,7 +66,8 @@ const App = () => {
         <Stack.Screen name="InsuranceSrc1" component={InsuranceSrc1} options={{ headerShown: false }} />
         <Stack.Screen name="InsurancePreview" component={InsurancePreview} options={{ headerShown: false }} />
         <Stack.Screen name="MedicalInfo" component={MedicalInfo} options={{ headerShown: false }} />
-        {/* PalakScreens */}
+        <Stack.Screen name="Maintab" component={Maintab} options={{headerShown:false}}/>      
+        {/* // PalakScreens */}
          <Stack.Screen name="MedicalReportPreview" component={MedicalReportPreview} options={{ headerShown: false }} />
          <Stack.Screen name="Terms" component={Terms} options={{ headerShown: false }} />
          <Stack.Screen name="TermsSrc2" component={TermsSrc2} options={{ headerShown: false }} />

@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { firestore } from './firechifile/firebaseConfig';
+import {firestore} from './firechifile/firebaseConfig'; // Adjust the import path as needed
 
 const OtpVerification = () => {
   const route = useRoute();

@@ -116,7 +116,7 @@ export default function BloodOxy({ navigation }) {
 
         <TouchableOpacity
           style={[styles.button, { backgroundColor: '#D32F2F' }]}
-          onPress={() => navigation.navigate('HomeScreen')}
+          onPress={() => navigation.navigate('MainTab')}
         >
           <Text style={styles.buttonText}>Cancel</Text>
         </TouchableOpacity>

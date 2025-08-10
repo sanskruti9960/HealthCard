@@ -11,7 +11,7 @@ import LottieView from 'lottie-react-native';
 import Torch from 'react-native-torch';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
-export default function BloodPressureScreen() {
+export default function BloodPressureScreen({navigation}) {
   const [hasPermission, setHasPermission] = useState(false);
   const [isMeasuring, setIsMeasuring] = useState(true);
   const [result, setResult] = useState(null);
@@ -50,7 +50,7 @@ export default function BloodPressureScreen() {
 
         setResult({ systolic, diastolic, status });
         setIsMeasuring(false);
-      }, 40000);
+      }, 15000);
 
       return () => {
         Torch.switchState(false);
@@ -122,7 +122,7 @@ export default function BloodPressureScreen() {
 
   <TouchableOpacity
     style={[styles.button, { backgroundColor: '#E53935' }]}
-    onPress={() => navigation.navigate('Home')}
+    onPress={() => navigation.navigate('MainTab')}
   >
     <Text style={[styles.buttonText, { color: '#fff' }]}>Cancel</Text>
   </TouchableOpacity>

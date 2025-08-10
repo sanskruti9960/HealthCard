@@ -42,7 +42,7 @@ export default function MeasureScreen({ navigation }) {
         setBpm(fake);
         setIsMeasuring(false);
         Torch.switchState(false); // turn torch OFF after measuring
-      }, 10000);
+      }, 15000);
 
       return () => {
         Torch.switchState(false); // always turn off if user navigates away
