@@ -1,139 +1,127 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar, RefreshControl } from 'react-native';
-import { Card, Avatar } from 'react-native-paper';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar, RefreshControl, Alert } from 'react-native';
+import { Card } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import LinearGradient from 'react-native-linear-gradient';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import FirestoreService, { USER_DATA_TYPES } from '../Services/FirestoreService';
 
 const InsurancePreview = ({ navigation, route }) => {
-  const { formState } = route.params; // Get the passed form data
+  const [userId, setUserId] = useState(null);
+  const [formData, setFormData] = useState(route.params?.formState || {});
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
   
-  const onRefresh = async () => {
-    setRefreshing(true);
-    // Simulate refresh delay
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 1000);
-  };
-  
-  // Only save if not coming from a save operation
-  useEffect(() => {
-    if (!route.params?.skipSave) {
-      const savePolicy = async () => {
-        try {
-          const existingPoliciesJSON = await AsyncStorage.getItem('insurancePolicies');
-          let policies = existingPoliciesJSON ? JSON.parse(existingPoliciesJSON) : [];
-          
-          const policyObject = {
-            id: route.params?.policyId || Date.now(),
-            name: formState.policyHolderName || 'Policy Holder',
-            policyNumber: formState.policyNumber || 'Unknown',
-            insuranceType: formState.policyType || 'Insurance Policy',
-            formState: formState
-          };
-          
-          const existingIndex = policies.findIndex(p => p.id === policyObject.id);
-          if (existingIndex >= 0) {
-            policies[existingIndex] = policyObject;
-          } else {
-            policies.push(policyObject);
-          }
-          
-          await AsyncStorage.setItem('insurancePolicies', JSON.stringify(policies));
-        } catch (error) {
-          console.log('Error saving policy:', error);
-        }
-      };
-      
-      savePolicy();
+  const initializeAndLoadData = useCallback(async () => {
+    try {
+      const id = await FirestoreService.getUserId();
+      setUserId(id);
+      await loadInsuranceData(id);
+    } catch (error) {
+     console.log('Error initializing:', error);
+      if (route.params?.formState) {
+        setFormData(route.params.formState);
+      }
+    } finally {
+      setLoading(false);
     }
-  }, [formState, route.params?.skipSave, route.params?.policyId]);
+  }, [route.params?.formState]);
 
-  const handleBack = () => {
+  const loadInsuranceData = useCallback(async (id) => {
+    if (!id) return;
+    
+    try {
+      if (route.params?.formState) {
+        setFormData(route.params.formState);
+        console.log('Loaded policy data from params');
+      } else {
+        setFormData({});
+      }
+    } catch (error) {
+      console.log('Error loading insurance data:', error);
+      setFormData({});
+    }
+  }, [route.params?.formState]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    if (userId) {
+      await loadInsuranceData(userId);
+    }
+    setRefreshing(false);
+  }, [userId, loadInsuranceData]);
+
+  useEffect(() => {
+    initializeAndLoadData();
+  }, [initializeAndLoadData]);
+  
+
+
+ const handleBack = () => {
     navigation.navigate('MultiplePolicy');
   };
   return (
     <View style={styles.viewStyle}>
-      <StatusBar backgroundColor="#0A66C2" barStyle="light-content" />
-      <LinearGradient colors={['#0A66C2', '#0A4D92']} style={styles.headerGradient}>
-        <View style={styles.headerContainer}>
-          <TouchableOpacity style={styles.btnStyle} onPress={handleBack}>
-            <Icon name="arrow-back" size={24} color="#FFF" />
-          </TouchableOpacity>
-          <Text style={styles.header}>Insurance Details</Text>
-          <TouchableOpacity
-            style={styles.editButton}
-            onPress={() => {
-              navigation.navigate('InsuranceSrc1', {
-                formState,
-                fromPreview: true,
-                policyId: route.params?.policyId,
-                isEditable: true,
-              });
-            }}
-          >
-            <Icon name="edit" size={20} color="#FFF" />
-            <Text style={styles.editButtonText}>Edit</Text>
-          </TouchableOpacity>
-        </View>
-      </LinearGradient>
-
+      <StatusBar backgroundColor="#F8FAFC" barStyle="dark-content" />
       <ScrollView 
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={['#0A66C2']}
-            tintColor="#0A66C2"
-          />
+            colors={['#1C75BC']}
+           tintColor="#1C75BC"
+         />
         }
+        style={styles.scrollContainer}
       >
-        <View style={styles.avatarContainer}>
-          <Avatar.Icon 
-            size={80} 
-            icon="shield" 
-            color="#FFF"
-            style={styles.avatar}
-          />
-          <Text style={styles.cardTitle}>Health Insurance Card</Text>
-          <Text style={styles.cardSubtitle}>Policy Details</Text>
+        <View style={styles.heroContainer}>
+          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+            <Icon name="arrow-back" size={24} color="#2E3A59" />
+          </TouchableOpacity>
+            
+          <View style={styles.iconWrapper}>
+            <MaterialCommunityIcons name="shield-account" size={60} color="#1C75BC" />
+          </View>
+          <Text style={styles.heroTitle}>Health Insurance Card</Text>
+          <Text style={styles.heroSubtitle}>Policy Details</Text>
         </View>
 
         <Card style={styles.cardStyle} elevation={4}>
           <Card.Content>
             <View style={styles.container}>
-              {getOrderedFields(formState).map(([key, value], index) => (
-                <View key={key} style={[styles.dataRow, index % 2 === 0 ? styles.evenRow : null]}>
-                  <Text style={styles.label}>{formatKey(key)}</Text>
-                  <Text style={styles.value}>{value}</Text>
-                </View>
-              ))}
+              {loading ? (
+                <Text style={styles.loadingText}>Loading insurance data...</Text>
+              ) : (
+                getOrderedFields(formData).map(([key, value, isEmpty], index) => (
+                  <View key={key} style={[styles.dataRow, index % 2 === 0 ? styles.evenRow : null]}>
+                    <Text style={styles.label}>{formatKey(key)}</Text>
+                    <Text style={[styles.value, isEmpty && styles.noDataText]}>{value}</Text>
+                  </View>
+                ))
+              )}
             </View>
           </Card.Content>
         </Card>
         <View style={styles.buttonContainer}>
-          
-          
           <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={() => navigation.navigate('InsuranceSrc1', { isNewPolicy: true })}
+            style={styles.editButton}
+            onPress={() => {
+              navigation.navigate('InsuranceSrc1', {
+                policyData: formData,
+                createNew: false
+              });
+            }}
           >
-           
-              <Icon name="add" size={20} color="#0A66C2" />
-              <Text style={styles.buttonText}>New Insurance</Text>
-            
+            <Icon name="edit" size={24} color="#1C75BC" />
+            <Text style={styles.editButtonText}>Edit </Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
-            style={styles.actionButton}
+            style={styles.nextButton}
             onPress={() => navigation.navigate('MultiplePolicy')}
           >
-            
-              <Icon name="list" size={20} color="#0A66C2" />
-              <Text style={styles.buttonText}>All Policies</Text>
-           
+            <Icon name="list" size={24} color="#1C75BC" />
+            <Text style={styles.nextButtonText}>All Policies</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -143,16 +131,16 @@ const InsurancePreview = ({ navigation, route }) => {
 
 // 🔤 Convert camelCase to readable labels
 const formatKey = (key) => {
-  return key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+ return key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
 };
 
-// 📋 Get fields in specific order with Policy Holder Name before Policy Number
+// 📋 Get fields in specific order 
 const getOrderedFields = (formState) => {
   const fieldOrder = [
     'companyName',
     'serviceNumber', 
     'emailOfCompany',
-    'policyHolderName',  // This will appear before policyNumber
+    'policyHolderName',  
     'policyNumber',
     'policyType',
     'sumInsured',
@@ -168,9 +156,14 @@ const getOrderedFields = (formState) => {
     'pancardNo'
   ];
   
-  return fieldOrder
-    .filter(key => formState[key] && formState[key].toString().trim() !== '')
-    .map(key => [key, formState[key]]);
+  return fieldOrder.map(key => {
+    const hasData = formState[key] && formState[key].toString().trim() !== '';
+    return [
+      key, 
+      hasData ? formState[key] : '-- Not Provided --',
+      !hasData // isEmpty flag
+    ];
+  });
 };
 
 export default InsurancePreview;
@@ -178,57 +171,58 @@ export default InsurancePreview;
 const styles = StyleSheet.create({
   viewStyle: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#F8FAFC',
   },
-  headerGradient: {
-    paddingTop: 10,
-    paddingBottom: 15,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    elevation: 4,
+  backButton: {
+    position: 'absolute',
+    top: 15,
+    left: 20,
+    padding: 8,
+    zIndex: 2,
   },
-  headerContainer: {
-    flexDirection: 'row',
+  heroContainer: {
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 10,
+    paddingHorizontal: 20,
+    paddingTop: 50,
+    paddingBottom: 10,
+    marginBottom: 10,
   },
-  header: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFF',
+  iconWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginBottom: 8,
     textAlign: 'center',
-    flex: 1,
   },
-  avatarContainer: {
-    alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 10,
-  },
-  avatar: {
-    backgroundColor: '#0A66C2',
-  },
-  cardTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#333',
-    marginTop: 10,
-  },
-  cardSubtitle: {
+  heroSubtitle: {
     fontSize: 16,
-    color: '#666',
-    marginBottom: 10,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  scrollContainer: {
+    flex: 1,
   },
   container: {
     padding: 10,
   },
   cardStyle: {
     backgroundColor: '#FFF',
-    borderRadius: 15,
-    marginHorizontal: 16,
+    borderRadius: 20,
+    marginHorizontal: 20,
     marginBottom: 20,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
   },
   dataRow: {
     padding: 12,
@@ -249,50 +243,62 @@ const styles = StyleSheet.create({
   },
   value: {
     fontSize: 15,
-    color: '#0A66C2',
+    color: '#1C75BC',
     fontWeight: '500',
     flex: 1,
     textAlign: 'right',
   },
+  noDataText: {
+    color: '#ff3b30',
+    fontStyle: 'italic',
+  },
   editButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 8,
+    padding: 12,
+    borderRadius: 10,
+    justifyContent: 'center',
+    marginRight: 10,
   },
   editButtonText: {
-    color: '#FFF',
-    fontSize: 14,
+    color: '#1C75BC',
+    fontSize: 16,
     fontWeight: '600',
-    marginLeft: 4,
+    marginLeft: 8,
   },
   btnStyle: {
     padding: 8,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     marginVertical: 20,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
   },
-  actionButton: {
+  nextButton: {
     flex: 1,
-    marginHorizontal: 10,
-    borderRadius: 10,
-    overflow: 'hidden',
-    alignSelf:'center',
-    alignItems:'center'
-  },
-  gradientButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
+    padding: 12,
     borderRadius: 10,
+    justifyContent: 'center',
+    marginLeft: 10,
   },
-  buttonText: {
-    color: '#0A66C2',
-    fontWeight: '600',
+  nextButtonText: {
+    color: '#1C75BC',
     fontSize: 16,
+    fontWeight: '600',
     marginLeft: 8,
+  },
+  loadingText: {
+    color: '#666',
+    fontSize: 16,
+    fontStyle: 'italic',
+    marginTop: 8,
   },
 });

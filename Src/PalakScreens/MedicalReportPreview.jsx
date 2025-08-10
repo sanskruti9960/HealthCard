@@ -1,142 +1,139 @@
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, RefreshControl} from 'react-native';
+import { 
+  StyleSheet, 
+  Text, 
+  View, 
+  TouchableOpacity, 
+  ScrollView, 
+  RefreshControl, 
+  ActivityIndicator ,
+  Button
+} from 'react-native';
 import React, { useState, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import LinearGradient from 'react-native-linear-gradient';
-import { Button, Card } from 'react-native-paper';
+
+import { Card } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import FirestoreService from '../Services/FirestoreService';
+import FirestoreService, { USER_DATA_TYPES } from '../Services/FirestoreService';
+import MultiplePolicy from './MultiplePolicy';
 
 const MedicalReportPreview = ({ navigation }) => {
- const [userId, setUserId] = useState(null);
- const [medicalInfo, setMedicalInfo] = useState({});
- const [refreshing, setRefreshing] = useState(false);
- const [loading, setLoading] = useState(true);
- const [error, setError] = useState(null);
+  const [medicalInfo, setMedicalInfo] = useState({});
+  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [checkingFirstTime, setCheckingFirstTime] = useState(true);
+  const [error, setError] = useState(null);
 
- const onRefresh = async ()=>{
-  setRefreshing(true);
-  await fetchMedicalData();
-
-  setTimeout(()=>{
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchMedicalData();
     setRefreshing(false);
-  }, 1000);}
- 
-
-  useEffect(() => {
-    initializeUser();
-  }, []);
-
-  const initializeUser = async () => {
-    try {
-      const id = await FirestoreService.getUserId();
-      setUserId(id);
-      fetchMedicalData(id);
-    } catch (error) {
-      console.log('Error initializing user:', error);
-    }
   };
 
   useEffect(() => {
+    checkFirstTimeAndLoadData();
+  }, []);
+
+  useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      fetchMedicalData();
+      if (!checkingFirstTime) {
+        fetchMedicalData();
+      }
     });
-    
-    return () => {
-      unsubscribe();
-    };
-  }, [navigation]);
-    
-const fetchMedicalData = async(userIdParam = userId)=>{
-   if (!userIdParam) return;
-   try {
+    return unsubscribe;
+  }, [navigation, checkingFirstTime]);
+
+  const checkFirstTimeAndLoadData = async () => {
+    try {
       setLoading(true);
       setError(null);
+
+      const userData = await FirestoreService.getUserDataByType(USER_DATA_TYPES.MEDICAL);
       
-      // Try to fetch from Firestore first
-      const userData = await FirestoreService.getUserDataByType(userIdParam, 'medicalInfo');
-      if (userData) {
-        const { id, userId: uid, dataType, createdAt, updatedAt, ...medicalData } = userData;
-        setMedicalInfo(medicalData);
-        console.log('Loaded medical data from Firestore for report');
+      // Check if this is first time (no data exists)
+      const hasData = userData && Object.keys(userData).length > 0 && 
+                     Object.values(userData).some(value => value && value.toString().trim() !== '');
+      
+      if (!hasData) {
+        // First-time user, redirect to form
+        navigation.replace('MedicalInfo');
+        return;
       } else {
-        // Fallback to AsyncStorage
-        const savedData = await AsyncStorage.getItem('medicalInfo');
-        if (savedData) {
-          const parsedData = JSON.parse(savedData);
-          if (parsedData && typeof parsedData === 'object') {
-            setMedicalInfo(parsedData);
-            console.log('Loaded medical data from AsyncStorage for report');
-          } else {
-            setMedicalInfo({});
-          }
-        } else {
-          setMedicalInfo({});
-        }
+        setMedicalInfo(userData);
+        console.log('Loaded existing medical data for preview');
+      }
+    } catch (error) {
+      console.log('Error checking medical data:', error);
+      setError('Failed to load medical data');
+      setMedicalInfo({});
+    } finally {
+      setLoading(false);
+      setCheckingFirstTime(false);
+    }
+  };
+
+  const fetchMedicalData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const userData = await FirestoreService.getUserDataByType(USER_DATA_TYPES.MEDICAL);
+      
+      if (userData) {
+        setMedicalInfo(userData);
+        console.log('Refreshed medical data from Firestore');
+      } else {
+        setMedicalInfo({});
       }
     } catch (error) {
       console.log('Error loading medical info:', error);
       setError('Failed to load medical data');
-      // Try AsyncStorage as final fallback
-      try {
-        const savedData = await AsyncStorage.getItem('medicalInfo');
-        if (savedData) {
-          const parsedData = JSON.parse(savedData);
-          setMedicalInfo(parsedData);
-        } else {
-          setMedicalInfo({});
-        }
-      } catch (fallbackError) {
-        console.log('Final fallback also failed:', fallbackError);
-        setMedicalInfo({});
-      }
+      setMedicalInfo({});
     } finally {
       setLoading(false);
     }
-}
-
-  const handleBack = () => {
-    navigation.navigate('HomeScreen'); // Replace with actual home screen name
   };
 
-  const getMedicalFields = (medicalInfo) => {
-    return [
-      ['Medical Conditions', medicalInfo.medicalConditions],
-      ['Allergies', medicalInfo.allergies],
-      ['Past Surgeries', medicalInfo.pastSurgery],
-      ['Chronic Illnesses', medicalInfo.chronicIllnesses],
-      ['Family Medical History', medicalInfo.familyMedicalHistory],
-    
-    ];
-  };
+  const handleBack = () => navigation.goBack();
+
+  const getMedicalFields = (medicalInfo) => [
+    ['Medical Conditions', medicalInfo.medicalConditions],
+    ['Allergies', medicalInfo.allergies],
+    ['Past Surgeries', medicalInfo.pastSurgery],
+    ['Chronic Illnesses', medicalInfo.chronicIllnesses],
+    ['Family Medical History', medicalInfo.familyMedicalHistory],
+  ];
+
+  if (checkingFirstTime) {
+    return (
+      <View style={styles.loaderScreen}>
+        <ActivityIndicator size="large" color="#0A66C2" />
+        <Text style={styles.loaderText}>Loading your medical report...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.viewStyle}>
-      <LinearGradient colors={['#0A66C2', '#0A4D92']} style={styles.headerGradient}>
-        <View style={styles.headerContainer}>
-          <TouchableOpacity style={styles.btnStyle} onPress={handleBack}>
-            <Icon name="arrow-back" size={24} color="#FFF" />
-          </TouchableOpacity>
-          <Text style={styles.header}>Medical Report</Text>
-          <View style={styles.btnStyle} />
-        </View>
-      </LinearGradient>
+      <View style={styles.headerContainer}>
+        <TouchableOpacity style={styles.btnStyle} onPress={handleBack}>
+          <Icon name="arrow-back" size={24} color="#2E3A59" />
+        </TouchableOpacity>
+        <Text style={styles.header}>Medical Report</Text>
+        <View style={styles.btnStyle} />
+      </View>
 
       <ScrollView
-       showsVerticalScrollIndicator={false}
-       decelerationRate={'fast'}
-              refreshControl={
-                <RefreshControl
-                  refreshing={refreshing}
-                  onRefresh={onRefresh}
-                  colors={['#0A66C2']}
-                  tintColor="#0A66C2"
-                />}>
-        <View style={styles.avatarContainer}>
-          <View style={styles.avatar}>
-            <Icon name="medical-services" size={40} color="#FFF" />
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#1C75BC']} tintColor="#1C75BC" />
+        }
+        style={styles.scrollContainer}
+      >
+        <View style={styles.heroContainer}>
+          <View style={styles.iconWrapper}>
+            <Icon name="medical-services" size={80} color="#1C75BC" />
           </View>
-          <Text style={styles.cardTitle}>Medical Report Card</Text>
-          <Text style={styles.cardSubtitle}>Report Details</Text>
+          <Text style={styles.heroTitle}>Medical Report Card</Text>
+          <Text style={styles.heroSubtitle}>Report Details</Text>
         </View>
 
         <Card style={styles.cardStyle} elevation={4}>
@@ -144,6 +141,7 @@ const fetchMedicalData = async(userIdParam = userId)=>{
             <View style={styles.container}>
               {loading ? (
                 <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color="#1C75BC" />
                   <Text style={styles.loadingText}>Loading medical data...</Text>
                 </View>
               ) : error ? (
@@ -158,8 +156,8 @@ const fetchMedicalData = async(userIdParam = userId)=>{
                 getMedicalFields(medicalInfo).map(([label, value], index) => (
                   <View key={label} style={[styles.dataRow, index % 2 === 0 ? styles.evenRow : null]}>
                     <Text style={styles.label}>{label}</Text>
-                    <Text style={[styles.value, !value || value === 'N/A' ? styles.noDataText : null]}>
-                      {value || 'no data'}
+                    <Text style={[styles.value, !value || value.toString().trim() === '' ? styles.noDataText : null]}>
+                      {value && value.toString().trim() !== '' ? value : '-- Not Provided --'}
                     </Text>
                   </View>
                 ))
@@ -169,17 +167,19 @@ const fetchMedicalData = async(userIdParam = userId)=>{
         </Card>
 
         <View style={styles.buttonContainer}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.editButton}
-            onPress={() => {
-              navigation.navigate('MedicalInfo');
-            }}
+            onPress={() => navigation.navigate('MedicalInfo')}
           >
-            <Icon name="edit" size={20} color="#0A66C2" />
+            <Icon name="edit" size={20} color="#1C75BC" />
             <Text style={styles.editButtonText}>Edit Medical Info</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate('MultiplePolicy')} style={styles.actionButton}>
-            <Text>next</Text>
+          <TouchableOpacity
+            style={styles.nextButton}
+            onPress={() => navigation.navigate('MultiplePolicy')}
+          >
+            <Icon name="arrow-forward" size={20} color="#FFF" />
+            <Text style={styles.nextButtonText}>Next</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -190,67 +190,70 @@ const fetchMedicalData = async(userIdParam = userId)=>{
 export default MedicalReportPreview;
 
 const styles = StyleSheet.create({
-   viewStyle: {
+  viewStyle: {
     flex: 1,
-    backgroundColor: 'white',
-  },
-  headerGradient: {
-    paddingTop: 10,
-    paddingBottom: 15,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    elevation: 4,
+    backgroundColor: '#F8FAFC',
   },
   headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 10,
+    paddingHorizontal: 20,
+    paddingTop: 15,
+    paddingBottom: 10,
   },
   header: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFF',
+    fontWeight: '700',
+    color: '#2E3A59',
     textAlign: 'center',
     flex: 1,
+    letterSpacing: 0.5,
   },
-  avatarContainer: {
+  heroContainer: {
     alignItems: 'center',
-    marginTop: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
     marginBottom: 10,
   },
-  avatar: {
-    backgroundColor: '#0A66C2',
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 10,
+  iconWrapper: {
+    backgroundColor: 'transparent',
+    borderRadius: 50,
+    padding: 15,
+    marginBottom: 15,
   },
-  cardTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#333',
-    marginTop: 10,
-    alignSelf: 'center',
+  heroTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginBottom: 8,
+    textAlign: 'center',
   },
-  cardSubtitle: {
+  heroSubtitle: {
     fontSize: 16,
-    color: '#666',
-    marginBottom: 10,
-    alignSelf: 'center',
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  scrollContainer: {
+    flex: 1,
   },
   container: {
     padding: 10,
   },
   cardStyle: {
     backgroundColor: '#FFF',
-    borderRadius: 15,
-    marginHorizontal: 16,
+    borderRadius: 20,
+    marginHorizontal: 20,
     marginBottom: 20,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
   },
   dataRow: {
     padding: 12,
@@ -271,7 +274,7 @@ const styles = StyleSheet.create({
   },
   value: {
     fontSize: 15,
-    color: '#0A66C2',
+    color: '#1C75BC',
     fontWeight: '500',
     flex: 1,
     textAlign: 'right',
@@ -288,7 +291,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   editButtonText: {
-    color: '#0A66C2',
+    color: '#1C75BC',
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
@@ -302,7 +305,7 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     marginVertical: 20,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     alignItems: 'center',
   },
   loadingContainer: {
@@ -313,6 +316,19 @@ const styles = StyleSheet.create({
     color: '#666',
     fontSize: 16,
     fontStyle: 'italic',
+    marginTop: 8,
+  },
+  loaderScreen: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+  },
+  loaderText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#1C75BC',
+    fontWeight: '600',
   },
   errorContainer: {
     padding: 20,
@@ -328,7 +344,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#0A66C2',
+    backgroundColor: '#1C75BC',
     borderRadius: 6,
   },
   retryText: {
@@ -336,25 +352,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  actionButton: {
+  nextButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0A66C2',
-    padding: 12,
-    borderRadius: 10,
-    justifyContent: 'center',
-  },
-  gradientButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: '#1C75BC',
     paddingVertical: 12,
+    paddingHorizontal: 24,
     borderRadius: 10,
+    marginTop: 10,
   },
-  buttonText: {
-    color: '#0A66C2',
-    fontWeight: '600',
+  nextButtonText: {
+    color: '#FFF',
     fontSize: 16,
+    fontWeight: '600',
     marginLeft: 8,
   },
 });

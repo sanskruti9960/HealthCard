@@ -13,9 +13,9 @@ import React, { useState, useEffect } from 'react';
 import { Button, Card, FAB } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useNavigation} from '@react-navigation/native';
-import LinearGradient from 'react-native-linear-gradient';
+
+import FirestoreService, { USER_DATA_TYPES } from '../Services/FirestoreService';
 
 const MultiplePolicy = () => {
   const navigation=useNavigation();
@@ -23,90 +23,97 @@ const MultiplePolicy = () => {
   const [selectedPolicy, setSelectedPolicy] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   
-  const [policies, setPolicies] = useState([])
+  const [policies, setPolicies] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   
-  
-  // ✅ Define the function first
-  const loadPolicies = async () => {
+  const loadPolicies = React.useCallback(async () => {
     try {
-      const savedPolicies = await AsyncStorage.getItem('insurancePolicies');
-      if (savedPolicies !== null) {
-        setPolicies(JSON.parse(savedPolicies));
-      }
+      setIsLoading(true);
+      const policiesData = await FirestoreService.getInsurancePolicies();
+      const formattedPolicies = policiesData.map((data) => ({
+        id: data.id,
+        name: data.policyHolderName || data.companyName || 'Policy Holder',
+        policyNumber: data.policyNumber || 'N/A',
+        insuranceType: data.policyType || 'General Insurance',
+        ...data
+      }));
+      setPolicies(formattedPolicies);
     } catch (error) {
       console.log('Error loading policies:', error);
+      setPolicies([]);
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, []);
   
-  const onRefresh = async () => {
+  const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
     await loadPolicies();
     setRefreshing(false);
-  };
+  }, [loadPolicies]);
 
   useEffect(() => {
     loadPolicies();
-  }, []);
+  }, [loadPolicies]);
 
   useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
-      loadPolicies();
-    });
-
+    const unsubscribe = navigation.addListener('focus', loadPolicies);
     return unsubscribe;
+  }, [navigation, loadPolicies]);
+
+  const handleAddPolicy = React.useCallback(() => {
+    navigation.navigate('InsuranceSrc1', { createNew: true });
   }, [navigation]);
 
-  const handleAddPolicy = () => {
-    navigation.navigate('InsuranceSrc1');
-  };
-
-  const handleViewPolicy = (policy) => {
+  const handleViewPolicy = React.useCallback((policy) => {
     navigation.navigate('InsurancePreview', { 
-      formState: policy.formState,
-      policyId: policy.id,
-      skipSave: true 
+      formState: policy
     });
-  };
+  }, [navigation]);
 
-  const handleLongPress = (policy) => {
+  const handleLongPress = React.useCallback((policy) => {
     setSelectedPolicy(policy);
     setModalVisible(true);
-  };
+  }, []);
 
-  const handleDeletePolicy = async () => {
+  const handleGoBack = React.useCallback(() => {
+    navigation.goBack();
+  }, [navigation]);
+
+  const handleDeletePolicy = React.useCallback(async () => {
     if (selectedPolicy) {
-      const updatedPolicies = policies.filter(policy => policy.id !== selectedPolicy.id);
-      setPolicies(updatedPolicies);
-      
       try {
-        await AsyncStorage.setItem('insurancePolicies', JSON.stringify(updatedPolicies));
+        await FirestoreService.deleteInsurancePolicy(selectedPolicy.id);
+        await loadPolicies();
+        console.log('Policy deleted successfully');
       } catch (error) {
-        console.log('Error saving policies:', error);
+        console.log('Error deleting policy:', error);
       }
       
       setModalVisible(false);
       setSelectedPolicy(null);
     }
-  };
+  }, [selectedPolicy, loadPolicies]);
 
   return (
     <SafeAreaView style={styles.viewStyle1}>
-      <StatusBar backgroundColor="#0A66C2" barStyle="light-content" />
-      <LinearGradient colors={['#0A66C2', '#0A4D92']} style={styles.headerGradient}>
-          <View style={styles.headerContainer}>
-            <TouchableOpacity style={styles.btnStyle} onPress={() => navigation.goBack()}>
-              <Icon name="arrow-back" size={24} color="#FFF" />
-            </TouchableOpacity>
-            <Text style={styles.header}>My Insurance Policies</Text>
-          </View>
-      </LinearGradient>
-      <ImageBackground 
-        source={{uri: 'https://img.freepik.com/free-vector/abstract-blue-geometric-shapes-background_1035-17545.jpg'}} 
-        style={styles.backgroundImage}
-        imageStyle={{opacity: 0.15}}
-      >
-
-
+      <StatusBar backgroundColor="#F8FAFC" barStyle="dark-content" />
+      <View style={styles.headerContainer}>
+        <TouchableOpacity style={styles.btnStyle} onPress={handleGoBack}>
+          <Icon name="arrow-back" size={24} color="#2E3A59" />
+        </TouchableOpacity>
+        <Text style={styles.header}>Insurances</Text>
+        <View style={styles.placeholder} />
+      </View>
+      
+      <View style={styles.heroContainer}>
+        <View style={styles.iconWrapper}>
+          <MaterialCommunityIcons name="shield-account" size={70} color="#1C75BC" />
+        </View>
+        <Text style={styles.heroTitle}>Insurance Policies</Text>
+        <Text style={styles.heroSubtitle}>Manage your insurance coverage</Text>
+      </View>
+      <View style={styles.contentContainer}>
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
             <Text style={styles.statNumber}>{policies.length}</Text>
@@ -121,45 +128,60 @@ const MultiplePolicy = () => {
         <Card style={styles.card2}>
           <Card.Content>
             <Text style={styles.sectionTitle}>Your Policies</Text>
-            <FlatList
-              data={policies}
-              renderItem={({ item }) => (
-                <Card 
-                  style={styles.container} 
-                  onPress={() => handleViewPolicy(item)}
-                  onLongPress={() => handleLongPress(item)}
-                >
-                  <Card.Content style={styles.policyCard}>
-                    <View style={styles.iconContainer}>
-                      <MaterialCommunityIcons 
-                        name={item.insuranceType.toLowerCase().includes('health') ? 'medical-bag' : 'shield-account'} 
-                        size={30} 
-                        color="#0A66C2" 
-                      />
-                    </View>
-                    <View style={styles.policyDetails}>
-                      <Text style={styles.policyName}>{item.name}</Text>
-                      <Text style={styles.policyType}>{item.insuranceType}</Text>
-                      <Text style={styles.policyNumber}>Policy #: {item.policyNumber}</Text>
-                    </View>
-                    <Icon name="chevron-right" size={24} color="#0A66C2" />
-                  </Card.Content>
-                </Card>
-              )}
-              keyExtractor={(item) => item.id.toString()}
-              contentContainerStyle={{ paddingBottom: 20 }}
-              refreshControl={
-                <RefreshControl
-                  refreshing={refreshing}
-                  onRefresh={onRefresh}
-                  colors={['#0A66C2']}
-                  tintColor="#0A66C2"
-                />
-              }
-            />
+            {isLoading ? (
+              <Text style={styles.loadingText}>Loading policies...</Text>
+            ) : policies.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <MaterialCommunityIcons name="shield-off" size={60} color="#ccc" />
+                <Text style={styles.emptyText}>No policies found</Text>
+                <Text style={styles.emptySubtext}>Tap the + button to add your first policy</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={policies}
+                renderItem={({ item }) => (
+                  <Card 
+                    style={styles.container} 
+                    onPress={() => handleViewPolicy(item)}
+                    onLongPress={() => handleLongPress(item)}
+                  >
+                    <Card.Content style={styles.policyCard}>
+                      <View style={styles.iconContainer}>
+                        <MaterialCommunityIcons 
+                          name={item.insuranceType?.toLowerCase().includes('health') ? 'medical-bag' : 'shield-account'} 
+                          size={30} 
+                          color="#1C75BC" 
+                        />
+                      </View>
+                      <View style={styles.policyDetails}>
+                        <Text style={styles.policyName}>{item.name}</Text>
+                        <Text style={styles.policyType}>{item.insuranceType}</Text>
+                        <Text style={styles.policyNumber}>Policy #: {item.policyNumber}</Text>
+                      </View>
+                      <Icon name="chevron-right" size={24} color="#1C75BC" />
+                      
+                    </Card.Content>
+                  </Card>
+                )}
+                keyExtractor={(item) => item.id.toString()}
+                contentContainerStyle={{ paddingBottom: 20 }}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={onRefresh}
+                    colors={['#1C75BC']}
+                    tintColor="#1C75BC"
+                  />
+                }
+                removeClippedSubviews={true}
+                maxToRenderPerBatch={10}
+                windowSize={10}
+              />
+              
+            )}
           </Card.Content>
         </Card>
-      </ImageBackground>
+      </View>
 
       <FAB style={styles.fab} icon="plus" color='white' onPress={handleAddPolicy} />
       
@@ -173,7 +195,6 @@ const MultiplePolicy = () => {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Delete Policy</Text>
             <Text style={styles.modalText}>Are you sure you want to delete this policy?</Text>
-            
             <View style={styles.modalButtons}>
               <TouchableOpacity 
                 style={[styles.modalButton, styles.cancelButton]} 
@@ -181,7 +202,6 @@ const MultiplePolicy = () => {
               >
                 <Text style={styles.buttonText}>Cancel</Text>
               </TouchableOpacity>
-              
               <TouchableOpacity 
                 style={[styles.modalButton, styles.deleteButton]} 
                 onPress={handleDeletePolicy}
@@ -202,33 +222,52 @@ export default MultiplePolicy;
 const styles = StyleSheet.create({
   viewStyle1: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F8FAFC',
   },
-  backgroundImage: {
+  contentContainer: {
     flex: 1,
     padding: 10,
-  },
-  headerGradient: {
-    paddingTop: 10,
-    paddingBottom: 15,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    elevation: 4,
-    marginBottom: 15,
-    width: '100%',
   },
   headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingHorizontal: 16,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
     paddingTop: 10,
+    paddingBottom: 5,
+  },
+  placeholder: {
+    width: 40,
   },
   header: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: 'white',
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#2E3A59',
     marginLeft: 15,
+    letterSpacing: 0.5,
+  },
+  heroContainer: {
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 5,
+    paddingBottom: 10,
+  },
+  iconWrapper: {
+    borderRadius: 25,
+    padding: 8,
+  },
+  heroTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  heroSubtitle: {
+    fontSize: 16,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 22,
   },
   btnStyle: {
     padding: 8,
@@ -250,14 +289,14 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 3,
     borderLeftWidth: 4,
-    borderLeftColor: '#0A66C2',
+    borderLeftColor: '#1C75BC',
   },
   fab: {
     position: 'absolute',
     margin: 16,
     right: 0,
     bottom: 0,
-    backgroundColor: '#0A66C2',
+    backgroundColor: '#1C75BC',
     elevation: 8,
   },
   card2: {
@@ -288,12 +327,13 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#0A66C2',
+    color: '#1C75BC',
   },
   statLabel: {
     fontSize: 14,
     color: '#666',
     marginTop: 5,
+    color: '#1C75BC',
   },
   sectionTitle: {
     fontSize: 18,
@@ -307,7 +347,7 @@ const styles = StyleSheet.create({
     padding: 5,
   },
   iconContainer: {
-    backgroundColor: '#e6f0fa',
+    backgroundColor: '#E8F4FD',
     padding: 10,
     borderRadius: 10,
     marginRight: 15,
@@ -382,5 +422,28 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: 'white',
     marginLeft: 5,
+  },
+  loadingText: {
+    textAlign: 'center',
+    color: '#666',
+    fontSize: 16,
+    padding: 20,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#666',
+    marginTop: 16,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#999',
+    marginTop: 8,
+    textAlign: 'center',
   },
 });

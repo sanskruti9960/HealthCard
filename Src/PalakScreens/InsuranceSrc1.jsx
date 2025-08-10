@@ -1,77 +1,79 @@
 import { StyleSheet, Text, View, TouchableOpacity, Modal, FlatList, ScrollView, Alert, KeyboardAvoidingView, StatusBar, Platform } from 'react-native'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, Divider, Avatar, TextInput } from 'react-native-paper'
 import Icon from 'react-native-vector-icons/MaterialIcons'
 import { useNavigation } from '@react-navigation/native'
 import Tooltip from 'react-native-walkthrough-tooltip'
-import LinearGradient from 'react-native-linear-gradient'
-import AsyncStorage from '@react-native-async-storage/async-storage'
+
+
+import FirestoreService, { USER_DATA_TYPES } from '../Services/FirestoreService'
 
 const InsuranceSrc1=({navigation, route})=>{
+  const [userId, setUserId] = useState(null);
   const [showTip, setShowTip] = useState(true);
   
-  // Hide tooltip after 5 seconds
-  React.useEffect(() => {
-    if (showTip) {
-      const timer = setTimeout(() => {
-        setShowTip(false);
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [showTip]);
+  useEffect(() => {
+    initializeUser();
+    loadExistingData();
+  }, []);
 
-  const onSubmit = async (data) => {
+  const loadExistingData = React.useCallback(async () => {
     try {
-      const existingPolicies = await AsyncStorage.getItem('insurancePolicies');
-      let policies = existingPolicies ? JSON.parse(existingPolicies) : [];
-      
-      const policyObject = {
-        id: route?.params?.policyId || Date.now() + Math.random(),
-        name: data.policyHolderName || data.companyName || 'Policy Holder',
-        policyNumber: data.policyNumber || 'N/A',
-        insuranceType: data.policyType || 'General Insurance',
-        formState: data
-      };
-      
-      // Check if editing existing policy
-      if (route?.params?.fromPreview && route?.params?.policyId) {
-        const existingIndex = policies.findIndex(p => p.id === route.params.policyId);
-        if (existingIndex >= 0) {
-          policies[existingIndex] = policyObject;
-        } else {
-          policies.push(policyObject);
-        }
-      } else {
-        // New policy
-        policies.push(policyObject);
+      if (route?.params?.policyData && !route?.params?.createNew) {
+        setFormState(route.params.policyData);
+        console.log('Loaded existing policy data');
       }
-      
-      await AsyncStorage.setItem('insurancePolicies', JSON.stringify(policies));
+    } catch (error) {
+      console.log('Error loading policy data:', error);
+    }
+  }, [route?.params]);
+
+  const initializeUser = React.useCallback(async () => {
+    try {
+      const id = await FirestoreService.getUserId();
+      setUserId(id);
+    } catch (error) {
+      console.log('Error initializing user:', error);
+    }
+  }, []);
+
+  const onSubmit = React.useCallback(async (data) => {
+    try {
+      const savedPolicy = await FirestoreService.saveInsurancePolicy(data);
       setModalVisible(true);
-      
-      // Navigate to preview with policy data
       setTimeout(() => {
-        navigation.navigate('InsurancePreview', { 
-          formState: data,
-          policyId: policyObject.id,
-          skipSave: true 
+        navigation.navigate('InsurancePreview', {
+          formState: savedPolicy,
+          policyId: savedPolicy.id
         });
       }, 2000);
     } catch (error) {
-      console.log('Error saving policy:', error);
+      console.log('Error saving insurance policy:', error);
     }
-  };
+  }, [navigation]);
     
   const [modalVisible, setModalVisible] = useState(false);
   
   React.useEffect(() => {
+    let tipTimer, modalTimer;
+    
+    if (showTip) {
+      tipTimer = setTimeout(() => {
+        setShowTip(false);
+      }, 3000);
+    }
+    
     if (modalVisible) {
-      const timer = setTimeout(() => {
+      modalTimer = setTimeout(() => {
         setModalVisible(false);
       }, 2000);
-      return () => clearTimeout(timer);
     }
-  }, [modalVisible]);
+    
+    return () => {
+      if (tipTimer) clearTimeout(tipTimer);
+      if (modalTimer) clearTimeout(modalTimer);
+    };
+  }, [showTip, modalVisible]);
   
   const [isEditable, setIsEditable] = useState(false);
   
@@ -96,10 +98,7 @@ const InsuranceSrc1=({navigation, route})=>{
   });
 
   React.useEffect(() => {
-    if (route?.params?.formState && route.params?.fromPreview) {
-      setFormState(route.params.formState);
-      setIsEditable(true);
-    } else if (!route?.params?.fromPreview) {
+    if (route?.params?.createNew || !route?.params?.policyData) {
       // Clear form for new policy creation
       setFormState({
         companyName: '',
@@ -121,10 +120,15 @@ const InsuranceSrc1=({navigation, route})=>{
         pancardNo: '',
       });
       setIsEditable(true);
+    } else if (route?.params?.policyData) {
+      // Load existing policy for editing
+      setFormState(route.params.policyData);
+      setIsEditable(true);
     }
   }, [route?.params]);
 
   const [showPolicyDropdown, setShowPolicyDropdown] = useState(false);
+  const [isCustomPolicyType, setIsCustomPolicyType] = useState(false);
   const policyTypes = [
     'Individual Policy', 
     'Maternity', 
@@ -133,61 +137,70 @@ const InsuranceSrc1=({navigation, route})=>{
     'Critical Illness', 
     'Personal Accident',
     'Disease-Specific',
+    'Other',
   ];
 
-  const handleChange = (field, value) => {
+  const handleChange = React.useCallback((field, value) => {
     setFormState((prev) => ({
       ...prev,
       [field]: value,
     }));
-  };
+  }, []);
+
+  const handleDropdownPress = React.useCallback(() => {
+    if (isEditable) setShowPolicyDropdown(true);
+  }, [isEditable]);
+
+  const handleGoBack = React.useCallback(() => {
+    navigation.goBack();
+  }, [navigation]);
 
   return (  
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.keyboardAvoidStyle}
     >
-      <StatusBar backgroundColor="#0A66C2" barStyle="light-content" />
+      <StatusBar backgroundColor="#F8FAFC" barStyle="dark-content" />
       
       <View style={styles.viewStyle}>
-        <LinearGradient colors={['#0A66C2', '#0A4D92']} style={styles.headerGradient}>
-          <View style={styles.headerContainer}>
-            <TouchableOpacity style={styles.btnStyle} onPress={() => navigation.goBack()}>
-              <Icon name="arrow-back" size={24} color="#FFF" />
-            </TouchableOpacity>
+        <View style={styles.headerContainer}>
+          <TouchableOpacity style={styles.btnStyle} onPress={handleGoBack}>
+            <Icon name="arrow-back" size={24} color="#2E3A59" />
+          </TouchableOpacity>
 
-            <Text style={styles.mainHeading}>INSURANCE CARD</Text>
-
-            <Tooltip
-              isVisible={showTip}
-              content={<Text style={styles.tooltipText}>Tap here to edit form fields</Text>}
-              placement="bottom"
-              onClose={() => setShowTip(false)}
-              contentStyle={styles.tooltipContent}
-              arrowSize={{ width: 16, height: 8 }}
-            >
-              <TouchableOpacity 
-                style={styles.editButtonHeader} 
-                onPress={()=>setIsEditable(true)}
-              >
-                <Icon name="edit" size={16} color="#FFF" />
-                <Text style={styles.editButtonText}>Edit</Text>
-              </TouchableOpacity>
-            </Tooltip>
-          </View>
-          
-          <View style={styles.avatarContainer}>
+          <View style={styles.headerIconWrapper}>
             <Avatar.Icon 
               size={60} 
               icon="shield" 
               color="#FFF"
-              style={styles.avatar}
+              style={styles.headerAvatar}
             />
-            <Text style={styles.cardSubtitle}>Enter Your Insurance Details</Text>
           </View>
-        </LinearGradient>
+
+          <Tooltip
+            isVisible={showTip}
+            content={<Text style={styles.tooltipText}>Tap here to edit form fields</Text>}
+            placement="bottom"
+            onClose={() => setShowTip(false)}
+            contentStyle={styles.tooltipContent}
+            arrowSize={{ width: 16, height: 8 }}
+          >
+            <TouchableOpacity 
+              style={styles.editButtonHeader} 
+              onPress={() => setIsEditable(!isEditable)}
+            >
+              <Icon name="edit" size={16} color="#1C75BC" />
+              <Text style={styles.editButtonText}>Edit</Text>
+            </TouchableOpacity>
+          </Tooltip>
+        </View>
         
-        <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollContainer}>
+        <View style={styles.heroContainer}>
+          <Text style={styles.heroTitle}>Insurance Details</Text>
+          <Text style={styles.heroSubtitle}>Enter Your Insurance Details</Text>
+        </View>
+        
+        <ScrollView showsVerticalScrollIndicator={false} decelerationRate={"fast"} style={styles.scrollContainer}>
           <Card style={styles.sectionCard} elevation={2}>
             <Card.Content>
               <Text style={styles.HeaderStyle}>INSURANCE PROVIDER</Text>
@@ -200,11 +213,11 @@ const InsuranceSrc1=({navigation, route})=>{
                   mode="outlined"
                   disabled={!isEditable}
                   onChangeText={(text) => handleChange('companyName', text)}
-                  left={<TextInput.Icon icon={() => <Icon name="business" size={20} color="#0A66C2" />} />}
+                  left={<TextInput.Icon icon={() => <Icon name="business" size={20} color="#1C75BC" />} />}
                   style={styles.paperInput}
-                  outlineColor="#0A66C2"
-                  activeOutlineColor="#0A66C2"
-                  theme={{roundness:15, colors: { primary: '#0A66C2', background: 'white', } }}
+                  outlineColor="#E2E8F0"
+                  activeOutlineColor="#1C75BC"
+                  theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white', } }}
                 />
               </View>
               
@@ -216,11 +229,11 @@ const InsuranceSrc1=({navigation, route})=>{
                   disabled={!isEditable}
                   keyboardType="numeric"
                   onChangeText={(text) => handleChange('serviceNumber', text)}
-                  left={<TextInput.Icon icon={() => <Icon name="phone" size={20} color="#0A66C2" />} />}
+                  left={<TextInput.Icon icon={() => <Icon name="phone" size={20} color="#1C75BC" />} />}
                   style={styles.paperInput}
-                  outlineColor="#0A66C2"
-                  activeOutlineColor="#0A66C2"
-                  theme={{roundness:15, colors: { primary: '#0A66C2', background: 'white' } }}
+                  outlineColor="#E2E8F0"
+                  activeOutlineColor="#1C75BC"
+                  theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
                 />
               </View>
 
@@ -232,11 +245,11 @@ const InsuranceSrc1=({navigation, route})=>{
                   disabled={!isEditable}
                   keyboardType="email-address"
                   onChangeText={(text) => handleChange('emailOfCompany', text)}
-                  left={<TextInput.Icon icon={() => <Icon name="email" size={20} color="#0A66C2" />} />}
+                  left={<TextInput.Icon icon={() => <Icon name="email" size={20} color="#1C75BC" />} />}
                   style={styles.paperInput}
-                  outlineColor="#0A66C2"
-                  activeOutlineColor="#0A66C2"
-                  theme={{roundness:15, colors: { primary: '#0A66C2', background: 'white' } }}
+                  outlineColor="#E2E8F0"
+                  activeOutlineColor="#1C75BC"
+                  theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
                 />
               </View>
             </Card.Content>
@@ -255,11 +268,11 @@ const InsuranceSrc1=({navigation, route})=>{
                   disabled={!isEditable}
                   keyboardType="default"
                   onChangeText={(text) => handleChange('policyHolderName', text)}
-                  left={<TextInput.Icon icon={() => <Icon name="description" size={20} color="#0A66C2" />} />}
+                  left={<TextInput.Icon icon={() => <Icon name="description" size={20} color="#3B82F6" />} />}
                   style={styles.paperInput}
-                  outlineColor="#0A66C2"
-                  activeOutlineColor="#0A66C2"
-                  theme={{roundness:15, colors: { primary: '#0A66C2', background: 'white' } }}
+                  outlineColor="#E2E8F0"
+                  activeOutlineColor="#3B82F6"
+                  theme={{roundness:12, colors: { primary: '#3B82F6', background: 'white' } }}
                 />
               </View>
 
@@ -271,11 +284,11 @@ const InsuranceSrc1=({navigation, route})=>{
                   disabled={!isEditable}
                   keyboardType="numeric"
                   onChangeText={(text) => handleChange('policyNumber', text)}
-                  left={<TextInput.Icon icon={() => <Icon name="description" size={20} color="#0A66C2" />} />}
+                  left={<TextInput.Icon icon={() => <Icon name="description" size={20} color="#3B82F6" />} />}
                   style={styles.paperInput}
-                  outlineColor="#0A66C2"
-                  activeOutlineColor="#0A66C2"
-                  theme={{roundness:15, colors: { primary: '#0A66C2', background: 'white' } }}
+                  outlineColor="#E2E8F0"
+                  activeOutlineColor="#3B82F6"
+                  theme={{roundness:12, colors: { primary: '#3B82F6', background: 'white' } }}
                 />
               </View>
 
@@ -285,18 +298,16 @@ const InsuranceSrc1=({navigation, route})=>{
                   value={formState.policyType}
                   mode="outlined"
                   disabled={!isEditable}
+                  editable={isCustomPolicyType || !isEditable ? isEditable : false}
                   onChangeText={(text) => handleChange('policyType', text)}
-                  right={<TextInput.Icon icon="menu-down" onPress={() => {
-                    if (isEditable) setShowPolicyDropdown(true);
-                  }} />}
-                  left={<TextInput.Icon icon={() => <Icon name="category" size={20} color="#0A66C2" />} />}
+                  right={<TextInput.Icon icon="menu-down" onPress={handleDropdownPress} />}
+                  left={<TextInput.Icon icon={() => <Icon name="category" size={20} color="#3B82F6" />} />}
                   style={styles.paperInput}
-                  outlineColor="#0A66C2"
-                  activeOutlineColor="#0A66C2"
-                  theme={{roundness:15, colors: { primary: '#0A66C2', background: 'white' } }}
-                  onTouchStart={() => {
-                    if (isEditable) setShowPolicyDropdown(true);
-                  }}
+                  outlineColor="#E2E8F0"
+                  activeOutlineColor="#3B82F6"
+                  theme={{roundness:12, colors: { primary: '#3B82F6', background: 'white' } }}
+                  onTouchStart={isCustomPolicyType ? undefined : handleDropdownPress}
+                  placeholder={isCustomPolicyType ? "Enter your policy type" : "Select policy type"}
                 />
               </View>
 
@@ -310,8 +321,14 @@ const InsuranceSrc1=({navigation, route})=>{
                         <TouchableOpacity 
                           style={styles.dropdownItem} 
                           onPress={() => {
-                            handleChange('policyType', item)
-                            setShowPolicyDropdown(false)
+                            if (item === 'Other') {
+                              setIsCustomPolicyType(true);
+                              handleChange('policyType', '');
+                            } else {
+                              setIsCustomPolicyType(false);
+                              handleChange('policyType', item);
+                            }
+                            setShowPolicyDropdown(false);
                           }}
                         >
                           <Text style={styles.dropdownItemText}>{item}</Text>
@@ -330,11 +347,11 @@ const InsuranceSrc1=({navigation, route})=>{
                   disabled={!isEditable}
                   keyboardType="numeric"
                   onChangeText={(text) => handleChange('sumInsured', text)}
-                  left={<TextInput.Icon icon={() => <Icon name="attach-money" size={20} color="#0A66C2" />} />}
+                  left={<TextInput.Icon icon={() => <Icon name="attach-money" size={20} color="#3B82F6" />} />}
                   style={styles.paperInput}
-                  outlineColor="#0A66C2"
-                  activeOutlineColor="#0A66C2"
-                  theme={{ roundness:15,colors: { primary: '#0A66C2', background: 'white' } }}
+                  outlineColor="#E2E8F0"
+                  activeOutlineColor="#3B82F6"
+                  theme={{ roundness:12,colors: { primary: '#3B82F6', background: 'white' } }}
                 />
               </View>
 
@@ -346,11 +363,11 @@ const InsuranceSrc1=({navigation, route})=>{
                     mode="outlined"
                     disabled={!isEditable}
                     onChangeText={(text) => handleChange('policyStartDate', text)}
-                    left={<TextInput.Icon icon={() => <Icon name="event" size={20} color="#0A66C2" />} />}
+                    left={<TextInput.Icon icon={() => <Icon name="event" size={20} color="#3B82F6" />} />}
                     style={styles.dateInput}
-                    outlineColor="#0A66C2"
-                    activeOutlineColor="#0A66C2"
-                    theme={{roundness:15, colors: { primary: '#0A66C2', background: 'white' } }}
+                    outlineColor="#E2E8F0"
+                    activeOutlineColor="#3B82F6"
+                    theme={{roundness:12, colors: { primary: '#3B82F6', background: 'white' } }}
                   />
                 </View>
                 
@@ -361,11 +378,11 @@ const InsuranceSrc1=({navigation, route})=>{
                     mode="outlined"
                     disabled={!isEditable}
                     onChangeText={(text) => handleChange('policyEndDate', text)}
-                    left={<TextInput.Icon icon={() => <Icon name="event" size={20} color="#0A66C2" />} />}
+                    left={<TextInput.Icon icon={() => <Icon name="event" size={20} color="#3B82F6" />} />}
                     style={styles.dateInput}
-                    outlineColor="#0A66C2"
-                    activeOutlineColor="#0A66C2"
-                    theme={{roundness:15, colors: { primary: '#0A66C2', background: 'white' } }}
+                    outlineColor="#E2E8F0"
+                    activeOutlineColor="#3B82F6"
+                    theme={{roundness:12, colors: { primary: '#3B82F6', background: 'white' } }}
                   />
                 </View>
               </View>
@@ -384,11 +401,11 @@ const InsuranceSrc1=({navigation, route})=>{
                   mode="outlined"
                   disabled={!isEditable}
                   onChangeText={(text) => handleChange('nomineeName', text)}
-                  left={<TextInput.Icon icon={() => <Icon name="person" size={20} color="#0A66C2" />} />}
+                  left={<TextInput.Icon icon={() => <Icon name="person" size={20} color="#3B82F6" />} />}
                   style={styles.paperInput}
-                  outlineColor="#0A66C2"
-                  activeOutlineColor="#0A66C2"
-                  theme={{roundness:15, colors: { primary: '#0A66C2', background: 'white' } }}
+                  outlineColor="#E2E8F0"
+                  activeOutlineColor="#3B82F6"
+                  theme={{roundness:12, colors: { primary: '#3B82F6', background: 'white' } }}
                 />
               </View>
               
@@ -399,11 +416,11 @@ const InsuranceSrc1=({navigation, route})=>{
                   mode="outlined"
                   disabled={!isEditable}
                   onChangeText={(text) => handleChange('nomineeRelation', text)}
-                  left={<TextInput.Icon icon={() => <Icon name="people" size={20} color="#0A66C2" />} />}
+                  left={<TextInput.Icon icon={() => <Icon name="people" size={20} color="#3B82F6" />} />}
                   style={styles.paperInput}
-                  outlineColor="#0A66C2"
-                  activeOutlineColor="#0A66C2"
-                  theme={{roundness:15, colors: { primary: '#0A66C2', background: 'white' } }}
+                  outlineColor="#E2E8F0"
+                  activeOutlineColor="#3B82F6"
+                  theme={{roundness:12, colors: { primary: '#3B82F6', background: 'white' } }}
                 />
               </View>
               
@@ -415,11 +432,11 @@ const InsuranceSrc1=({navigation, route})=>{
                   disabled={!isEditable}
                   keyboardType="numeric"
                   onChangeText={(text) => handleChange('nomineePhn', text)}
-                  left={<TextInput.Icon icon={() => <Icon name="phone" size={20} color="#0A66C2" />} />}
+                  left={<TextInput.Icon icon={() => <Icon name="phone" size={20} color="#3B82F6" />} />}
                   style={styles.paperInput}
-                  outlineColor="#0A66C2"
-                  activeOutlineColor="#0A66C2"
-                  theme={{roundness:15, colors: { primary: '#0A66C2', background: 'white' } }}
+                  outlineColor="#E2E8F0"
+                  activeOutlineColor="#3B82F6"
+                  theme={{roundness:12, colors: { primary: '#3B82F6', background: 'white' } }}
                 />
               </View>
             </Card.Content>
@@ -438,11 +455,11 @@ const InsuranceSrc1=({navigation, route})=>{
                   disabled={!isEditable}
                   keyboardType="numeric"
                   onChangeText={(text) => handleChange('claimAmount', text)}
-                  left={<TextInput.Icon icon={() => <Icon name="money" size={20} color="#0A66C2" />} />}
+                  left={<TextInput.Icon icon={() => <Icon name="money" size={20} color="#3B82F6" />} />}
                   style={styles.paperInput}
-                  outlineColor="#0A66C2"
-                  activeOutlineColor="#0A66C2"
-                  theme={{roundness:15, colors: { primary: '#0A66C2', background: 'white' } }}
+                  outlineColor="#E2E8F0"
+                  activeOutlineColor="#3B82F6"
+                  theme={{roundness:12, colors: { primary: '#3B82F6', background: 'white' } }}
                 />
               </View>
 
@@ -453,11 +470,11 @@ const InsuranceSrc1=({navigation, route})=>{
                   mode="outlined"
                   disabled={!isEditable}
                   onChangeText={(text) => handleChange('claimLink', text)}
-                  left={<TextInput.Icon icon={() => <Icon name="local-hospital" size={20} color="#0A66C2" />} />}
+                  left={<TextInput.Icon icon={() => <Icon name="local-hospital" size={20} color="#3B82F6" />} />}
                   style={styles.paperInput}
-                  outlineColor="#0A66C2"
-                  activeOutlineColor="#0A66C2"
-                  theme={{roundness:15, colors: { primary: '#0A66C2', background: 'white' } }}
+                  outlineColor="#E2E8F0"
+                  activeOutlineColor="#3B82F6"
+                  theme={{roundness:12, colors: { primary: '#3B82F6', background: 'white' } }}
                 />
               </View>
 
@@ -469,11 +486,11 @@ const InsuranceSrc1=({navigation, route})=>{
                   disabled={!isEditable}
                   keyboardType="numeric"
                   onChangeText={(text) => handleChange('claimHelpPhn', text)}
-                  left={<TextInput.Icon icon={() => <Icon name="support-agent" size={20} color="#0A66C2" />} />}
+                  left={<TextInput.Icon icon={() => <Icon name="support-agent" size={20} color="#3B82F6" />} />}
                   style={styles.paperInput}
-                  outlineColor="#0A66C2"
-                  activeOutlineColor="#0A66C2"
-                  theme={{roundness:15, colors: { primary: '#0A66C2', background: 'white' } }}
+                  outlineColor="#E2E8F0"
+                  activeOutlineColor="#3B82F6"
+                  theme={{roundness:12, colors: { primary: '#3B82F6', background: 'white' } }}
                 />
               </View>
             </Card.Content>
@@ -492,11 +509,11 @@ const InsuranceSrc1=({navigation, route})=>{
                   keyboardType="numeric"
                   disabled={!isEditable}
                   onChangeText={(text) => handleChange('adharcardNo', text)}
-                  left={<TextInput.Icon icon={() => <Icon name="fingerprint" size={20} color="#0A66C2" />} />}
+                  left={<TextInput.Icon icon={() => <Icon name="fingerprint" size={20} color="#3B82F6" />} />}
                   style={styles.paperInput}
-                  outlineColor="#0A66C2"
-                  activeOutlineColor="#0A66C2"
-                  theme={{roundness:15, colors: { primary: '#0A66C2', background: 'white' } }}
+                  outlineColor="#E2E8F0"
+                  activeOutlineColor="#3B82F6"
+                  theme={{roundness:12, colors: { primary: '#3B82F6', background: 'white' } }}
                 />
               </View>
           
@@ -508,11 +525,11 @@ const InsuranceSrc1=({navigation, route})=>{
                   keyboardType="numeric"
                   disabled={!isEditable}
                   onChangeText={(text) => handleChange('pancardNo', text)}
-                  left={<TextInput.Icon icon={() => <Icon name="badge" size={20} color="#0A66C2" />} />}
+                  left={<TextInput.Icon icon={() => <Icon name="badge" size={20} color="#3B82F6" />} />}
                   style={styles.paperInput}
-                  outlineColor="#0A66C2"
-                  activeOutlineColor="#0A66C2"
-                  theme={{roundness:15, colors: { primary: '#0A66C2', background: 'white' } }}
+                  outlineColor="#E2E8F0"
+                  activeOutlineColor="#3B82F6"
+                  theme={{roundness:12, colors: { primary: '#3B82F6', background: 'white' } }}
                 />
               </View>
             </Card.Content>
@@ -526,7 +543,7 @@ const InsuranceSrc1=({navigation, route})=>{
                 setIsEditable(false);  
               }}
             >
-                <Icon name="save" size={20} color="#0A66C2" />
+                <Icon name="save" size={20} color="#1C75BC" />
                 <Text style={styles.buttonText}>Save</Text>
             </TouchableOpacity>
           </View>
@@ -551,100 +568,105 @@ const InsuranceSrc1=({navigation, route})=>{
 export default InsuranceSrc1
 
 const styles=StyleSheet.create({
-  paperInput: {
-    backgroundColor: '#f0f2f4ff',
-    width: '100%',
-    marginVertical: 1,
-    height:40,
-    borderWidth:0,
-    borderRadius:50,
-    labelColor: '#0A66C2',
-    
-
-    
-    
-  },
+ 
   dateContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginVertical: 5,
-    
-  },
+   },
   dateInputWrapper: {
-    width: '48%',
-    
-    
+    flex: 1,
+    marginHorizontal: 5,
   },
   dateInput: {
-    backgroundColor: '#f0f2f4ff',
-    height: 40,
+    flex: 1,
   },
   keyboardAvoidStyle:{
     flex:1
   },
   viewStyle: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
-  },
-  headerGradient: {
-    paddingTop: 10,
-    paddingBottom: 20,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    elevation: 4,
+    backgroundColor: '#F8FAFC',
   },
   headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 10,
+    paddingHorizontal: 20,
     paddingTop: 10,
+    paddingBottom: 5,
   },
   mainHeading: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#FFF',
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#2E3A59',
     flex: 1,
     textAlign: 'center',
+    letterSpacing: 0.5,
   },
-  avatarContainer: {
+  heroContainer: {
     alignItems: 'center',
-    marginTop: 10,
+    paddingHorizontal: 20,
+    paddingTop: 5,
+    paddingBottom: 15,
+    marginBottom: 10,
   },
-  avatar: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
+  headerIconWrapper: {
+    borderRadius: 25,
+   
   },
-  cardSubtitle: {
-    fontSize: 14,
-    color: '#FFF',
-    marginTop: 5,
-    opacity: 0.9,
+  headerAvatar: {
+    backgroundColor: '#1C75BC',
+  },
+  heroTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  heroSubtitle: {
+    fontSize: 16,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 22,
   },
   scrollContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 10,
+    flex: 1,
   },
   sectionCard: {
-    marginBottom: 15,
-    borderRadius: 12,
-    elevation: 2,
+    marginBottom: 20,
+    marginHorizontal: 15,
+    borderRadius: 20,
     backgroundColor: '#FFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
   },
   HeaderStyle: {
-    fontWeight: '600',
-    fontSize: 16,
-    color: '#0A66C2',
-    marginBottom: 8,
+    fontWeight: '700',
+    fontSize: 18,
+    color: '#1E293B',
+    marginBottom: 12,
+    letterSpacing: 0.3,
   },
   divider: {
-    backgroundColor: '#E0E0E0',
-    height: 1,
-    marginBottom: 10,
+    backgroundColor: '#E2E8F0',
+    height: 2,
+    marginBottom: 15,
+    borderRadius: 1,
   },
   inputContainer: {
     marginBottom: 8,
     marginTop: 4,
     width: '100%',
+  },
+  paperInput: {
+    backgroundColor: 'white',
   },
   textInputWithIcon: {
     flex: 1,
@@ -659,13 +681,13 @@ const styles=StyleSheet.create({
   editButtonHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: '#E8F4FD',
     borderRadius: 20,
     paddingVertical: 6,
     paddingHorizontal: 8,
   },
   editButtonText: {
-    color: '#FFF',
+    color: '#1C75BC',
     fontSize: 12,
     fontWeight: '600',
     marginLeft: 2,
@@ -675,6 +697,7 @@ const styles=StyleSheet.create({
     paddingHorizontal: 16,
   },
   actionButton: {
+    flexDirection: 'row',
     borderRadius: 10,
     overflow: 'hidden',
     alignSelf: 'center',
@@ -688,7 +711,7 @@ const styles=StyleSheet.create({
     borderRadius: 10,
   },
   buttonText: {
-    color: '#0A66C2',
+    color: '#1C75BC',
     fontWeight: '700',
     fontSize: 18,
     marginLeft: 8,
@@ -707,7 +730,7 @@ const styles=StyleSheet.create({
   },
   modalText: {
     fontSize: 18,
-    color: '#0A66C2',
+    color: '#1C75BC',
     fontWeight: '600',
     textAlign: 'center',
   },
@@ -736,7 +759,7 @@ const styles=StyleSheet.create({
     color: '#333',
   },
   tooltipContent: {
-    backgroundColor: '#0A66C2',
+    backgroundColor: '#1C75BC',
     padding: 8,
     borderRadius: 8,
     width: 180,
