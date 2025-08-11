@@ -162,7 +162,7 @@ const OtpVerification = () => {
               onPress={() => {
                 setModalVisible(false);
                 if (modalType === 'success' && route.params?.from === 'signup') navigation.replace('Terms');
-                if (modalType === 'success' && route.params?.from === 'login') navigation.replace('HomeScreen');
+                if (modalType === 'success' && route.params?.from === 'login') navigation.replace('MainTab');
               }}
             >
               <Text style={styles.modalButtonText}>OK</Text>

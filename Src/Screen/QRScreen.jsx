@@ -1,60 +1,121 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+  PermissionsAndroid,
+  Platform,
+  Share,
+} from 'react-native';
+import auth from "@react-native-firebase/auth";
+import firestore from "@react-native-firebase/firestore";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import Feather from "react-native-vector-icons/Feather";
 import QRCode from 'react-native-qrcode-svg';
-import { useNavigation } from '@react-navigation/native';
-//*******************************************Work In Progress*****************************************************
-const QRCodeScreen = () => {
-  const navigation = useNavigation();
-  const userData = {
-    name: "Sarthak Adhav",
-    bloodGroup: "O+",
-    emergencyContact: "+9100000000",
-    allergies: "Girls",
+import { doc } from '@react-native-firebase/firestore';
+
+const QRCodeScreen = ({ navigation }) => {
+  const [loading, setLoading] = useState(true);
+  const [userDoc, setUserDoc] = useState('');
+  const qrRef = useRef();
+//  const uid = "Rn1hkEFgXpfzInVvZSYp8jDg2Lg1"
+  useEffect(() => {
+  if (userDoc) {
+    console.log("QR Data:", userDoc);
+  }
+}, [userDoc]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+       
+        const uid = auth().currentUser.uid; // Current user ID
+       const doc = await firestore()
+  .collection('Siddhi')
+  .doc(uid)
+  .get();
+        if (doc.exists) {
+          setUserDoc(doc.data());
+        }
+      } catch (error) {
+        console.log("Error fetching user data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+//     console.log('Document exists:', doc.exists);
+// console.log('Doc data:', doc.data());
+  }, []);
+
+  const requestStoragePermission = async () => {
+    if (Platform.OS === 'android' && Platform.Version < 33) {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE
+      );
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
+    }
+    return true;
   };
 
-  const qrString = JSON.stringify(userData); // Convert to string
+const handleShareLink = async () => {
+  try {
+    const uid = auth().currentUser.uid;  // Get user UID
+    const longLink = `https://health-card-1-git-healthweb-palaks-projects-ef7075f5.vercel.app?uid=${encodeURIComponent(uid)}`;
+
+    // Optional: Use Firebase Dynamic Links to shorten this link (see below)
+
+    await Share.share({
+      message: `Emergency QR: ${longLink}`,
+    });
+  } catch (error) {
+    console.log('Error sharing link:', error);
+  }
+};
+
 
   return (
     <View style={style.Screen}>
       <View style={style.Header}>
-        <TouchableOpacity style={style.backButton}>
+        <TouchableOpacity style={style.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={35} color="#000" />
         </TouchableOpacity>
-        <Text style={{
-          fontSize: 22, fontWeight: '600', color: '#000'
-        }}>My QR Code</Text>
+        <Text style={{ fontSize: 22, fontWeight: '600', color: '#000' }}>My QR Code</Text>
       </View>
 
-      {/* <Image
-        source={require('../Images/QR.png')}
-        style={style.image}
-      /> */}
-      <View style={style.QRcard}>
-        {/* <Text style={style.title}>My Emergency QR</Text> */}
-        <QRCode
-          value="qrString"
-          size={200}
-          color="#7B75F5"           // Purple QR lines
-          backgroundColor="#FFFFFF" // Background
-        />
-      </View>
+      {loading ? (
+        <View style={style.loaderContainer}>
+          <ActivityIndicator size="large" color="#1b47d2" />
+          <Text style={{ marginTop: 10, color: '#555' }}>Loading QR...</Text>
+        </View>
+      ) : (
+        <>
+          <Text style={style.slogan}>Your Health, One Scan Away</Text>
+         <View style={style.QRcard}>
+  {userDoc ? (
+    <QRCode
+      value={JSON.stringify(userDoc)}
+      size={200}
+      color="#4D94CC"
+      backgroundColor="#FFFFFF"
+      getRef={(c) => (qrRef.current = c)} // optional if you want to save/share image
+    />
+  ) : (
+    <Text style={{ color: '#999', textAlign: 'center' }}>No data available</Text>
+  )}
+</View>
 
-      <View style={style.btn}>
-        <TouchableOpacity style={[style.qrbtn, { marginBottom: 12 }]}>
-          <Text style={style.qrbtnText}>Download</Text>
-          <Feather name="download"
-            size={18}
-            color="#fff"
-            style={style.downloadIcon} />
-        </TouchableOpacity>
 
-        <TouchableOpacity style={style.qrbtn} onPress={() => navigation.navigate('Locationex')}>
-          <Text style={style.qrbtnText}>Share Live Location</Text>
-          <Feather name="map-pin" size={18} color="#fff" style={style.downloadIcon} />
-        </TouchableOpacity>
-      </View>
+          <View style={style.btnContainer}>
+            <TouchableOpacity style={style.qrBtn} onPress={handleShareLink}>
+              <Text style={style.qrBtnText}>Share QR</Text>
+              <Feather name="share-2" size={18} color="#fff" style={style.icon} />
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
     </View>
   );
 };
@@ -66,25 +127,22 @@ const style = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-  title: {
-    fontSize: 20,
-    marginBottom: 20,
-    fontWeight: 'bold',
-  },
+
   Header: {
-    position: 'relative',
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 20,
     backgroundColor: '#fff',
   },
+
   backButton: {
     position: 'absolute',
     left: 20,
     top: '70%',
   },
+
   QRcard: {
-    marginTop: 140,
+    marginTop: 20,
     alignSelf: 'center',
     alignItems: 'center',
     justifyContent: 'center',
@@ -94,36 +152,46 @@ const style = StyleSheet.create({
     borderRadius: 50,
     borderWidth: 2,
   },
-  image: {
-    position: 'absolute',
-    top: 20,
-    left: 40,
-    width: 250,
-    height: 190,
-    borderRadius: 20,
-    marginTop: 60,
-  },
-  btn: {
-    marginTop: 15,
-  },
-  qrbtn: {
-    backgroundColor: '#7B75F5',
-    alignSelf: 'center',
-    justifyContent: 'space-around',
-    width: 160,
-    height: 50,
+
+  btnContainer: {
     flexDirection: 'row',
-    paddingVertical: 15,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    marginTop: 30,
+  },
+
+  qrBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1C75BC',
+    paddingVertical: 12,
     paddingHorizontal: 30,
-    borderRadius: 10,
-    elevation: 2,
+    borderRadius: 12,
+    elevation: 4,
   },
-  qrbtnText: {
+
+  qrBtnText: {
     color: '#fff',
-    fontWeight: '600',
     fontSize: 16,
+    fontWeight: '600',
+    marginRight: 8,
   },
-  downloadIcon: {
-    marginLeft: 10,
-  }
+
+  icon: {
+    marginRight: 4,
+  },
+
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  slogan: {
+    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#4D94CC',
+    marginTop: 40,
+  },
 });

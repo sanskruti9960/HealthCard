@@ -2,7 +2,6 @@ import { StyleSheet, Text, View } from 'react-native';
 import React from 'react';
 
 // Screens
-import Setschedulepg from './src/Screen/Setschedulepg';
 import MultiplePolicy from './src/Screens/MultiplePolicy';
 import InsuranceSrc1 from './src/Screens/InsuranceSrc1';
 import InsurancePreview from './src/Screens/InsurancePreview';
@@ -45,7 +44,7 @@ const Stack = createNativeStackNavigator();
 const App = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Onboard" screenOptions={{ headerShown: false }}>
+      <Stack.Navigator initialRouteName="MainTab" screenOptions={{ headerShown: false }}>
 
         {/* Flow before showing bottom tab */}
         <Stack.Screen name="Onboard" component={Onboard} />
@@ -60,7 +59,6 @@ const App = () => {
         <Stack.Screen name="MainTab" component={MainTab} />
 
         {/* Other screens accessible from Maintab */}
-        <Stack.Screen name="Setschedulepg" component={Setschedulepg} />
         <Stack.Screen name="MultiplePolicy" component={MultiplePolicy} />
         <Stack.Screen name="EmergencyContact" component={EmergencyContact} />
         <Stack.Screen name="InsuranceSrc1" component={InsuranceSrc1} />
