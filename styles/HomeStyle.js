@@ -21,6 +21,7 @@ const HomeStyle = StyleSheet.create({
   Topbar: {
     flexDirection: "row",
     margin: 12,
+    marginTop: 20,
     
   },
 
@@ -110,14 +111,17 @@ const HomeStyle = StyleSheet.create({
   },
 
   /* Dailycheckout 4 cards */
-    container: {
-    padding: 7,
-    flex: 1,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
+container: {
+  padding: 7,
+  flex: 1,
+  alignItems: 'center', // centers horizontally
+},
+
+row: {
+  flexDirection: 'row',
+  flexWrap: 'wrap',     // allows wrapping to next line
+  justifyContent: 'center', // centers items in row
+},
 
 })
 export default HomeStyle

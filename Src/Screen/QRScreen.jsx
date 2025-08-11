@@ -3,8 +3,10 @@ import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import Ionicons from "react-native-vector-icons/Ionicons";
 import Feather from "react-native-vector-icons/Feather";
 import QRCode from 'react-native-qrcode-svg';
+import { useNavigation } from '@react-navigation/native';
 //*******************************************Work In Progress*****************************************************
 const QRCodeScreen = () => {
+  const navigation = useNavigation();
   const userData = {
     name: "Sarthak Adhav",
     bloodGroup: "O+",
@@ -40,7 +42,7 @@ const QRCodeScreen = () => {
       </View>
 
       <View style={style.btn}>
-        <TouchableOpacity style={style.qrbtn}>
+        <TouchableOpacity style={[style.qrbtn, { marginBottom: 12 }]}>
           <Text style={style.qrbtnText}>Download</Text>
           <Feather name="download"
             size={18}
@@ -48,10 +50,10 @@ const QRCodeScreen = () => {
             style={style.downloadIcon} />
         </TouchableOpacity>
 
-
-        {/* <TouchableOpacity style={style.qrbtn}>
-          <Text style={style.qrbtnText}>Edit QR</Text>
-        </TouchableOpacity>  */}
+        <TouchableOpacity style={style.qrbtn} onPress={() => navigation.navigate('Locationex')}>
+          <Text style={style.qrbtnText}>Share Live Location</Text>
+          <Feather name="map-pin" size={18} color="#fff" style={style.downloadIcon} />
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -122,6 +124,6 @@ const style = StyleSheet.create({
     fontSize: 16,
   },
   downloadIcon: {
-    narginLeft: 10,
+    marginLeft: 10,
   }
 });

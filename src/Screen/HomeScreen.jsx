@@ -150,7 +150,7 @@ const HomeScreen = ({ navigation }) => {
             <Ionicons name="person-circle" size={45} color="skyblue"
             />
           </TouchableOpacity>
-          <Text style={{ fontWeight: "500", fontSize: 19, marginLeft: 10, }}>{`👋 Hello, ${fullName}cutiee `}</Text>
+          <Text style={{ fontWeight: "500", fontSize: 19, marginLeft: 10, }}>{`👋 Hello, ${fullName} `}</Text>
 
         </View>
 

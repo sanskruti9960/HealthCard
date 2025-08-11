@@ -3,64 +3,29 @@ import {
   View,
   Text,
   StyleSheet,
-  PermissionsAndroid,
-  Platform,
   TouchableOpacity,
 } from 'react-native';
 import LottieView from 'lottie-react-native';
-import Torch from 'react-native-torch';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 export default function BloodOxy({ navigation }) {
-  const [hasPermission, setHasPermission] = useState(false);
   const [isMeasuring, setIsMeasuring] = useState(true);
   const [result, setResult] = useState(null);
 
   useEffect(() => {
-    const requestPermission = async () => {
-      if (Platform.OS === 'android') {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.CAMERA
-        );
-        setHasPermission(granted === PermissionsAndroid.RESULTS.GRANTED);
-      } else {
-        setHasPermission(true);
-      }
-    };
-
-    requestPermission();
-  }, []);
-
-  useEffect(() => {
-    if (hasPermission && isMeasuring) {
-      Torch.switchState(true);
-
+    // Simulate measuring delay and generate fake SpO2 result
+    if (isMeasuring) {
       const timer = setTimeout(() => {
-        Torch.switchState(false);
-
-        // Simulate SpO2 result
         const spo2 = Math.floor(Math.random() * (100 - 90 + 1)) + 90;
-        const status =
-          spo2 < 94 ? 'Low' : spo2 <= 98 ? 'Normal' : 'High';
+        const status = spo2 < 94 ? 'Low' : spo2 <= 98 ? 'Normal' : 'High';
 
         setResult({ spo2, status });
         setIsMeasuring(false);
       }, 25000);
 
-      return () => {
-        Torch.switchState(false);
-        clearTimeout(timer);
-      };
+      return () => clearTimeout(timer);
     }
-  }, [hasPermission, isMeasuring]);
-
-  if (!hasPermission) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.permissionText}>Camera permission not granted.</Text>
-      </View>
-    );
-  }
+  }, [isMeasuring]);
 
   if (isMeasuring) {
     return (
@@ -183,15 +148,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#fff',
-  },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  permissionText: {
-    color: 'red',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });

@@ -3,41 +3,18 @@ import {
   View,
   Text,
   StyleSheet,
-  PermissionsAndroid,
-  Platform,
   TouchableOpacity,
 } from 'react-native';
 import LottieView from 'lottie-react-native';
-import Torch from 'react-native-torch';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
-export default function BloodPressureScreen({navigation}) {
-  const [hasPermission, setHasPermission] = useState(false);
+export default function BloodPressureScreen({ navigation }) {
   const [isMeasuring, setIsMeasuring] = useState(true);
   const [result, setResult] = useState(null);
 
   useEffect(() => {
-    const requestPermission = async () => {
-      if (Platform.OS === 'android') {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.CAMERA
-        );
-        setHasPermission(granted === PermissionsAndroid.RESULTS.GRANTED);
-      } else {
-        setHasPermission(true);
-      }
-    };
-
-    requestPermission();
-  }, []);
-
-  useEffect(() => {
-    if (hasPermission && isMeasuring) {
-      Torch.switchState(true);
-
+    if (isMeasuring) {
       const timer = setTimeout(() => {
-        Torch.switchState(false);
-
         // Simulate random result
         const systolic = Math.floor(Math.random() * (130 - 110 + 1)) + 110;
         const diastolic = Math.floor(Math.random() * (85 - 70 + 1)) + 70;
@@ -52,26 +29,17 @@ export default function BloodPressureScreen({navigation}) {
         setIsMeasuring(false);
       }, 15000);
 
-      return () => {
-        Torch.switchState(false);
-        clearTimeout(timer);
-      };
+      return () => clearTimeout(timer);
     }
-  }, [hasPermission, isMeasuring]);
-
-  if (!hasPermission) {
-    return (
-      <View style={styles.center}>
-        <Text style={{ color: 'red' }}>Camera permission not granted.</Text>
-      </View>
-    );
-  }
+  }, [isMeasuring]);
 
   if (isMeasuring) {
     return (
       <View style={styles.container}>
         <Text style={styles.title}>Measuring Blood Pressure</Text>
-        <Text style={styles.subtitle}>Please stay relaxed and still{"\n"}Place your fingertip on flashlight</Text>
+        <Text style={styles.subtitle}>
+          Please stay relaxed and still{"\n"}Place your fingertip on flashlight
+        </Text>
         <LottieView
           source={require('../img/bloodpress.json')}
           autoPlay
@@ -108,26 +76,25 @@ export default function BloodPressureScreen({navigation}) {
         color="#d30505ff"
         style={{ marginVertical: 20 }}
       />
-      
-     <View style={{ flexDirection: 'row', gap: 12, marginTop: 20 }}>
-  <TouchableOpacity
-    style={[styles.button, { backgroundColor: '#00AEEF' }]}
-    onPress={() => {
-      setIsMeasuring(true);
-      setResult(null);
-    }}
-  >
-    <Text style={styles.buttonText}>Measure Again</Text>
-  </TouchableOpacity>
 
-  <TouchableOpacity
-    style={[styles.button, { backgroundColor: '#E53935' }]}
-    onPress={() => navigation.navigate('MainTab')}
-  >
-    <Text style={[styles.buttonText, { color: '#fff' }]}>Cancel</Text>
-  </TouchableOpacity>
-</View>
+      <View style={{ flexDirection: 'row', gap: 12, marginTop: 20 }}>
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: '#00AEEF' }]}
+          onPress={() => {
+            setIsMeasuring(true);
+            setResult(null);
+          }}
+        >
+          <Text style={styles.buttonText}>Measure Again</Text>
+        </TouchableOpacity>
 
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: '#E53935' }]}
+          onPress={() => navigation.navigate('MainTab')}
+        >
+          <Text style={[styles.buttonText, { color: '#fff' }]}>Cancel</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -148,5 +115,4 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   buttonText: { fontSize: 16, fontWeight: 'bold', color: '#fff' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 });

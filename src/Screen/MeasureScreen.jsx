@@ -2,62 +2,27 @@ import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
-  PermissionsAndroid,
-  Platform,
   StyleSheet,
   TouchableOpacity,
-  NativeModules,
-  Alert,
 } from 'react-native';
-import Torch from 'react-native-torch'; // make sure it's installed
+
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import LottieView from 'lottie-react-native';
 
 export default function MeasureScreen({ navigation }) {
-  const [hasPermission, setHasPermission] = useState(false);
   const [bpm, setBpm] = useState(null);
   const [isMeasuring, setIsMeasuring] = useState(true);
 
   useEffect(() => {
-    const askPermission = async () => {
-      if (Platform.OS === 'android') {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.CAMERA
-        );
-        setHasPermission(granted === PermissionsAndroid.RESULTS.GRANTED);
-      } else {
-        setHasPermission(true);
-      }
-    };
+    // Simulate measuring delay and then show fake bpm
+    const timer = setTimeout(() => {
+      const fake = Math.floor(Math.random() * (90 - 72 + 1)) + 72; // 72 to 90
+      setBpm(fake);
+      setIsMeasuring(false);
+    }, 15000);
 
-    askPermission();
+    return () => clearTimeout(timer);
   }, []);
-
-  useEffect(() => {
-    if (hasPermission) {
-      Torch.switchState(true); // turn torch ON
-
-      const timer = setTimeout(() => {
-  const fake = Math.floor(Math.random() * (90 - 72 + 1)) + 72; // 72 to 90
-        setBpm(fake);
-        setIsMeasuring(false);
-        Torch.switchState(false); // turn torch OFF after measuring
-      }, 15000);
-
-      return () => {
-        Torch.switchState(false); // always turn off if user navigates away
-        clearTimeout(timer);
-      };
-    }
-  }, [hasPermission]);
-
-  if (!hasPermission) {
-    return (
-      <View style={styles.center}>
-        <Text style={{ color: 'red' }}>Camera permission not granted.</Text>
-      </View>
-    );
-  }
 
   return (
     <View style={styles.container}>
@@ -66,16 +31,15 @@ export default function MeasureScreen({ navigation }) {
           <>
             <Text style={styles.title}>Measuring Heart Rate</Text>
             <Text style={styles.instruction}>Place your fingertip on flashlight</Text>
-<View style={{ alignItems: 'center', justifyContent: 'center' }}>
-  <LottieView
-    source={require('../img/loadrate.json')}
-    autoPlay
-    loop
-    style={{ width: 200, height: 200 }}
-  />
-</View>
-         
-        <Text style={styles.waiting}>Analyzing pulse...</Text>
+            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+              <LottieView
+                source={require('../img/loadrate.json')}
+                autoPlay
+                loop
+                style={{ width: 200, height: 200 }}
+              />
+            </View>
+            <Text style={styles.waiting}>Analyzing pulse...</Text>
           </>
         ) : (
           <>
