@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Health Card Data</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f7f9fc; }
+    h2 { color: #1C75BC; }
+    pre { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    .error { color: red; font-weight: bold; }
+    .btn { padding: 10px 15px; background: #1C75BC; color: white; border: none; border-radius: 5px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h2>User Health Data</h2>
+  <div id="output">Loading...</div>
+  <button id="loginBtn" class="btn">Sign in with Google</button>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+// Firebase Config
+const firebaseConfig = {
+  apiKey: "AIzaSyDKwPZstPGtVuL7qbWKK07LW1KDLAqDQgA",
+  authDomain: "internpro-e969e.firebaseapp.com",
+  storageBucket: "internpro-e969e.appspot.com",
+  messagingSenderId: "678464281008",
+  appId: "1:678464281008:web:97cee81e6d2bd54cb39e75",
+  projectId: "internpro-e969e",
+};
+
+// Init Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+
+// Sign in button
+document.getElementById("loginBtn").addEventListener("click", () => {
+  signInWithPopup(auth, provider)
+    .then((result) => {
+      console.log("Signed in as:", result.user.uid);
+    })
+    .catch((error) => {
+      console.error("Login error:", error);
+    });
+});
+
+// Listen for auth state
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    document.getElementById('output').innerHTML = "Fetching your data...";
+    try {
+      const docRef = doc(db, "Siddhi", user.uid);
+      console.log('docRef',docRef);
+      
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        document.getElementById('output').innerHTML =
+          `<pre>${JSON.stringify(snap.data(), null, 2)}</pre>`;
+      } else {
+        document.getElementById('output').innerHTML = "<p class='error'>No data found for this user.</p>";
+      }
+    } catch (e) {
+      document.getElementById('output').innerHTML = `<p class='error'>Error: ${e.message}</p>`;
+    }
+  } else {
+    document.getElementById('output').innerHTML = "<p class='error'>Not signed in.</p>";
+  }
+});
+</script>
+</body>
+</html>

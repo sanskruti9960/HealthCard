@@ -1,5 +1,6 @@
-import { StyleSheet, Text, View } from 'react-native';
+// import { StyleSheet, Text, View } from 'react-native';
 import React from 'react';
+import { Linking } from "react-native";
 
 // Screens
 import MultiplePolicy from './src/Screens/MultiplePolicy';
@@ -40,11 +41,16 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 const Stack = createNativeStackNavigator();
+// This will open your Vercel landing page
+
 
 const App = () => {
   return (
+    
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="MainTab" screenOptions={{ headerShown: false }}>
+      
+      <Stack.Navigator initialRouteName="Onboard" screenOptions={{ headerShown: false }}>
+
 
         {/* Flow before showing bottom tab */}
         <Stack.Screen name="Onboard" component={Onboard} />
@@ -57,6 +63,7 @@ const App = () => {
 
         {/* Main app with bottom tab */}
         <Stack.Screen name="MainTab" component={MainTab} />
+              
 
         {/* Other screens accessible from Maintab */}
         <Stack.Screen name="MultiplePolicy" component={MultiplePolicy} />

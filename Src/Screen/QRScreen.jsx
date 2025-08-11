@@ -5,70 +5,58 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  PermissionsAndroid,
-  Platform,
   Share,
 } from 'react-native';
-import auth from "@react-native-firebase/auth";
-import firestore from "@react-native-firebase/firestore";
+import { db } from '../firebaseConfig'; // <-- import db here
+import { doc, getDoc } from 'firebase/firestore'; // <-- import needed Firestore functions
 import Ionicons from "react-native-vector-icons/Ionicons";
 import Feather from "react-native-vector-icons/Feather";
 import QRCode from 'react-native-qrcode-svg';
-import { doc } from '@react-native-firebase/firestore';
-
-const QRCodeScreen = ({ navigation }) => {
+import auth from '@react-native-firebase/auth';
+const QRScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
-  const [userDoc, setUserDoc] = useState('');
+  const [userData, setUserData] = useState(null);
   const qrRef = useRef();
-//  const uid = "Rn1hkEFgXpfzInVvZSYp8jDg2Lg1"
-  useEffect(() => {
-  if (userDoc) {
-    console.log("QR Data:", userDoc);
-  }
-}, [userDoc]);
+  const uid = auth().currentUser?.uid; // Get the current user's UID
+  // const uid = "4hLVbn80kgfnyGEVm9XUjzII8Bv1"; // Replace with your actual UID or fetch dynamically
+
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-       
-        const uid = auth().currentUser.uid; // Current user ID
-       const doc = await firestore()
-  .collection('Siddhi')
-  .doc(uid)
-  .get();
-        if (doc.exists) {
-          setUserDoc(doc.data());
+  const fetchUserData = async () => {
+    try {
+      const docRef = doc(db, 'Siddhi', uid);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+
+        // Convert timestamp to readable string (optional)
+        if (data.updatedAt?.toDate) {
+          data.updatedAt = data.updatedAt.toDate().toISOString();
         }
-      } catch (error) {
-        console.log("Error fetching user data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-//     console.log('Document exists:', doc.exists);
-// console.log('Doc data:', doc.data());
-  }, []);
 
-  const requestStoragePermission = async () => {
-    if (Platform.OS === 'android' && Platform.Version < 33) {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE
-      );
-      return granted === PermissionsAndroid.RESULTS.GRANTED;
+        setUserData(data); // keep Firestore structure exactly
+        console.log("Fetched user data:", data);
+      } else {
+        console.log("No document found for UID:", uid);
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    } finally {
+      setLoading(false);
     }
-    return true;
   };
+
+  fetchUserData();
+  console.log(userData)
+}, []);
+
 
 const handleShareLink = async () => {
   try {
-    const uid = auth().currentUser.uid;  // Get user UID
-    const longLink = `https://health-card-1-git-healthweb-palaks-projects-ef7075f5.vercel.app?uid=${encodeURIComponent(uid)}`;
-
-    // Optional: Use Firebase Dynamic Links to shorten this link (see below)
-
+    const qrLink = ` https://internpro-e969e.web.app?uid=${uid}`;
     await Share.share({
-      message: `Emergency QR: ${longLink}`,
+      message: `Emergency QR: ${qrLink}`,
     });
   } catch (error) {
     console.log('Error sharing link:', error);
@@ -93,20 +81,20 @@ const handleShareLink = async () => {
       ) : (
         <>
           <Text style={style.slogan}>Your Health, One Scan Away</Text>
-         <View style={style.QRcard}>
-  {userDoc ? (
-    <QRCode
-      value={JSON.stringify(userDoc)}
-      size={200}
-      color="#4D94CC"
-      backgroundColor="#FFFFFF"
-      getRef={(c) => (qrRef.current = c)} // optional if you want to save/share image
-    />
-  ) : (
-    <Text style={{ color: '#999', textAlign: 'center' }}>No data available</Text>
-  )}
-</View>
+          <View style={style.QRcard}>
+            {userData ? (
+             <QRCode
+  value={` https://internpro-e969e.web.app?uid=${uid}`}
+  size={200}
+  color="#4D94CC"
+  backgroundColor="#FFFFFF"
+  getRef={(c) => (qrRef.current = c)}
+/>
 
+            ) : (
+              <Text style={{ color: '#999', textAlign: 'center' }}>No data available</Text>
+            )}
+          </View>
 
           <View style={style.btnContainer}>
             <TouchableOpacity style={style.qrBtn} onPress={handleShareLink}>
@@ -120,7 +108,8 @@ const handleShareLink = async () => {
   );
 };
 
-export default QRCodeScreen;
+export default QRScreen;
+
 
 const style = StyleSheet.create({
   Screen: {
