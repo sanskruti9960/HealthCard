@@ -34,7 +34,7 @@ const UserPage = () => {
       } finally {
         setLoading(false);
       }
-    };
+   };
 
     fetchUserData();
   }, [userId]);
