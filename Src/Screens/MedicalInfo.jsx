@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Text,
   View,
@@ -13,11 +13,12 @@ import {
 import { Divider, Avatar, Card, TextInput, Button } from "react-native-paper";
 
 import Icon from 'react-native-vector-icons/MaterialIcons'
-import FirestoreService, { USER_DATA_TYPES } from "../Services/firestoreSrevice";
+import FirestoreService, { USER_DATA_TYPES } from "../Services/FirestoreService";
 
 const MedicalInfo = ({ navigation, route }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [isEditable, setIsEditable] = useState(true);
+  const [validationErrors, setValidationErrors] = useState({});
   
   const [formState, setFormState] = useState({
     medicalConditions: '',
@@ -26,6 +27,10 @@ const MedicalInfo = ({ navigation, route }) => {
     chronicIllnesses: '',
     familyMedicalHistory: '',
   });
+
+  const medicalConditionsRef = useRef(null);
+  const allergiesRef = useRef(null);
+  const familyMedicalHistoryRef = useRef(null);
 
   useEffect(() => {
     loadExistingData();
@@ -43,18 +48,62 @@ const MedicalInfo = ({ navigation, route }) => {
     }
   }, []);
 
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!formState.medicalConditions.trim()) {
+      errors.medicalConditions = 'Medical conditions field is required';
+    }
+    
+    if (!formState.allergies.trim()) {
+      errors.allergies = 'Allergies field is required';
+    }
+    
+    if (!formState.familyMedicalHistory.trim()) {
+      errors.familyMedicalHistory = 'Family medical history field is required';
+    }
+    
+    setValidationErrors(errors);
+    
+    if (Object.keys(errors).length > 0) {
+      const fieldRefs = {
+        medicalConditions: medicalConditionsRef,
+        allergies: allergiesRef,
+        familyMedicalHistory: familyMedicalHistoryRef
+      };
+      
+      const firstErrorField = Object.keys(errors)[0];
+      fieldRefs[firstErrorField]?.current?.focus();
+    }
+    
+    return Object.keys(errors).length === 0;
+  };
+
   const handleChange = useCallback((field, value) => {
     setFormState((prev) => ({
       ...prev,
       [field]: value,
     }));
-  }, []);
+    
+    // Clear validation error when user starts typing
+    if (validationErrors[field]) {
+      setValidationErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  }, [validationErrors]);
 
   const handleGoBack = useCallback(() => {
     navigation.goBack();
   }, [navigation]);
 
   const onSubmit = useCallback(async () => {
+    if (!validateForm()) {
+      return;
+    }
+    
     try {
       await FirestoreService.saveUserData(USER_DATA_TYPES.MEDICAL, formState);
       setModalVisible(true);
@@ -65,7 +114,7 @@ const MedicalInfo = ({ navigation, route }) => {
     } catch (error) {
       console.log('Error saving medical info:', error);
     }
-  }, [formState, navigation]);
+  }, [formState, navigation, validateForm]);
 
 
   return (
@@ -98,14 +147,15 @@ const MedicalInfo = ({ navigation, route }) => {
         </View>
         
         <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollContainer}>
-          <Card style={styles.sectionCard} elevation={2}>
-            <Card.Content>
-              <Text style={styles.HeaderStyle}>MEDICAL CONDITIONS</Text>
-              <Divider style={styles.divider}/>
+          {/* <Card style={styles.sectionCard} elevation={2}>
+            <Card.Content> */}
+              <Text style={styles.HeaderStyle}>MEDICAL CONDITIONS :</Text>
+              {/* <Divider style={styles.divider}/> */}
               
               <View style={styles.inputContainer}>
                 <TextInput
-                  label="Existing Medical Condition"
+                  ref={medicalConditionsRef}
+                  label="Existing Medical Condition(If Any/None)"
                   value={formState.medicalConditions}
                   mode="outlined"
                   disabled={!isEditable}
@@ -117,11 +167,15 @@ const MedicalInfo = ({ navigation, route }) => {
                   activeOutlineColor="#1C75BC"
                   theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
                 />
+                {validationErrors.medicalConditions && (
+                  <Text style={styles.errorText}>{validationErrors.medicalConditions}</Text>
+                )}
               </View>
 
               <View style={styles.inputContainer}>
                 <TextInput
-                  label="Allergies"
+                  ref={allergiesRef}
+                  label="Allergies(If Any)"
                   value={formState.allergies}
                   mode="outlined"
                   disabled={!isEditable}
@@ -133,6 +187,9 @@ const MedicalInfo = ({ navigation, route }) => {
                   activeOutlineColor="#1C75BC"
                   theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
                 />
+                {validationErrors.allergies && (
+                  <Text style={styles.errorText}>{validationErrors.allergies}</Text>
+                )}
               </View>
 
               <View style={styles.inputContainer}>
@@ -169,7 +226,8 @@ const MedicalInfo = ({ navigation, route }) => {
 
               <View style={styles.inputContainer}>
                 <TextInput
-                  label="Family Medical History"
+                  ref={familyMedicalHistoryRef}
+                  label="Family Medical History (If Any)"
                   value={formState.familyMedicalHistory}
                   mode="outlined"
                   disabled={!isEditable}
@@ -181,9 +239,12 @@ const MedicalInfo = ({ navigation, route }) => {
                   activeOutlineColor="#1C75BC"
                   theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
                 />
+                {validationErrors.familyMedicalHistory && (
+                  <Text style={styles.errorText}>{validationErrors.familyMedicalHistory}</Text>
+                )}
               </View>
-            </Card.Content>
-          </Card>
+            {/* </Card.Content>
+          </Card> */}
 
 
           <View style={styles.buttonContainer}>
@@ -262,88 +323,55 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     color: '#1E293B',
-    marginBottom: 4,
+    marginBottom: 8,
     textAlign: 'center',
   },
   heroSubtitle: {
-    fontSize: 13,
+    fontSize: 16,
     color: '#64748B',
     textAlign: 'center',
-    lineHeight: 18,
+    lineHeight: 22,
   },
   scrollContainer: {
+    flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 20,
-  },
-  sectionCard: {
-    marginBottom: 20,
-    borderRadius: 20,
-    backgroundColor: '#FFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
   },
   HeaderStyle: {
     fontWeight: '700',
     fontSize: 18,
     color: '#1E293B',
-    marginBottom: 12,
+    marginBottom: 20,
     letterSpacing: 0.3,
   },
-  divider: {
-    backgroundColor: '#E2E8F0',
-    height: 2,
-    marginBottom: 15,
-    borderRadius: 1,
-  },
   inputContainer: {
-    marginBottom: 8,
-    marginTop: 4,
-    width: '100%',
+    marginBottom: 16,
   },
   paperInput: {
     backgroundColor: 'white',
-    width: '100%',
-    marginVertical: 1,
   },
   buttonContainer: {
-    marginVertical: 20,
-    paddingHorizontal: 16,
+    marginVertical: 30,
+    alignItems: 'center',
   },
   actionButton: {
     flexDirection: 'row',
-    backgroundColor: 'transparent',
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 16,
-    alignSelf: 'center',
     alignItems: 'center',
-    shadowColor: 'transparent',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0,
-    shadowRadius: 0,
-    elevation: 0,
+    backgroundColor: '#E8F4FD',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 10,
   },
   buttonText: {
     color: '#1C75BC',
-    fontWeight: '700',
-    fontSize: 20,
+    fontSize: 16,
+    fontWeight: '600',
     marginLeft: 8,
-    letterSpacing: 0.5,
-  },
-  btnStyle: {
-    padding: 8,
   },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 30,
   },
   modalView: {
     backgroundColor: 'white',
@@ -361,5 +389,14 @@ const styles = StyleSheet.create({
     color: '#1C75BC',
     fontWeight: '600',
     textAlign: 'center',
+  },
+  btnStyle: {
+    padding: 8,
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
   },
 });
