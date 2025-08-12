@@ -9,21 +9,20 @@ import {
   KeyboardAvoidingView,
   Platform,
   StatusBar,
-  Modal,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LottieView from 'lottie-react-native';
 import Animation1 from './img/Animation1.json';
 import { getAuth, createUserWithEmailAndPassword } from '@react-native-firebase/auth';
+import Toast from 'react-native-root-toast';
+
 const Signup = ({ navigation }) => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
-  const [modalVisible, setModalVisible] = useState(false);
-  const [modalMessage, setModalMessage] = useState('');
-  const [modalType, setModalType] = useState('error'); // 'success' or 'error'
 
   const validate = () => {
     const newErrors = {};
@@ -39,7 +38,6 @@ const Signup = ({ navigation }) => {
 const handleSignup = async () => {
   if (!validate()) return;
 
-  // Normalize phone number: remove non-digits, take last 10 digits
   const normalizePhone = (num) => num.replace(/\D/g, '').slice(-10);
   const normalizedPhone = normalizePhone(phone);
 
@@ -48,7 +46,18 @@ const handleSignup = async () => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const uid = userCredential.user.uid;
 
-    // Pass user info to OTP screen for storing after verification
+    // ✅ Show success toast
+    Toast.show('Signed up successfully!', {
+      duration: Toast.durations.SHORT,
+      position: Toast.positions.BOTTOM,
+      shadow: true,
+      animation: true,
+      hideOnPress: true,
+      backgroundColor: '#4CAF50', // green background
+      textColor: '#fff',
+    });
+
+    // Navigate to OTP verification
     navigation.navigate('OtpVerification', {
       from: 'signup',
       uid,
@@ -60,9 +69,17 @@ const handleSignup = async () => {
 
   } catch (error) {
     console.error('Signup Error:', error);
-    setModalType('error');
-    setModalMessage(error.message);
-    setModalVisible(true);
+
+    // ❌ Show error toast
+    Toast.show(error.message, {
+      duration: Toast.durations.LONG,
+      position: Toast.positions.BOTTOM,
+      shadow: true,
+      animation: true,
+      hideOnPress: true,
+      backgroundColor: '#d9534f', // red background
+      textColor: '#fff',
+    });
   }
 };
 
@@ -123,8 +140,16 @@ const handleSignup = async () => {
                 setPassword(text);
                 if (errors.password) setErrors({ ...errors, password: null });
               }}
-              secureTextEntry
+              secureTextEntry={!showPassword}
             />
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+              <Ionicons
+                name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                size={22}
+                color="#1C75BC"
+                style={{ marginLeft: 8 }}
+              />
+            </TouchableOpacity>
           </View>
           {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
 
@@ -160,29 +185,6 @@ const handleSignup = async () => {
           </View>
         </View>
       </ScrollView>
-
-      {/* Modal for alerts */}
-      <Modal
-        visible={modalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <Text style={[styles.modalTitle, modalType === 'success' ? styles.modalTitleSuccess : styles.modalTitleError]}>
-              {modalType === 'success' ? 'Success' : 'Error'}
-            </Text>
-            <Text style={styles.modalMessage}>{modalMessage}</Text>
-            <TouchableOpacity
-              style={styles.modalButton}
-              onPress={() => setModalVisible(false)}
-            >
-              <Text style={styles.modalButtonText}>OK</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </KeyboardAvoidingView>
   );
 };
@@ -304,47 +306,6 @@ const styles = StyleSheet.create({
   signupLink: {
     fontSize: 13,
     color: '#1C75BC',
-    fontWeight: 'bold',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContainer: {
-    backgroundColor: '#fff',
-    width: '80%',
-    borderRadius: 10,
-    padding: 20,
-    elevation: 10,
-    alignItems: 'center',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  modalTitleSuccess: {
-    color: '#1C75BC',
-  },
-  modalTitleError: {
-    color: '#d9534f',
-  },
-  modalMessage: {
-    fontSize: 14,
-    color: '#333',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  modalButton: {
-    backgroundColor: '#1C75BC',
-    paddingVertical: 10,
-    paddingHorizontal: 25,
-    borderRadius: 8,
-  },
-  modalButtonText: {
-    color: '#fff',
     fontWeight: 'bold',
   },
 });

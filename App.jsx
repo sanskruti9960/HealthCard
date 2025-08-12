@@ -1,60 +1,76 @@
-// import { StyleSheet, Text, View } from 'react-native';
-import React from 'react';
-import { Linking } from "react-native";
-
-// Screens
-import MultiplePolicy from './src/Screens/MultiplePolicy';
-import InsuranceSrc1 from './src/Screens/InsuranceSrc1';
-import InsurancePreview from './src/Screens/InsurancePreview';
-import Customloader from './src/Animations/Customloader.jsx';
-import PersonalDetails from './src/Screens/PersonalDetails';
-import EmergencyContact from './src/Screens/EmergencyContact';
-import MedicalInfo from './src/Screens/MedicalInfo';
-import MainTab from './src/Screen/MainTab.jsx';
-import MeasureScreen from './src/Screen/MeasureScreen';
-import Waterintake from './src/Screen/Waterintake'; 
-import Bloodoxy from './src/Screen/Bloodoxy';
-import Bloodpress from './src/Screen/Bloodpress';
-// sarthak
-import DoctorSuggestionScreen from './src/Screen/DoctorSuggestionScreen';
-import EmergencyContactScreen from './src/Screen/EmergencyContactScreen';
-import DoctorBookingScreen from './src/Screen/DoctorBookingScreen';
-import NotificationScreen from './src/Screen/NotificationScreen';
-import ChangePasswordScreen from './src/Screen/ChangePasswordScreen';
-import AllRecentVisits from './src/Screen/AllRecentVisits.jsx';
-import DocRecommendationScreen from './src/Screen/DocRecommendationScreen.jsx';
-import AccountDetailsScreen from './src/Screen/AccountDetailsScreen.jsx';
-// siddhi
-import ForgotPassword from './src/SiddhiScreens/ForgotPassword.jsx';
-import Onboard from './src/SiddhiScreens/Onboard.jsx';
-import Signup from './src/SiddhiScreens/Signup.jsx';
-import Login from './src/SiddhiScreens/Login.jsx';
-import OtpVerification from './src/SiddhiScreens/OtpVerification.jsx';
-import Locationex from './src/SiddhiScreens/Locationex.jsx';
-// palak
-import StartInsuranceFile from './src/PalakScreens/StartInsuranceFile';
-import MedicalReportPreview from './src/PalakScreens/MedicalReportPreview.jsx';
-import Terms from './src/PalakScreens/Terms.jsx';
-import TermsSrc2 from './src/PalakScreens/TermsSrc2.jsx';
-import QRScreen from './src/Screen/QRScreen.jsx';
-
-import { Provider as PaperProvider } from 'react-native-paper';
+import React, { useState, useEffect } from 'react';
+import { ActivityIndicator, View } from 'react-native';
+import auth from '@react-native-firebase/auth';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-const Stack = createNativeStackNavigator();
-// This will open your Vercel landing page
+// Screens
+import Onboard from './src/SiddhiScreens/Onboard.jsx';
+import Signup from './src/SiddhiScreens/Signup.jsx';
+import Login from './src/SiddhiScreens/Login.jsx';
+import ForgotPassword from './src/SiddhiScreens/ForgotPassword.jsx';
+import OtpVerification from './src/SiddhiScreens/OtpVerification.jsx';
+import Terms from './src/PalakScreens/Terms.jsx';
+import PersonalDetails from './src/Screens/PersonalDetails.jsx';
+import MainTab from './src/Screen/MainTab.jsx';
+import MultiplePolicy from './src/Screens/MultiplePolicy.jsx';
+import EmergencyContact from './src/Screens/EmergencyContact.jsx';
+import InsuranceSrc1 from './src/Screens/InsuranceSrc1.jsx';
+import InsurancePreview from './src/Screens/InsurancePreview.jsx';
+import MedicalInfo from './src/Screens/MedicalInfo.jsx';
+import MedicalReportPreview from './src/PalakScreens/MedicalReportPreview.jsx';
+import TermsSrc2 from './src/PalakScreens/TermsSrc2.jsx';
+import StartInsuranceFile from './src/PalakScreens/StartInsuranceFile.jsx';
+import DoctorSuggestionScreen from './src/Screen/DoctorSuggestionScreen.jsx';
+import EmergencyContactScreen from './src/Screen/EmergencyContactScreen.jsx';
+import Locationex from './src/SiddhiScreens/Locationex.jsx';
+import MeasureScreen from './src/Screen/MeasureScreen.jsx';
+import Waterintake from './src/Screen/Waterintake.jsx';
+import Bloodoxy from './src/Screen/Bloodoxy.jsx';
+import Bloodpress from './src/Screen/Bloodpress.jsx';
+import NotificationScreen from './src/Screen/NotificationScreen.jsx';
+import ChangePasswordScreen from './src/Screen/ChangePasswordScreen.jsx';
+import DoctorBookingScreen from './src/Screen/DoctorBookingScreen.jsx';
+import AllRecentVisits from './src/Screen/AllRecentVisits.jsx';
+import DocRecommendationScreen from './src/Screen/DocRecommendationScreen.jsx';
+import QRScreen from './src/Screen/QRScreen.jsx';
+import AccountDetailsScreen from './src/Screen/AccountDetailsScreen.jsx';
+import Customloader from './src/Animations/Customloader.jsx';
 
+const Stack = createNativeStackNavigator();
 
 const App = () => {
+  const [initialRoute, setInitialRoute] = useState(null); // null until auth check is done
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = auth().onAuthStateChanged(user => {
+      if (user) {
+        // User is signed in → go to MainTab
+        setInitialRoute('MainTab');
+      } else {
+        // User not signed in → go to Onboard
+        setInitialRoute('Onboard');
+      }
+      setCheckingAuth(false); // auth check done
+    });
+
+    return unsubscribe; // cleanup
+  }, []);
+
+  if (checkingAuth) {
+    // show loader while checking
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#1b47d2" />
+      </View>
+    );
+  }
+
   return (
-    
     <NavigationContainer>
-      
-      <Stack.Navigator initialRouteName="MainTab" screenOptions={{ headerShown: false }}>
-
-
-        {/* Flow before showing bottom tab */}
+      <Stack.Navigator initialRouteName={initialRoute} screenOptions={{ headerShown: false }}>
+        {/* Auth screens */}
         <Stack.Screen name="Onboard" component={Onboard} />
         <Stack.Screen name="Signup" component={Signup} />
         <Stack.Screen name="Login" component={Login} />
@@ -63,11 +79,10 @@ const App = () => {
         <Stack.Screen name="Terms" component={Terms} />
         <Stack.Screen name="PersonalDetails" component={PersonalDetails} />
 
-        {/* Main app with bottom tab */}
+        {/* Main app */}
         <Stack.Screen name="MainTab" component={MainTab} />
-              
 
-        {/* Other screens accessible from Maintab */}
+        {/* Other screens */}
         <Stack.Screen name="MultiplePolicy" component={MultiplePolicy} />
         <Stack.Screen name="EmergencyContact" component={EmergencyContact} />
         <Stack.Screen name="InsuranceSrc1" component={InsuranceSrc1} />
@@ -83,18 +98,14 @@ const App = () => {
         <Stack.Screen name="Waterintake" component={Waterintake} />
         <Stack.Screen name="Bloodoxy" component={Bloodoxy} />
         <Stack.Screen name="Bloodpress" component={Bloodpress} />
-      
-        
-        {/* Sarthak's screens */}
         <Stack.Screen name="NotificationScreen" component={NotificationScreen} />
         <Stack.Screen name="ChangePasswordScreen" component={ChangePasswordScreen} />
-          <Stack.Screen name="DoctorBookingScreen" component={DoctorBookingScreen} />
-          <Stack.Screen name="AllRecentVisits" component={AllRecentVisits} />
-          <Stack.Screen name="DocRecommendationScreen" component={DocRecommendationScreen} />
-          <Stack.Screen name="QRScreen" component={QRScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="AccountDetailsScreen" component={AccountDetailsScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="Customloader" component={Customloader} options={{ headerShown: false }} />
-
+        <Stack.Screen name="DoctorBookingScreen" component={DoctorBookingScreen} />
+        <Stack.Screen name="AllRecentVisits" component={AllRecentVisits} />
+        <Stack.Screen name="DocRecommendationScreen" component={DocRecommendationScreen} />
+        <Stack.Screen name="QRScreen" component={QRScreen} />
+        <Stack.Screen name="AccountDetailsScreen" component={AccountDetailsScreen} />
+        <Stack.Screen name="Customloader" component={Customloader} />
       </Stack.Navigator>
     </NavigationContainer>
   );

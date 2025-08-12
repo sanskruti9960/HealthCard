@@ -1,409 +1,679 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from "react";
 import {
-  StyleSheet, Text, View, FlatList,
-  TouchableOpacity, Modal, Linking, TextInput
-} from 'react-native';
-import Ionicons from "react-native-vector-icons/Ionicons";
-import FontAwesome from "react-native-vector-icons/FontAwesome";
-import MaterialIcons from "react-native-vector-icons/MaterialIcons";
-import { collection, addDoc, getDocs, } from 'firebase/firestore';
-import { db } from "../firebaseConfig";
-import { useEffect } from 'react';
+  Text,
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Keyboard,
+  StatusBar,
+  KeyboardAvoidingView,
+  Platform,
+  Modal,
+  RefreshControl,
+} from "react-native";
+import { Divider, Avatar, Card, TextInput, FAB } from "react-native-paper";
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import { useForm, Controller } from "react-hook-form";
+import FirestoreService, { USER_DATA_TYPES } from '../Services/firestoreSrevice';
 
-
-
-const saveContactToFirebase = async (userId, contact) => {
-  try {
-    // Firestore collection path
-    const docRef = await addDoc(collection(db, `users/${userId}/emergencyContacts`), contact);
-    console.log("Contact saved to Firestore with ID:", docRef.id);
-  } catch (error) {
-    console.error("Error saving contact:", error);
-  }
-};
-
-const Emergencycontact = ({ navigation }) => {
-  const [modalVisible, setModalVisible] = useState(false);
+const EmergencyContact = ({ navigation }) => {
+  const [modalVisible,setModalVisible]=useState(false);
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedContact, setSelectedContact] = useState(null);
-  const [addModalVisible, setAddModalVisible] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [newPhone, setNewPhone] = useState('');
-  const [newRelation, setNewRelation] = useState('');
-  const [nameError, setNameError] = useState('');
-  const [phoneError, setPhoneError] = useState('');
-  const [relationError, setRelationError] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [contacts, setContacts] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
 
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm({
+    defaultValues: {
+      emergencyName: "",
+      emergencyPhone: "",
+      emergencyRelation: "",
+    },
+  });
 
   useEffect(() => {
-    fetchContactsFromFirebase("user123"); // Replace with real user ID later
+    loadData();
   }, []);
 
-  // 🔄 Dynamic Contact List
-  const [emergencyContacts, setEmergencyContacts] = useState([]);
-
-  const openContactModal = (contact) => {
-    setSelectedContact(contact);
-    setModalVisible(true);
-  };
-
-  const handleCall = (phone) => {
-    Linking.openURL(`tel:${phone}`);
-    setModalVisible(false);
-  };
-
-  const fetchContactsFromFirebase = async (userId) => {
+  const loadData = async () => {
     try {
-      const querySnapshot = await getDocs(collection(db, `users/${userId}/emergencyContacts`));
-      const contacts = [];
-      querySnapshot.forEach((doc) => {
-        contacts.push({
-          id: doc.id, // Firestore document ID
-          ...doc.data(), // name, phone, relation
-        });
-      });
-      setEmergencyContacts(contacts); // ⬅️ Update state
+      const data = await FirestoreService.getEmergencyContacts();
+      setContacts(data);
     } catch (error) {
-      console.error("Error fetching contacts:", error);
+      console.log('Error loading data:', error);
     }
   };
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  }, []);
+
+  const onSubmit = useCallback(async (data) => {
+    try {
+      await FirestoreService.saveUserData(USER_DATA_TYPES.EMERGENCY, data);
+      Keyboard.dismiss();
+      console.log("Emergency Contact Data:", data);
+      navigation.navigate("MedicalInfo");
+    } catch (error) {
+      console.log('Error saving data:', error);
+    }
+  }, [navigation]);
+
+  const handlePrevious = useCallback(() => {
+    navigation.navigate("PersonalDetails");
+  }, [navigation]);
+
+  const AddContact=() => {
+    setModalVisible(true);}
+
   return (
-    <View style={style.Screen}>
-      {/* Header */}
-      <View style={style.Header}>
-        <TouchableOpacity style={style.backButton}
-          onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={35} color="#000" />
-        </TouchableOpacity>
-        <Text style={style.contactstext}>Contacts</Text>
-      </View>
-
-      {/* Contact List */}
-      <View style={style.contactsList}>
-        <FlatList
-          data={emergencyContacts}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={style.contactRow}
-              onPress={() => openContactModal(item)}
-            >
-              <FontAwesome
-                name="user-circle"
-                size={35}
-                color="grey"
-                style={style.contactavatar}
-              />
-              <View style={style.contactDetails}>
-                <Text style={style.contactName}>{item.name}</Text>
-                <Text style={style.cardValue}>{item.phone}</Text>
-              </View>
-            </TouchableOpacity>
-          )}
-        />
-      </View>
-
-      {/* View Contact Modal */}
-      <Modal
-        visible={modalVisible}
-        transparent
-        animationType="slide"
-      >
-        <View style={style.modalBackground}>
-          <View style={style.modalCard}>
-            <Text style={style.modalTitle}>{selectedContact?.name}</Text>
-            <Text style={style.modalSub}>{selectedContact?.relation}</Text>
-            <Text style={style.modalPhone}>{selectedContact?.phone}</Text>
-
-            <View style={style.modalButtons}>
-              <TouchableOpacity
-                style={[style.modalBtn, { backgroundColor: '#1b47d2' }]}
-                onPress={() => handleCall(selectedContact?.phone)}
-              >
-                <MaterialIcons name="call" size={20} color="#fff" />
-                <Text style={style.modalBtnText}>Call</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[style.modalBtn, { backgroundColor: '#555' }]}
-                onPress={() => setModalVisible(false)}
-              >
-                <MaterialIcons name="edit" size={20} color="#fff" />
-                <Text style={style.modalBtnText}>Edit</Text>
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity onPress={() => setModalVisible(false)}>
-              <Text style={style.modalCancel}>Close</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.keyboardAvoidStyle}
+    >
+      <StatusBar backgroundColor="#FFF" barStyle="dark-content" />
       
-      {/* Floating Action Button to Add Contact */}
-      <TouchableOpacity
-        style={style.fab}
-        onPress={() => setAddModalVisible(true)}
-      >
-        <Ionicons name="add" size={30} color="#fff" />
-      </TouchableOpacity>
-
-      {/* Add Contact Modal */}
-      <Modal
-        visible={addModalVisible}
-        transparent
-        animationType="slide"
-      >
-        <View style={style.modalBackground}>
-          <View style={style.modalCard}>
-            <Text style={style.modalTitle}>Add New Contact</Text>
-
-            <TextInput
-              style={[style.input, nameError && style.errorInput]}
-              placeholder="Enter name"
-              value={newName}
-              onChangeText={(text) => {
-                setNewName(text);
-                if (text.trim()) setNameError('');
-              }}
-            />
-            {nameError ? <Text style={style.errorText}>{nameError}</Text> : null}
-
-            <TextInput
-              style={[style.input, phoneError && style.errorInput]}
-              placeholder="Enter phone number"
-              keyboardType="numeric"
-              value={newPhone}
-              onChangeText={(text) => {
-                setNewPhone(text);
-                if (text.trim()) setPhoneError('');
-              }}
-            />
-            {phoneError ? <Text style={style.errorText}>{phoneError}</Text> : null}
-
-            <TextInput
-              style={[style.input, relationError && style.errorInput]}
-              placeholder="Enter relation"
-              value={newRelation}
-              onChangeText={(text) => {
-                setNewRelation(text);
-                if (text.trim()) setRelationError('');
-              }}
-            />
-            {relationError ? <Text style={style.errorText}>{relationError}</Text> : null}
-
-
-
-            <View style={[style.modalButtons, { marginTop: 16 }]}>
-              <TouchableOpacity
-                style={[style.modalBtn, { backgroundColor: '#1b47d2' }]}
-                onPress={() => {
-                  let isValid = true;
-                  const phoneRegex = /^[0-9]{10}$/;
-
-                  // Name Validation
-                  if (!newName.trim()) {
-                    setNameError('Name is required');
-                    isValid = false;
-                  } else {
-                    setNameError('');
-                  }
-
-                  // Phone Validation
-                  if (!newPhone.trim()) {
-                    setPhoneError('Phone number is required');
-                    isValid = false;
-                  } else if (!phoneRegex.test(newPhone)) {
-                    setPhoneError('Enter a valid 10-digit phone number');
-                    isValid = false;
-                  } else {
-                    setPhoneError('');
-                  }
-
-                  // Optional: Relation Validation
-                  if (!newRelation.trim()) {
-                    setRelationError('Relation is required');
-                    isValid = false;
-                  } else {
-                    setRelationError('');
-                  }
-
-                  if (!isValid) return;
-
-                  const newContact = {
-                    id: Date.now().toString(),
-                    name: newName.trim(),
-                    phone: newPhone.trim(),
-                    relation: newRelation.trim(),
-                  };
-
-                  setEmergencyContacts(prev => [...prev, newContact]);
-                  saveContactToFirebase("user123", newContact);
-
-                  setAddModalVisible(false);
-                  setNewName('');
-                  setNewPhone('');
-                  setNewRelation('');
-                  setNameError('');
-                  setPhoneError('');
-                  setRelationError('');
-                }}
-
-              >
-                <Ionicons name="save" size={20} color="#fff" />
-                <Text style={style.modalBtnText}>Save</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[style.modalBtn, { backgroundColor: '#555' }]}
-                onPress={() => setAddModalVisible(false)}
-              >
-                <Text style={style.modalBtnText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+      <View style={styles.viewStyle}>
+        <View style={styles.headerContainer}>
+          <TouchableOpacity style={styles.backBtn} onPress={handlePrevious}>
+            <Icon name="arrow-back" size={24} color="#2E3A59" />
+          </TouchableOpacity>
+          <Text style={styles.mainHeading}>Emergency Contacts</Text>
+          <View style={styles.placeholder} />
         </View>
-      </Modal>
-    </View>
+        
+        <View style={styles.heroContainer}>
+          <View style={styles.iconWrapper}>
+            <Avatar.Icon 
+              size={80} 
+              icon="contacts" 
+              color="#FFF"
+              style={styles.avatar}
+            />
+          </View>
+          <Text style={styles.heroTitle}>Emergency Contacts</Text>
+          <Text style={styles.heroSubtitle}>Add your emergency contact information for safety</Text>
+        </View>
+        
+        <ScrollView 
+          showsVerticalScrollIndicator={false} 
+          style={styles.scrollContainer}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={['#1C75BC']}
+              tintColor="#1C75BC"
+            />
+          }>
+          {contacts.map((contact, index) => (
+            <TouchableOpacity key={contact.id || index} onPress={() => {
+              setSelectedContact(contact);
+              setDetailModalVisible(true);
+            }}>
+              <Card style={styles.contactCard} elevation={2}>
+                <Card.Content style={styles.contactContent}>
+                  <View style={styles.contactHeader}>
+                    <Icon name="person" size={24} color="#1C75BC" />
+                    <Text style={styles.contactName}>{contact.emergencyName}</Text>
+                  </View>
+                  <View style={styles.contactDetails}>
+                    <View style={styles.contactRow}>
+                      <Icon name="phone" size={18} color="#6B7280" />
+                      <Text style={styles.contactInfo}>{contact.emergencyPhone}</Text>
+                    </View>
+                    {contact.emergencyRelation && (
+                      <View style={styles.contactRow}>
+                        <Icon name="family-restroom" size={18} color="#6B7280" />
+                        <Text style={styles.contactInfo}>{contact.emergencyRelation}</Text>
+                      </View>
+                    )}
+                  </View>
+                </Card.Content>
+              </Card>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+        
+        <Modal 
+          visible={modalVisible}
+          animationType="fade" 
+          transparent={true}>
+          <TouchableOpacity 
+            style={styles.modalOverlay} 
+            activeOpacity={1} 
+            onPress={() => setModalVisible(false)}>
+            <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+              <Card style={styles.modalCard} elevation={2}>
+                <Card.Content>
+                  <TouchableOpacity 
+                    style={styles.closeButton} 
+                    onPress={() => setModalVisible(false)}
+                    activeOpacity={0.7}>
+                    <Icon name="close" size={24} color="#6B7280" />
+                  </TouchableOpacity>
+                  <Text style={styles.modalTitle}>Add Emergency Contact</Text>
+              <View style={styles.modalInputContainer}>
+                <Controller
+                  control={control}
+                  name="emergencyName"
+                  rules={{ required: "Contact name is required" }}
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      label="Contact Name"
+                      value={value}
+                      mode="outlined"
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      placeholder="Enter full name"
+                      left={<TextInput.Icon icon={() => <Icon name="person" size={22} color="#1C75BC" />} />}
+                      style={styles.modalPaperInput}
+                      outlineColor="#D1D5DB"
+                      activeOutlineColor="#1C75BC"
+                      theme={{
+                        roundness: 12,
+                        colors: {
+                          primary: '#1C75BC',
+                          background: '#FAFBFC',
+                          outline: '#D1D5DB',
+                          onSurfaceVariant: '#6B7280'
+                        }
+                      }}
+                      error={!!errors.emergencyName}
+                      contentStyle={{ fontSize: 16, color: '#1F2937' }}
+                    />
+                  )}
+                />
+                {errors.emergencyName && (
+                  <Text style={styles.modalError}>{errors.emergencyName.message}</Text>
+                )}
+              </View>
+
+              <View style={styles.modalInputContainer}>
+                <Controller
+                  control={control}
+                  name="emergencyPhone"
+                  rules={{
+                    required: "Phone number is required",
+                    pattern: {
+                      value: /^[0-9]{10}$/,
+                      message: "Enter a valid 10-digit number",
+                    },
+                  }}
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      label="Phone Number"
+                      value={value}
+                      mode="outlined"
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      placeholder="Enter phone number"
+                      keyboardType="phone-pad"
+                      left={<TextInput.Icon icon={() => <Icon name="phone" size={22} color="#1C75BC" />} />}
+                      style={styles.modalPaperInput}
+                      outlineColor="#D1D5DB"
+                      activeOutlineColor="#1C75BC"
+                      theme={{
+                        roundness: 12,
+                        colors: {
+                          primary: '#1C75BC',
+                          background: '#FAFBFC',
+                          outline: '#D1D5DB',
+                          onSurfaceVariant: '#6B7280'
+                        }
+                      }}
+                      error={!!errors.emergencyPhone}
+                      contentStyle={{ fontSize: 16, color: '#1F2937' }}
+                    />
+                  )}
+                />
+                {errors.emergencyPhone && (
+                  <Text style={styles.modalError}>{errors.emergencyPhone.message}</Text>
+                )}
+              </View>
+
+              <View style={styles.modalInputContainer}>
+                <Controller
+                  control={control}
+                  name="emergencyRelation"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      label="Relationship (Optional)"
+                      value={value}
+                      mode="outlined"
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      placeholder="e.g., Spouse, Parent, Sibling"
+                      left={<TextInput.Icon icon={() => <Icon name="family-restroom" size={22} color="#1C75BC" />} />}
+                      style={styles.modalPaperInput}
+                      outlineColor="#D1D5DB"
+                      activeOutlineColor="#1C75BC"
+                      theme={{
+                        roundness: 12,
+                        colors: {
+                          primary: '#1C75BC',
+                          background: '#FAFBFC',
+                          outline: '#D1D5DB',
+                          onSurfaceVariant: '#6B7280'
+                        }
+                      }}
+                      contentStyle={{ fontSize: 16, color: '#1F2937' }}
+                    />
+                  )}
+                />
+                <View style={styles.modalButtonContainer}>
+                  <TouchableOpacity 
+                    style={styles.modalButton} 
+                    onPress={handleSubmit(async (data) => {
+                      if (isEditing && selectedContact) {
+                        const contactWithId = { ...data, id: selectedContact.id };
+                        await FirestoreService.saveEmergencyContact(contactWithId);
+                        setIsEditing(false);
+                      } else {
+                        await FirestoreService.saveEmergencyContact(data);
+                      }
+                      await loadData();
+                      reset({ emergencyName: "", emergencyPhone: "", emergencyRelation: "" });
+                      setModalVisible(false);
+                    })}
+                    activeOpacity={0.8}>
+                    <Icon name={isEditing ? "save" : "add"} size={20} color="#FFF" />
+                    <Text style={styles.modalButtonText}>{isEditing ? "Save Changes" : "Add Contact"}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+                </Card.Content>
+              </Card>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </Modal>
+        
+        <FAB style={styles.fab} icon="plus" color='white' onPress={AddContact}/>
+        
+        {/* Detail Modal */}
+        <Modal 
+          visible={detailModalVisible}
+          animationType="fade" 
+          transparent={true}>
+          <TouchableOpacity 
+            style={styles.modalOverlay} 
+            activeOpacity={1} 
+            onPress={() => {
+              setDetailModalVisible(false);
+              setIsEditing(false);
+            }}>
+            <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+              <Card style={styles.modalCard} elevation={2}>
+                <Card.Content>
+                  <TouchableOpacity 
+                    style={styles.closeButton} 
+                    onPress={() => {
+                      setDetailModalVisible(false);
+                      setIsEditing(false);
+                    }}
+                    activeOpacity={0.7}>
+                    <Icon name="close" size={20} color="#6B7280" />
+                  </TouchableOpacity>
+
+                  <Text style={styles.modalTitle}>Contact Details</Text>
+                  
+                  {selectedContact && (
+                    <>
+                      <View style={styles.detailRow}>
+                        <Icon name="person" size={20} color="#1C75BC" />
+                        <Text style={styles.detailLabel}>Name:</Text>
+                        <Text style={styles.detailValue}>{selectedContact.emergencyName}</Text>
+                      </View>
+                      
+                      <View style={styles.detailRow}>
+                        <Icon name="phone" size={20} color="#1C75BC" />
+                        <Text style={styles.detailLabel}>Phone:</Text>
+                        <Text style={styles.detailValue}>{selectedContact.emergencyPhone}</Text>
+                      </View>
+                      
+                      {selectedContact.emergencyRelation && (
+                        <View style={styles.detailRow}>
+                          <Icon name="family-restroom" size={20} color="#1C75BC" />
+                          <Text style={styles.detailLabel}>Relation:</Text>
+                          <Text style={styles.detailValue}>{selectedContact.emergencyRelation}</Text>
+                        </View>
+                      )}
+                      
+                      <View style={styles.detailButtonContainer}>
+                        <TouchableOpacity 
+                          style={styles.editButton} 
+                          onPress={() => {
+                            reset(selectedContact);
+                            setDetailModalVisible(false);
+                            setIsEditing(true);
+                            setModalVisible(true);
+                          }}
+                          activeOpacity={0.8}>
+                          <Icon name="edit" size={18} color="#1C75BC" />
+                          <Text style={styles.editButtonText}>Edit</Text>
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity 
+                          style={styles.deleteButton} 
+                          onPress={async () => {
+                            await FirestoreService.deleteEmergencyContact(selectedContact.id);
+                            await loadData();
+                            setDetailModalVisible(false);
+                          }}
+                          activeOpacity={0.8}>
+                          <Icon name="delete" size={16} color="#FFF" />
+                          <Text style={styles.deleteButtonText}>Delete</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </>
+                  )}
+                </Card.Content>
+              </Card>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </Modal>
+      </View>
+    </KeyboardAvoidingView>
   );
 };
 
-export default Emergencycontact;
+export default EmergencyContact;
 
-
-const style = StyleSheet.create({
-  Screen: {
+const styles = StyleSheet.create({
+  keyboardAvoidStyle: {
+    flex: 1
+  },
+  viewStyle: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#F8FAFC',
   },
-  Header: {
-    position: 'relative',
-    justifyContent: 'center',
+  headerContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 15,
+    paddingBottom: 10,
+  },
+  placeholder: {
+    width: 40,
+  },
+  mainHeading: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#2E3A59',
+    flex: 1,
+    textAlign: 'center',
+    letterSpacing: 0.5,
+  },
+  heroContainer: {
+    alignItems: 'center',
+    paddingHorizontal: 20,
     paddingVertical: 20,
-    backgroundColor: '#fff',
   },
-  contactstext: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#000',
+  iconWrapper: {
+    backgroundColor: 'transparent',
+    borderRadius: 35,
+    padding: 8,
+    marginBottom: 8,
   },
-  backButton: {
-    position: 'absolute',
-    left: 20,
-    top: '50%',
+  avatar: {
+    backgroundColor: '#1C75BC',
   },
-  contactsList: {
-    marginTop: 10,
+  heroTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  heroSubtitle: {
+    fontSize: 13,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  scrollContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+
+  modalInputContainer: {
+    marginBottom: 18,
+    width: '100%',
     paddingHorizontal: 16,
+  },
+  modalPaperInput: {
+    backgroundColor: '#FAFBFC',
+    width: '100%',
+    fontSize: 16,
+    height: 56,
+  },
+
+  backBtn: {
+    padding: 8,
+  },
+  fab: {
+    position: 'absolute',
+    right: 14,
+    bottom: 30,
+    backgroundColor: '#1C75BC',
+    elevation: 8,
+    borderRadius: 28,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    padding: 20,
+    
+  },
+  modalCard: {
+    // width: '100%',
+    // Width: 380,
+    // Height: 300,
+    borderRadius: 16,
+    backgroundColor: '#FFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 10,
+    borderWidth: 0.5,
+    borderColor: '#E5E7EB',
+    paddingVertical: 8,
+  },
+  DetailModalCard:{
+    flex: 1,
+    width: '100%',
+    maxWidth: 400,
+    maxHeight: '80%',
+    padding: 16,
+    borderRadius: 16,
+    backgroundColor: '#FFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1E293B',
+    textAlign: 'center',
+    marginBottom: 24,
+    marginTop: 8,
+    letterSpacing: 0.3,
+    paddingHorizontal: 16,
+  },
+  modalButtonContainer: {
+    marginTop: 24,
+    marginBottom: 8,
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  modalButton: {
+    flexDirection: 'row',
+    backgroundColor: '#1C75BC',
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    maxWidth: 280,
+    shadowColor: '#1C75BC',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  modalButtonText: {
+    color: '#FFF',
+    fontWeight: '600',
+    fontSize: 16,
+    marginLeft: 8,
+    letterSpacing: 0.3,
+  },
+  modalError: {
+    color: '#EF4444',
+    fontSize: 12,
+    marginTop: 6,
+    marginLeft: 12,
+    fontWeight: '500',
+  },
+  contactCard: {
+    marginBottom: 16,
+    borderRadius: 16,
+    backgroundColor: '#FFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.01,
+    shadowRadius: 4,
+    elevation: 0.5,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    width: '100%',
+  },
+  contactContent: {
+    padding: 16,
+  },
+  contactHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  contactName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1E293B',
+    marginLeft: 12,
+    flex: 1,
+  },
+  contactDetails: {
+    marginLeft: 36,
   },
   contactRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    elevation: 2,
-    marginBottom: 8,
+    marginBottom: 6,
   },
-  contactavatar: {
-    marginRight: 16,
-  },
-  contactName: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#000',
-  },
-  cardValue: {
+  contactInfo: {
     fontSize: 14,
-    color: '#888',
-    marginTop: 2,
+    color: '#6B7280',
+    marginLeft: 8,
   },
-
-  // MODAL STYLES
-  modalBackground: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    justifyContent: 'center',
+  detailRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-  },
-  modalCard: {
-    backgroundColor: '#fff',
-    padding: 24,
-    borderRadius: 20,
+    marginBottom: 18,
+    paddingHorizontal: 20,
+    paddingVertical: 4,
     width: '100%',
-    alignItems: 'center',
+   
   },
-  modalTitle: {
-    fontSize: 20,
+  detailLabel: {
+    fontSize: 14,
     fontWeight: '600',
-    color: '#000',
+    color: '#374151',
+    marginLeft: 12,
+    Width: '100%',
   },
-  modalSub: {
-    fontSize: 16,
-    color: '#444',
+  detailValue: {
+    fontSize: 14,
+    color: '#1F2937',
+    marginLeft: 8,
+   
+  },
+  detailButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginTop: 4,
+    marginBottom: 8,
+    paddingHorizontal: 0,
+    gap: 12,
   },
-  modalPhone: {
-    fontSize: 16,
-    color: '#1b47d2',
-    marginTop: 8,
-  },
-  modalButtons: {
+  editButton: {
     flexDirection: 'row',
-    marginTop: 20,
-    gap: 20,
-  },
-  modalBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
+    backgroundColor: '#F8FAFC',
+    paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 10,
-  },
-  modalBtnText: {
-    color: '#fff',
-    marginLeft: 8,
-    fontWeight: '600',
-  },
-  modalCancel: {
-    marginTop: 20,
-    color: 'red',
-    fontWeight: '600',
-  },
-  fab: {
-    position: 'absolute',
-    bottom: 30,
-    right: 30,
-    backgroundColor: '#1b47d2',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: 'center',
     alignItems: 'center',
-    elevation: 5,
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#1C75BC',
+    flex: 1,
+    shadowColor: '#1C75BC',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  input: {
-    width: '100%',
-    height: 48,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    fontSize: 16,
-    backgroundColor: '#fff',
-    marginBottom: 4,
+  editButtonText: {
+    color: '#1C75BC',
+    fontWeight: '600',
+    fontSize: 14,
+    marginLeft: 6,
   },
-  errorInput: {
-    borderColor: 'red',
+  deleteButton: {
+    flexDirection: 'row',
+    backgroundColor: '#EF4444',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+    shadowColor: '#EF4444',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  errorText: {
-    color: 'red',
-    fontSize: 13,
-    marginBottom: 8,
-    marginLeft: 4,
+  deleteButtonText: {
+    color: '#FFF',
+    fontWeight: '600',
+    fontSize: 14,
+    marginLeft: 6,
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    zIndex: 1,
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
   },
 });
-

@@ -26,6 +26,7 @@ const Login = ({ navigation }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
   const [modalType, setModalType] = useState('error'); // 'success' or 'error'
+  const [showPassword, setShowPassword] = useState(false);
 
   const validate = () => {
     let valid = true;
@@ -182,8 +183,16 @@ const handleLogin = async () => {
                   setPassword(text);
                   if (errors.password) setErrors({ ...errors, password: undefined });
                 }}
-                secureTextEntry
+                secureTextEntry={!showPassword}
               />
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                <Ionicons
+                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                  size={22}
+                  color="#1C75BC"
+                  style={{ marginLeft: 8 }}
+                />
+              </TouchableOpacity>
             </View>
             {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
 

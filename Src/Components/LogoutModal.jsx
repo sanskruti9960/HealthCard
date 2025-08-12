@@ -21,7 +21,7 @@ const LogoutModal = ({ visible, onClose }) => {
             </Pressable>
             <Pressable style={styles.logoutButton} onPress={() => {
               // Handle logout logic here
-              Alert.alert('Navigate to  login/signup page');
+            
               onClose();
             }}>
               <Text style={styles.logoutButtonText}>Logout</Text>

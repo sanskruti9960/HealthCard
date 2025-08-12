@@ -6,6 +6,7 @@ export const USER_DATA_TYPES = {
   MEDICAL: 'medicalInfo',
   INSURANCE: 'insuranceInfo',
   INSURANCE_POLICIES: 'insurancePolicies',
+  EMERGENCY: 'emergencyContact',
 };
 
 class FirestoreService {
@@ -173,6 +174,99 @@ class FirestoreService {
       return true;
     } catch (error) {
       console.error('Error deleting insurance policy:', error);
+      throw error;
+    }
+  }
+
+  // ---------- EMERGENCY CONTACTS METHODS ----------
+  async saveEmergencyContact(contactData) {
+    try {
+      const userId = await this.getUserId();
+      const userRef = firestore().collection('Siddhi').doc(userId);
+      
+      const docSnap = await userRef.get();
+      let contacts = [];
+      
+      if (docSnap.exists && docSnap.data().emergencyContact) {
+        contacts = Array.isArray(docSnap.data().emergencyContact) 
+          ? docSnap.data().emergencyContact 
+          : [docSnap.data().emergencyContact];
+      }
+      
+      const contactWithId = {
+        ...contactData,
+        id: contactData.id || Date.now().toString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      // Check if contact exists and update it, otherwise add new
+      const existingIndex = contacts.findIndex(c => c.id === contactWithId.id);
+      if (existingIndex >= 0) {
+        // Update existing contact
+        contacts[existingIndex] = { ...contacts[existingIndex], ...contactWithId };
+        console.log('Emergency contact updated successfully');
+      } else {
+        // Add new contact with createdAt timestamp
+        contactWithId.createdAt = new Date().toISOString();
+        contacts.push(contactWithId);
+        console.log('New emergency contact added successfully');
+      }
+      
+      const updateData = {
+        emergencyContact: contacts,
+        updatedAt: firestore.FieldValue.serverTimestamp(),
+      };
+      
+      if (!docSnap.exists) {
+        updateData.createdAt = firestore.FieldValue.serverTimestamp();
+      }
+
+      await userRef.set(updateData, { merge: true });
+      return contactWithId;
+    } catch (error) {
+      console.error('Error saving emergency contact:', error);
+      throw error;
+    }
+  }
+
+  async getEmergencyContacts() {
+    try {
+      const userId = await this.getUserId();
+      const docSnap = await firestore().collection('Siddhi').doc(userId).get();
+      
+      if (!docSnap.exists) return [];
+      
+      const userData = docSnap.data();
+      const contacts = userData.emergencyContact;
+      
+      if (!contacts) return [];
+      return Array.isArray(contacts) ? contacts : [contacts];
+    } catch (error) {
+      console.error('Error getting emergency contacts:', error);
+      return [];
+    }
+  }
+
+  async deleteEmergencyContact(contactId) {
+    try {
+      const userId = await this.getUserId();
+      const userRef = firestore().collection('Siddhi').doc(userId);
+      
+      const docSnap = await userRef.get();
+      if (!docSnap.exists) return false;
+      
+      const contacts = docSnap.data().emergencyContact || [];
+      const contactsArray = Array.isArray(contacts) ? contacts : [contacts];
+      const filteredContacts = contactsArray.filter(c => c.id !== contactId);
+      
+      await userRef.set({
+        emergencyContact: filteredContacts,
+        updatedAt: firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+      
+      return true;
+    } catch (error) {
+      console.error('Error deleting emergency contact:', error);
       throw error;
     }
   }
