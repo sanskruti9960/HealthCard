@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import {
+  Modal,
+  View,
+  Text,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  StyleSheet,
+  Animated,
+  Easing,
+} from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
@@ -8,8 +17,21 @@ const SleepWakeTimeModal = ({ visible, onClose, onSubmit }) => {
   const [wakeTime, setWakeTime] = useState(null);
   const [isSleepPickerVisible, setSleepPickerVisible] = useState(false);
   const [isWakePickerVisible, setWakePickerVisible] = useState(false);
-const [sleepAlertVisible, setSleepAlertVisible] = useState(false);
-const [sleepAlertMessage, setSleepAlertMessage] = useState('');
+  const [sleepAlertVisible, setSleepAlertVisible] = useState(false);
+  const [sleepAlertMessage, setSleepAlertMessage] = useState('');
+
+  const scaleAnim = new Animated.Value(0.9);
+
+  React.useEffect(() => {
+    if (visible) {
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 6,
+        tension: 80,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [visible]);
 
   const handleSleepConfirm = (time) => setSleepTime(time);
   const handleWakeConfirm = (time) => setWakeTime(time);
@@ -22,25 +44,25 @@ const [sleepAlertMessage, setSleepAlertMessage] = useState('');
     return parseFloat(diff.toFixed(2));
   };
 
-const handleSubmit = () => {
-  if (!sleepTime || !wakeTime) {
-    setSleepAlertMessage('Please select both sleep and wake times.');
-    setSleepAlertVisible(true);
-    return;
-  }
+  const handleSubmit = () => {
+    if (!sleepTime || !wakeTime) {
+      setSleepAlertMessage('Please select both sleep and wake times.');
+      setSleepAlertVisible(true);
+      return;
+    }
 
-  const hours = calculateSleepHours(sleepTime, wakeTime);
-  onSubmit({ sleepTime, wakeTime, sleepHours: hours });
-  onClose(); // close the modal
-};
-
+    const hours = calculateSleepHours(sleepTime, wakeTime);
+    onSubmit({ sleepTime, wakeTime, sleepHours: hours });
+    onClose();
+  };
 
   return (
-    
-    <Modal visible={visible} animationType="fade" transparent>
-      <View style={styles.modalOverlay}>
+   <Modal visible={visible} animationType="fade" transparent>
+  <TouchableWithoutFeedback onPress={onClose}>
+    <View style={styles.modalOverlay}>
+      <TouchableWithoutFeedback>
         <View style={styles.modalContainer}>
-          <Text style={styles.title}>Set Sleep & Wake Time</Text>
+          <Text style={styles.title}>🌙 Set Sleep & Wake Time</Text>
 
           <TouchableOpacity style={styles.timeButton} onPress={() => setSleepPickerVisible(true)}>
             <Text style={styles.buttonText}>Set Sleep Time</Text>
@@ -58,10 +80,9 @@ const handleSubmit = () => {
           </Text>
 
           <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-            <Text style={styles.submitButtonText}>Submit</Text>
+            <Text style={styles.submitButtonText}>Save Times</Text>
           </TouchableOpacity>
 
-          {/* Sleep Time Picker */}
           {isSleepPickerVisible && (
             <DateTimePicker
               value={sleepTime || new Date()}
@@ -75,7 +96,6 @@ const handleSubmit = () => {
             />
           )}
 
-          {/* Wake Time Picker */}
           {isWakePickerVisible && (
             <DateTimePicker
               value={wakeTime || new Date()}
@@ -89,32 +109,32 @@ const handleSubmit = () => {
             />
           )}
         </View>
-      </View>
-       {/* Alert Modal if time not selected */}
-<Modal
-  visible={sleepAlertVisible}
-  transparent
-  animationType="fade"
-  onRequestClose={() => setSleepAlertVisible(false)}
->
-  <View style={styles.sleepModalBackdrop}>
-    <View style={styles.sleepModalCard}>
-      <Ionicons name="alert-circle" size={60} color="orange" />
-      <Text style={styles.sleepModalTitle}>Missing Time</Text>
-      <Text style={styles.sleepModalMessage}>{sleepAlertMessage}</Text>
-      <TouchableOpacity
-        style={styles.sleepModalButton}
-        onPress={() => setSleepAlertVisible(false)}
-      >
-        <Text style={styles.sleepModalButtonText}>OK</Text>
-      </TouchableOpacity>
+      </TouchableWithoutFeedback>
     </View>
-  </View>
-</Modal>
+  </TouchableWithoutFeedback>
 
-   </Modal>
-
-    
+      {/* Alert Modal */}
+      <Modal
+        visible={sleepAlertVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSleepAlertVisible(false)}
+      >
+        <View style={styles.sleepModalBackdrop}>
+          <View style={styles.sleepModalCard}>
+            <Ionicons name="alert-circle" size={60} color="orange" />
+            <Text style={styles.sleepModalTitle}>Missing Time</Text>
+            <Text style={styles.sleepModalMessage}>{sleepAlertMessage}</Text>
+            <TouchableOpacity
+              style={styles.sleepModalButton}
+              onPress={() => setSleepAlertVisible(false)}
+            >
+              <Text style={styles.sleepModalButtonText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </Modal>
   );
 };
 
@@ -123,98 +143,59 @@ export default SleepWakeTimeModal;
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: '#000000aa',
+    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
+    paddingHorizontal: 20,
   },
   modalContainer: {
-    backgroundColor: '#fff',
     width: '100%',
-    borderRadius: 20,
-    padding: 24,
-    elevation: 5,
+    backgroundColor: '#fefefe',
+    borderRadius: 25,
+    padding: 25,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    borderWidth: 1,
+    borderColor: '#dcdcdc',
   },
   title: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 20,
+    fontSize: 22,
+    fontWeight: '600',
+    color: '#5c5470',
     textAlign: 'center',
-    color: '#333',
+    marginBottom: 20,
   },
   timeButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#dbe7f0', // soft sky blue
     paddingVertical: 12,
-    borderRadius: 10,
+    borderRadius: 30,
     marginVertical: 8,
     alignItems: 'center',
   },
   buttonText: {
-    color: 'white',
-    fontSize: 15,
-    fontWeight: '600',
+    color: '#4a6572',
+    fontSize: 16,
+    fontWeight: '500',
   },
   timeText: {
-    marginTop: 10,
     fontSize: 16,
-    color: '#444',
+    color: '#6a6a6a',
     textAlign: 'center',
+    marginVertical: 4,
   },
   submitButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#a1d6b2', // soft green
     paddingVertical: 14,
-    marginTop: 24,
-    borderRadius: 12,
+    borderRadius: 30,
+    marginTop: 20,
     alignItems: 'center',
   },
   submitButtonText: {
-    color: 'white',
+    color: '#2f4f4f',
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
   },
-/* Alert Modal if time not selected */
-  sleepModalBackdrop: {
-  flex: 1,
-  backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  justifyContent: 'center',
-  alignItems: 'center',
-},
-
-sleepModalCard: {
-  width: '80%',
-  backgroundColor: '#fff',
-  borderRadius: 18,
-  paddingVertical: 30,
-  paddingHorizontal: 20,
-  alignItems: 'center',
-  elevation: 10,
-},
-
-sleepModalTitle: {
-  fontSize: 20,
-  fontWeight: '600',
-  marginTop: 10,
-  color: '#222',
-},
-
-sleepModalMessage: {
-  fontSize: 16,
-  color: '#666',
-  textAlign: 'center',
-  marginVertical: 12,
-},
-
-sleepModalButton: {
-  backgroundColor: '#1c75bc',
-  paddingVertical: 10,
-  paddingHorizontal: 30,
-  borderRadius: 10,
-},
-
-sleepModalButtonText: {
-  color: '#fff',
-  fontWeight: 'bold',
-  fontSize: 16,
-},
-
 });

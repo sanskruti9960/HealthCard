@@ -6,7 +6,7 @@ import { Linking } from "react-native";
 import MultiplePolicy from './src/Screens/MultiplePolicy';
 import InsuranceSrc1 from './src/Screens/InsuranceSrc1';
 import InsurancePreview from './src/Screens/InsurancePreview';
-
+import Customloader from './src/Animations/Customloader.jsx';
 import PersonalDetails from './src/Screens/PersonalDetails';
 import EmergencyContact from './src/Screens/EmergencyContact';
 import MedicalInfo from './src/Screens/MedicalInfo';
@@ -23,6 +23,7 @@ import NotificationScreen from './src/Screen/NotificationScreen';
 import ChangePasswordScreen from './src/Screen/ChangePasswordScreen';
 import AllRecentVisits from './src/Screen/AllRecentVisits.jsx';
 import DocRecommendationScreen from './src/Screen/DocRecommendationScreen.jsx';
+import AccountDetailsScreen from './src/Screen/AccountDetailsScreen.jsx';
 // siddhi
 import ForgotPassword from './src/SiddhiScreens/ForgotPassword.jsx';
 import Onboard from './src/SiddhiScreens/Onboard.jsx';
@@ -35,6 +36,7 @@ import StartInsuranceFile from './src/PalakScreens/StartInsuranceFile';
 import MedicalReportPreview from './src/PalakScreens/MedicalReportPreview.jsx';
 import Terms from './src/PalakScreens/Terms.jsx';
 import TermsSrc2 from './src/PalakScreens/TermsSrc2.jsx';
+import QRScreen from './src/Screen/QRScreen.jsx';
 
 import { Provider as PaperProvider } from 'react-native-paper';
 import { NavigationContainer } from '@react-navigation/native';
@@ -49,7 +51,7 @@ const App = () => {
     
     <NavigationContainer>
       
-      <Stack.Navigator initialRouteName="Onboard" screenOptions={{ headerShown: false }}>
+      <Stack.Navigator initialRouteName="MainTab" screenOptions={{ headerShown: false }}>
 
 
         {/* Flow before showing bottom tab */}
@@ -89,6 +91,9 @@ const App = () => {
           <Stack.Screen name="DoctorBookingScreen" component={DoctorBookingScreen} />
           <Stack.Screen name="AllRecentVisits" component={AllRecentVisits} />
           <Stack.Screen name="DocRecommendationScreen" component={DocRecommendationScreen} />
+          <Stack.Screen name="QRScreen" component={QRScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="AccountDetailsScreen" component={AccountDetailsScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Customloader" component={Customloader} options={{ headerShown: false }} />
 
       </Stack.Navigator>
     </NavigationContainer>

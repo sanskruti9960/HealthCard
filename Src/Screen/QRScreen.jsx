@@ -1,68 +1,61 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  ActivityIndicator,
   Share,
 } from 'react-native';
-import { db } from '../firebaseConfig'; // <-- import db here
-import { doc, getDoc } from 'firebase/firestore'; // <-- import needed Firestore functions
+import { db } from '../SiddhiScreens/firechifile/firebaseConfig';
+import { doc, getDoc } from 'firebase/firestore';
 import Ionicons from "react-native-vector-icons/Ionicons";
 import Feather from "react-native-vector-icons/Feather";
 import QRCode from 'react-native-qrcode-svg';
 import auth from '@react-native-firebase/auth';
+
+import Customloader from '../Animations/Customloader.jsx'; // Adjust the import path as necessary
 const QRScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState(null);
   const qrRef = useRef();
-  const uid = auth().currentUser?.uid; // Get the current user's UID
-  // const uid = "4hLVbn80kgfnyGEVm9XUjzII8Bv1"; // Replace with your actual UID or fetch dynamically
-
+  const uid = auth().currentUser?.uid;
 
   useEffect(() => {
-  const fetchUserData = async () => {
-    try {
-      const docRef = doc(db, 'Siddhi', uid);
-      const docSnap = await getDoc(docRef);
+    const fetchUserData = async () => {
+      try {
+        const docRef = doc(db, 'Siddhi', uid);
+        const docSnap = await getDoc(docRef);
 
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-
-        // Convert timestamp to readable string (optional)
-        if (data.updatedAt?.toDate) {
-          data.updatedAt = data.updatedAt.toDate().toISOString();
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.updatedAt?.toDate) {
+            data.updatedAt = data.updatedAt.toDate().toISOString();
+          }
+          setUserData(data);
+        } else {
+          console.log("No document found for UID:", uid);
         }
-
-        setUserData(data); // keep Firestore structure exactly
-        console.log("Fetched user data:", data);
-      } else {
-        console.log("No document found for UID:", uid);
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      } finally {
+        setLoading(false);
       }
+    };
+
+    fetchUserData();
+  }, []);
+
+  const handleShareLink = async () => {
+    try {
+      const qrLink = ` https://internpro-e969e.web.app?uid=${uid}`;
+      await Share.share({
+        message: `Emergency QR: ${qrLink}`,
+      });
     } catch (error) {
-      console.error("Error fetching user data:", error);
-    } finally {
-      setLoading(false);
+      console.log('Error sharing link:', error);
     }
   };
-
-  fetchUserData();
-  console.log(userData)
-}, []);
-
-
-const handleShareLink = async () => {
-  try {
-    const qrLink = ` https://internpro-e969e.web.app?uid=${uid}`;
-    await Share.share({
-      message: `Emergency QR: ${qrLink}`,
-    });
-  } catch (error) {
-    console.log('Error sharing link:', error);
-  }
-};
-
 
   return (
     <View style={style.Screen}>
@@ -75,7 +68,7 @@ const handleShareLink = async () => {
 
       {loading ? (
         <View style={style.loaderContainer}>
-          <ActivityIndicator size="large" color="#1b47d2" />
+<Customloader width={200} height={200} visible={loading} minVisibleTime={10} />
           <Text style={{ marginTop: 10, color: '#555' }}>Loading QR...</Text>
         </View>
       ) : (
@@ -83,14 +76,13 @@ const handleShareLink = async () => {
           <Text style={style.slogan}>Your Health, One Scan Away</Text>
           <View style={style.QRcard}>
             {userData ? (
-             <QRCode
-  value={` https://internpro-e969e.web.app?uid=${uid}`}
-  size={200}
-  color="#4D94CC"
-  backgroundColor="#FFFFFF"
-  getRef={(c) => (qrRef.current = c)}
-/>
-
+              <QRCode
+                value={` https://internpro-e969e.web.app?uid=${uid}`}
+                size={200}
+                color="#4D94CC"
+                backgroundColor="#FFFFFF"
+                getRef={(c) => (qrRef.current = c)}
+              />
             ) : (
               <Text style={{ color: '#999', textAlign: 'center' }}>No data available</Text>
             )}
@@ -110,77 +102,18 @@ const handleShareLink = async () => {
 
 export default QRScreen;
 
-
 const style = StyleSheet.create({
-  Screen: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-
-  Header: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 20,
-    backgroundColor: '#fff',
-  },
-
-  backButton: {
-    position: 'absolute',
-    left: 20,
-    top: '70%',
-  },
-
+  Screen: { flex: 1, backgroundColor: '#fff' },
+  Header: { justifyContent: 'center', alignItems: 'center', paddingVertical: 20, backgroundColor: '#fff' },
+  backButton: { position: 'absolute', left: 20, top: '70%' },
   QRcard: {
-    marginTop: 20,
-    alignSelf: 'center',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '80%',
-    height: '40%',
-    backgroundColor: '#fff',
-    borderRadius: 50,
-    borderWidth: 2,
+    marginTop: 20, alignSelf: 'center', alignItems: 'center', justifyContent: 'center',
+    width: '80%', height: '40%', backgroundColor: '#fff', borderRadius: 50, borderWidth: 2,
   },
-
-  btnContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    marginTop: 30,
-  },
-
-  qrBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1C75BC',
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 12,
-    elevation: 4,
-  },
-
-  qrBtnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-    marginRight: 8,
-  },
-
-  icon: {
-    marginRight: 4,
-  },
-
-  loaderContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  slogan: {
-    textAlign: 'center',
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#4D94CC',
-    marginTop: 40,
-  },
+  btnContainer: { flexDirection: 'row', justifyContent: 'center', paddingHorizontal: 20, marginTop: 30 },
+  qrBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1C75BC', paddingVertical: 12, paddingHorizontal: 30, borderRadius: 12, elevation: 4 },
+  qrBtnText: { color: '#fff', fontSize: 16, fontWeight: '600', marginRight: 8 },
+  icon: { marginRight: 4 },
+  loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  slogan: { textAlign: 'center', fontSize: 18, fontWeight: '800', color: '#4D94CC', marginTop: 40 },
 });

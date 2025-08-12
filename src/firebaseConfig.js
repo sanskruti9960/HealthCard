@@ -4,7 +4,6 @@ import { getFirestore } from "firebase/firestore";// https://firebase.google.com
 const firebaseConfig = {
   apiKey: "AIzaSyDKwPZstPGtVuL7qbWKK07LW1KDLAqDQgA",
   authDomain: "internpro-e969e.firebaseapp.com",
-
   projectId: "internpro-e969e",
   storageBucket: "internpro-e969e.firebasestorage.app",
   messagingSenderId: "678464281008",

@@ -1,4 +1,4 @@
-import { StyleSheet, Linking, Text, View, Pressable, TextInput, TouchableOpacity, Dimensions, ScrollView, Modal } from 'react-native'
+import { StyleSheet, Linking, Text,TouchableWithoutFeedback, View, Pressable, TextInput, TouchableOpacity, Dimensions, ScrollView, Modal } from 'react-native'
 import React, { useState } from 'react'
 import FontAwesome5 from "react-native-vector-icons/FontAwesome5";
 import SleepTracker from "./SleepTracker"
@@ -187,7 +187,7 @@ const ActivityCard = () => {
           animationType='fade'
           transparent={true}
 
-        >
+        ><TouchableWithoutFeedback onPress={() => setModalOpen(false)}>
           <View style={HomeStyle.container}>
             <View style={HomeStyle.innercontainer}>
               <Text style={HomeStyle.heading}>How stressed are you feeling?</Text>
@@ -214,6 +214,7 @@ const ActivityCard = () => {
               </TouchableOpacity>
             </View>
           </View>
+          </TouchableWithoutFeedback>
         </Modal>
 
         {/* low level stress modal=======================        */}

@@ -2,74 +2,137 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Health Card Data</title>
+  <title>User Health Card</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: #f7f9fc; }
-    h2 { color: #1C75BC; }
-    pre { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-    .error { color: red; font-weight: bold; }
-    .btn { padding: 10px 15px; background: #1C75BC; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #e3f2fd, #ffffff);
+      padding: 20px;
+      margin: 0;
+      color: #333;
+    }
+    h2 {
+      text-align: center;
+      color: #1565c0;
+      margin-bottom: 30px;
+      font-size: 28px;
+    }
+    .card {
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+      padding: 20px;
+      margin-bottom: 20px;
+      transition: transform 0.2s ease;
+    }
+    .card:hover { transform: translateY(-3px); }
+    .section-title {
+      font-size: 20px;
+      font-weight: bold;
+      color: #1565c0;
+      border-bottom: 2px solid #e8f0f9;
+      padding-bottom: 8px;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .field {
+      margin-bottom: 12px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .field-label { font-weight: bold; color: #555; min-width: 140px; }
+    .field-value { color: #222; flex: 1; }
+    .error { text-align: center; color: red; font-weight: bold; font-size: 18px; }
+    #loading {
+      text-align: center;
+      font-size: 18px;
+      color: #1565c0;
+      font-weight: bold;
+      animation: blink 1.2s infinite;
+    }
+    @keyframes blink { 50% { opacity: 0.5; } }
   </style>
 </head>
 <body>
-  <h2>User Health Data</h2>
+  <h2>🩺 User Health Card</h2>
   <div id="output">Loading...</div>
-  <button id="loginBtn" class="btn">Sign in with Google</button>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyDKwPZstPGtVuL7qbWKK07LW1KDLAqDQgA",
   authDomain: "internpro-e969e.firebaseapp.com",
-  storageBucket: "internpro-e969e.appspot.com",
+  projectId: "internpro-e969e",
+  storageBucket: "internpro-e969e.appspot.com", 
   messagingSenderId: "678464281008",
   appId: "1:678464281008:web:97cee81e6d2bd54cb39e75",
-  projectId: "internpro-e969e",
 };
 
-// Init Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
 
-// Sign in button
-document.getElementById("loginBtn").addEventListener("click", () => {
-  signInWithPopup(auth, provider)
-    .then((result) => {
-      console.log("Signed in as:", result.user.uid);
-    })
-    .catch((error) => {
-      console.error("Login error:", error);
-    });
-});
+const output = document.getElementById('output');
+output.innerHTML = `<div id="loading">⏳ Fetching your data...</div>`;
 
-// Listen for auth state
-onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    document.getElementById('output').innerHTML = "Fetching your data...";
-    try {
-      const docRef = doc(db, "Siddhi", user.uid);
-      console.log('docRef',docRef);
-      
-      const snap = await getDoc(docRef);
-      if (snap.exists()) {
-        document.getElementById('output').innerHTML =
-          `<pre>${JSON.stringify(snap.data(), null, 2)}</pre>`;
-      } else {
-        document.getElementById('output').innerHTML = "<p class='error'>No data found for this user.</p>";
-      }
-    } catch (e) {
-      document.getElementById('output').innerHTML = `<p class='error'>Error: ${e.message}</p>`;
+// 1️⃣ Get UID from URL query params
+const params = new URLSearchParams(window.location.search);
+const USER_DOC_ID = params.get("uid");
+
+if (!USER_DOC_ID) {
+  output.innerHTML = `<p class='error'>No UID provided in the link.</p>`;
+} else {
+  listenForData(USER_DOC_ID);
+}
+
+function listenForData(USER_DOC_ID) {
+  const docRef = doc(db, "Siddhi", USER_DOC_ID);
+  console.log(`Listening for data changes for user ID: ${USER_DOC_ID}`);
+
+  onSnapshot(docRef, (snap) => {
+    if (snap.exists()) {
+      const data = snap.data();
+      output.innerHTML = `
+        <div class="card">
+          <div class="section-title">👤 Personal Information</div>
+          <div class="field"><span class="field-label">Full Name:</span> <div class="field-value">${data.fullName || '-'}</div></div>
+          <div class="field"><span class="field-label">Email:</span> <div class="field-value">${data.email || '-'}</div></div>
+          <div class="field"><span class="field-label">Phone:</span> <div class="field-value">${data.phone || '-'}</div></div>
+          <div class="field"><span class="field-label">User ID:</span> <div class="field-value">${USER_DOC_ID}</div></div>
+        </div>
+        
+        <div class="card">
+          <div class="section-title">🩺 Medical Information</div>
+          <div class="field"><span class="field-label">Allergies:</span> <div class="field-value">${data.medicalInfo?.allergies || '-'}</div></div>
+          <div class="field"><span class="field-label">Chronic Illnesses:</span> <div class="field-value">${data.medicalInfo?.chronicIllnesses || '-'}</div></div>
+          <div class="field"><span class="field-label">Family History:</span> <div class="field-value">${data.medicalInfo?.familyMedicalHistory || '-'}</div></div>
+          <div class="field"><span class="field-label">Medical Conditions:</span> <div class="field-value">${data.medicalInfo?.medicalConditions || '-'}</div></div>
+          <div class="field"><span class="field-label">Past Surgery:</span> <div class="field-value">${data.medicalInfo?.pastSurgery || '-'}</div></div>
+        </div>
+        
+        ${data.insurancePolicies?.length ? data.insurancePolicies.map((policy, i) => `
+          <div class="card">
+            <div class="section-title">📄 Insurance Policy #${i + 1}</div>
+            <div class="field"><span class="field-label">Company Name:</span> <div class="field-value">${policy.companyName || '-'}</div></div>
+            <div class="field"><span class="field-label">Policy Number:</span> <div class="field-value">${policy.policyNumber || '-'}</div></div>
+            <div class="field"><span class="field-label">Claim Amount:</span> <div class="field-value">${policy.claimAmount || '-'}</div></div>
+            <div class="field"><span class="field-label">Service Number:</span> <div class="field-value">${policy.serviceNumber || '-'}</div></div>
+            <div class="field"><span class="field-label">Claim Link:</span> <div class="field-value"><a href="${policy.claimLink}" target="_blank">${policy.claimLink || '-'}</a></div></div>
+          </div>
+        `).join('') : ''}
+      `;
+    } else {
+      output.innerHTML = `<p class='error'>No data found for this user.</p>`;
     }
-  } else {
-    document.getElementById('output').innerHTML = "<p class='error'>Not signed in.</p>";
-  }
-});
+  }, (error) => {
+    output.innerHTML = `<p class='error'>Error: ${error.message}</p>`;
+  });
+}
 </script>
 </body>
 </html>

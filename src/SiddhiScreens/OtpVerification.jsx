@@ -12,7 +12,8 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import {firestore} from './firechifile/firebaseConfig'; // Adjust the import path as needed
+import { db } from './firechifile/firebaseConfig';
+import { doc, setDoc } from 'firebase/firestore';
 
 const OtpVerification = () => {
   const route = useRoute();
@@ -37,7 +38,7 @@ const OtpVerification = () => {
     }
   };
 
- const handleVerifyOtp = async () => {
+const handleVerifyOtp = async () => {
   const enteredOtp = otp.join('');
   if (enteredOtp.length < 6) {
     setModalType('error');
@@ -56,27 +57,27 @@ const OtpVerification = () => {
   setVerifying(true);
 
   try {
-      if (route.params?.from === 'signup') {
-        const { uid, fullName, email, phone, password } = route.params;
+    if (route.params?.from === 'signup') {
+      const { uid, fullName, email, phone, password } = route.params;
 
-        const userData = {
-          userid: uid,
-          fullName,
-          email,
-          phone,
-          password,
-          createdAt: new Date().toISOString(),
-        };
+      const userData = {
+        userid: uid,
+        fullName,
+        email,
+        phone,
+        password,
+        createdAt: new Date().toISOString(),
+      };
 
-        await firestore().collection('Siddhi').doc(uid).set(userData);
-        setModalType('success');
-        setModalMessage('Your account has been created.');
-        setModalVisible(true);
-      } else {
-        setModalType('success');
-        setModalMessage('Welcome back!');
-        setModalVisible(true);
-      }
+      await setDoc(doc(db, 'Siddhi', uid), userData);
+      setModalType('success');
+      setModalMessage('Your account has been created.');
+      setModalVisible(true);
+    } else {
+      setModalType('success');
+      setModalMessage('Welcome back!');
+      setModalVisible(true);
+    }
   } catch (error) {
     console.error('OTP Verification Error:', error);
     setModalType('error');
@@ -86,6 +87,7 @@ const OtpVerification = () => {
     setVerifying(false);
   }
 };
+
 
   const handleResendOtp = () => {
     setResending(true);

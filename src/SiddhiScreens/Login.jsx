@@ -14,8 +14,8 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
-import { getAuth, signInWithEmailAndPassword } from '@react-native-firebase/auth';
-import { getFirestore, doc, getDoc } from '@react-native-firebase/firestore';
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
 const { width } = Dimensions.get('window');
 
 const Login = ({ navigation }) => {
@@ -53,64 +53,60 @@ const Login = ({ navigation }) => {
     return valid;
   };
 
-  const handleLogin = async () => {
-    if (!validate()) return;
+ 
+const handleLogin = async () => {
+  if (!validate()) return;
 
-    // Normalize phone number: remove non-digits, take last 10 digits
-    const normalizePhone = (num) => num.replace(/\D/g, '').slice(-10);
-    const enteredPhone = normalizePhone(phone);
+  const normalizePhone = (num) => num.replace(/\D/g, '').slice(-10);
+  const enteredPhone = normalizePhone(phone);
 
-    try {
-      // 1. Sign in with Firebase Auth (modular API)
-      const auth = getAuth();
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const uid = userCredential.user.uid;
+  try {
+    // 1. Sign in
+    const userCredential = await auth().signInWithEmailAndPassword(email, password);
+    const uid = userCredential.user.uid;
 
-      // 2. Fetch user data from Firestore (modular API)
-      const firestore = getFirestore();
-      const userDocRef = doc(firestore, 'Siddhi', uid);
-      const userDoc = await getDoc(userDocRef);
-
-      if (!userDoc.exists) {
-        setModalType('error');
-        setModalMessage('No user data found in Firestore.');
-        setModalVisible(true);
-        return;
-      }
-
-      const userData = userDoc.data();
-      const storedPhone = userData.phone ? normalizePhone(userData.phone) : '';
-
-      // 3. Compare phone number from Firestore with entered one
-      if (storedPhone !== enteredPhone) {
-        setModalType('error');
-        setModalMessage('The phone number does not match our records.');
-        setModalVisible(true);
-        return;
-      }
-
-      // 4. Navigate to OTP screen with phone + UID
-      navigation.navigate('OtpVerification', {
-        uid: uid,
-        phone: userData.phone,
-        from: 'login', // to tell OTP screen this is from login
-      });
-
-    } catch (error) {
-      console.error('Login Error:', error);
-      let message = error.message;
-
-      if (error.code === 'auth/user-not-found') {
-        message = 'No account found with this email.';
-      } else if (error.code === 'auth/wrong-password') {
-        message = 'Incorrect password.';
-      }
-
+    // 2. Get Firestore user
+    const userDoc = await firestore().collection('Siddhi').doc(uid).get();
+    if (!userDoc.exists) {
       setModalType('error');
-      setModalMessage(message);
+      setModalMessage('No user data found in Firestore.');
       setModalVisible(true);
+      return;
     }
-  };
+
+    const userData = userDoc.data();
+    const storedPhone = userData.phone ? normalizePhone(userData.phone) : '';
+
+    if (storedPhone !== enteredPhone) {
+      setModalType('error');
+      setModalMessage('The phone number does not match our records.');
+      setModalVisible(true);
+      return;
+    }
+
+    navigation.navigate('OtpVerification', {
+      uid,
+      phone: userData.phone,
+      from: 'login',
+    });
+
+  } catch (error) {
+    console.error('Login Error:', error);
+    let message = error.message;
+
+    if (error.code === 'auth/user-not-found') {
+      message = 'No account found with this email.';
+    } else if (error.code === 'auth/wrong-password') {
+      message = 'Incorrect password.';
+    } else if (error.code === 'auth/invalid-credential') {
+      message = 'Invalid credentials. Please check your email and password.';
+    }
+
+    setModalType('error');
+    setModalMessage(message);
+    setModalVisible(true);
+  }
+};
 
   return (
     <LinearGradient colors={['#f0f4ff', '#fff']} style={{ flex: 1 }}>

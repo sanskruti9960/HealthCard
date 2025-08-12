@@ -10,7 +10,7 @@ import { AnimatedCircularProgress } from 'react-native-circular-progress';
 import Svg, { Path } from 'react-native-svg'
 import { doc, getDoc } from 'firebase/firestore';
 import auth from '@react-native-firebase/auth';
-import { db } from '../firebaseConfig'; // your firebase config file
+import { db } from '../SiddhiScreens/firechifile/firebaseConfig'; // your firebase config file
 const { width } = Dimensions.get('window');
 
 const cards = [
@@ -54,30 +54,37 @@ const HomeScreen = ({ navigation }) => {
   };
   // ===============for database of name , prfileimage =================
   const [fullName, setFullName] = useState('');
+  const [profileImage, setProfileImage] = useState(null); // store Base64 image
   const user = auth().currentUser;
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      const userId = user.uid;
-      try {
-        const docRef = doc(db, 'Siddhi', userId);
-        const docSnap = await getDoc(docRef);
+useEffect(() => {
+  const fetchUserData = async () => {
+    if (!user?.uid) return;
 
-        if (docSnap.exists()) {
-          const userData = docSnap.data();
-          setFullName(userData.fullName || '');
+    try {
+      const docRef = doc(db, 'Siddhi', user.uid);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const userData = docSnap.data();
+        setFullName(userData.fullName || '');
+
+        if (userData.profileImageBase64) {
+          // Use as-is because it already has 'data:image/jpeg;base64,'
+          setProfileImage(userData.profileImageBase64);
         } else {
-          console.log('No such user!');
+          setProfileImage(null);
         }
-      } catch (error) {
-        console.error('Error getting user data:', error);
+      } else {
+        console.log('No such user!');
       }
-    };
+    } catch (error) {
+      console.error('Error getting user data:', error);
+    }
+  };
 
-    fetchUserData();
-  }, []);
-
-
+  fetchUserData();
+}, [user]);
 
   // =====================================================
   const flatListRef = useRef(null);
@@ -142,14 +149,28 @@ const HomeScreen = ({ navigation }) => {
     <View style={HomeStyle.main}>
       {/* Topbar container */}
       <View style={HomeStyle.Topbar}>
-
         <View style={HomeStyle.profile_name}>
+
+          {/* profile image  */}
           <TouchableOpacity
             style={HomeStyle.profile_icon}
-            onPress={() => profiles()} >
-            <Ionicons name="person-circle" size={45} color="skyblue"
-            />
+
+          >
+            {profileImage ? (
+              <Image
+                source={{ uri: profileImage }}
+                style={{
+                  height: 45,
+                  width: 45,
+                  borderRadius: 20, // smooth rounded corners
+                  resizeMode: 'cover',
+                }}
+              />
+            ) : (
+              <Ionicons name="person-circle" size={45} color="skyblue" />
+            )}
           </TouchableOpacity>
+          {/* name in top bar */}
           <Text style={{ fontWeight: "500", fontSize: 19, marginLeft: 10, }}>{`👋 Hello, ${fullName} `}</Text>
 
         </View>
