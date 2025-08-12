@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar, Refres
 import { Card } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import FirestoreService, { USER_DATA_TYPES } from '../Services/firestoreSrevice';
+import FirestoreService, { USER_DATA_TYPES } from '../Services/FirestoreService';
 
 const InsurancePreview = ({ navigation, route }) => {
   const [userId, setUserId] = useState(null);
@@ -86,22 +86,19 @@ const InsurancePreview = ({ navigation, route }) => {
           <Text style={styles.heroSubtitle}>Policy Details</Text>
         </View>
 
-        <Card style={styles.cardStyle} elevation={4}>
-          <Card.Content>
             <View style={styles.container}>
               {loading ? (
                 <Text style={styles.loadingText}>Loading insurance data...</Text>
               ) : (
                 getOrderedFields(formData).map(([key, value, isEmpty], index) => (
-                  <View key={key} style={[styles.dataRow, index % 2 === 0 ? styles.evenRow : null]}>
+                  <View key={key} style={styles.dataRow}>
                     <Text style={styles.label}>{formatKey(key)}</Text>
                     <Text style={[styles.value, isEmpty && styles.noDataText]}>{value}</Text>
                   </View>
                 ))
               )}
             </View>
-          </Card.Content>
-        </Card>
+        
         <View style={styles.buttonContainer}>
           <TouchableOpacity 
             style={styles.editButton}
@@ -210,24 +207,8 @@ const styles = StyleSheet.create({
   container: {
     padding: 10,
   },
-  cardStyle: {
-    backgroundColor: '#FFF',
-    borderRadius: 20,
-    marginHorizontal: 20,
-    marginBottom: 20,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
-  },
   dataRow: {
     padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EFEFEF',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -250,7 +231,7 @@ const styles = StyleSheet.create({
   },
   noDataText: {
     color: '#ff3b30',
-    fontStyle: 'italic',
+    fontWeight: '300',
   },
   editButton: {
     flex: 1,
