@@ -5,17 +5,21 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  TextInput,
   Keyboard,
+  Modal,
+  FlatList,
 } from "react-native";
-import DropDownPicker from "react-native-dropdown-picker";
+import { TextInput } from "react-native-paper";
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useForm, Controller } from "react-hook-form";
-import Styling from "./Styling";
-import FirestoreService, { USER_DATA_TYPES } from "../Services/firestoreSrevice";
+import FirestoreService, { USER_DATA_TYPES } from "../Services/FirestoreService";
 
 const PersonalDetails = ({ navigation }) => {
-  const [genderOpen, setGenderOpen] = useState(false);
-  const [bloodOpen, setBloodOpen] = useState(false);
+  const [showGenderDropdown, setShowGenderDropdown] = useState(false);
+  const [showBloodDropdown, setShowBloodDropdown] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
   const genderItems = [
     { label: "Male", value: "male" },
@@ -43,8 +47,10 @@ const PersonalDetails = ({ navigation }) => {
   } = useForm({
     defaultValues: {
       fullName: "",
-      phone: "",
+      height: "",
+      weight: "",
       birthDate: "",
+      address: "",
       gender: "",
       bloodGrp: "",
     },
@@ -72,10 +78,10 @@ const PersonalDetails = ({ navigation }) => {
         await FirestoreService.saveUserData(USER_DATA_TYPES.PERSONAL, data);
         console.log("Personal details saved successfully");
         Keyboard.dismiss();
-        navigation.navigate("MainTab");
+        navigation.navigate("HomeScreen");
       } catch (error) {
         console.log("Error saving personal details:", error);
-        navigation.navigate("MainTab");
+        navigation.navigate("HomeScreen");
       }
     },
     [navigation]
@@ -85,133 +91,276 @@ const PersonalDetails = ({ navigation }) => {
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.viewStyle}>
         <Text style={styles.heading}>User Details</Text>
-        <Styling />
+        <Text style={styles.subtitle}>"Your health is an investment, not an expense"</Text>
+        
 
-        {/* Single Card with All Inputs */}
-        <View style={styles.inputCard}>
-          <Text style={styles.label}>Full Name</Text>
-          <Controller
-            control={control}
-            name="fullName"
-            rules={{ required: "Full name is required" }}
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                style={styles.textInputStyle}
-                placeholder="Enter Full Name"
-                placeholderTextColor="#999"
-                value={value}
-                onBlur={onBlur}
-                onChangeText={onChange}
-              />
-            )}
-          />
+      
+          <View style={styles.inputContainer}>
+            <Controller
+              control={control}
+              name="fullName"
+              rules={{ required: "Full name is required" }}
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput
+                  mode="outlined"
+                  label="Full Name"
+                  value={value}
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  left={<TextInput.Icon icon={() => <Icon name="person" size={20} color="#1C75BC" />} />}
+                  style={styles.paperInput}
+                  outlineColor="#E2E8F0"
+                  activeOutlineColor="#1C75BC"
+                  theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
+                />
+              )}
+            />
+          </View>
           {errors.fullName && (
             <Text style={styles.error}>{errors.fullName.message}</Text>
           )}
 
-          <Text style={[styles.label, { marginTop: 16 }]}>Phone Number</Text>
-          <Controller
-            control={control}
-            name="phone"
-            rules={{
-              required: "Phone number is required",
-              pattern: {
-                value: /^[0-9]{10}$/,
-                message: "Enter a valid 10-digit number",
-              },
-            }}
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                style={styles.textInputStyle}
-                placeholder="Enter Phone Number"
-                placeholderTextColor="#999"
-                keyboardType="phone-pad"
-                value={value}
-                onBlur={onBlur}
-                onChangeText={onChange}
-              />
-            )}
-          />
-          {errors.phone && <Text style={styles.error}>{errors.phone.message}</Text>}
+          <View style={styles.inputContainer}>
+            <Controller
+              control={control}
+              name="height"
+              rules={{ required: "Height is required" }}
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput
+                  mode="outlined"
+                  label="Height (cm)"
+                  keyboardType="numeric"
+                  value={value}
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  left={<TextInput.Icon icon={() => <Icon name="height" size={20} color="#1C75BC" />} />}
+                  style={styles.paperInput}
+                  outlineColor="#E2E8F0"
+                  activeOutlineColor="#1C75BC"
+                  theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
+                />
+              )}
+            />
+          </View>
+          {errors.height && (
+            <Text style={styles.error}>{errors.height.message}</Text>
+          )}
 
-          <Text style={[styles.label, { marginTop: 16 }]}>Birth Date</Text>
-          <Controller
-            control={control}
-            name="birthDate"
-            rules={{ required: "Birth date is required" }}
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                placeholder="DD-MON-YEAR"
-                placeholderTextColor="#999"
-                style={styles.textInputStyle}
-                value={value}
-                onBlur={onBlur}
-                onChangeText={onChange}
-              />
-            )}
-          />
+          <View style={styles.inputContainer}>
+            <Controller
+              control={control}
+              name="weight"
+              rules={{ required: "Weight is required" }}
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput
+                  mode="outlined"
+                  label="Weight (kg)"
+                  keyboardType="numeric"
+                  value={value}
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  left={<TextInput.Icon icon={() => <Icon name="monitor-weight" size={20} color="#1C75BC" />} />}
+                  style={styles.paperInput}
+                  outlineColor="#E2E8F0"
+                  activeOutlineColor="#1C75BC"
+                  theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
+                />
+              )}
+            />
+          </View>
+          {errors.weight && (
+            <Text style={styles.error}>{errors.weight.message}</Text>
+          )}
+
+          <View style={styles.inputContainer}>
+            <Controller
+              control={control}
+              name="birthDate"
+              rules={{ required: "Birth date is required" }}
+              render={({ field: { onChange, value } }) => (
+                <TouchableOpacity onPress={() => setShowDatePicker(true)} activeOpacity={1}>
+                  <TextInput
+                    mode="outlined"
+                    label="Birth Date"
+                    value={value}
+                    editable={false}
+                    left={<TextInput.Icon icon={() => <Icon name="event" size={20} color="#1C75BC" />} />}
+                    style={styles.paperInput}
+                    outlineColor="#E2E8F0"
+                    activeOutlineColor="#1C75BC"
+                    theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
+                    placeholder="Select Birth Date"
+                    pointerEvents="none"
+                  />
+                </TouchableOpacity>
+              )}
+            />
+          </View>
           {errors.birthDate && (
             <Text style={styles.error}>{errors.birthDate.message}</Text>
           )}
 
-          <Text style={[styles.label, { marginTop: 16 }]}>Gender</Text>
-          <Controller
-            control={control}
-            name="gender"
-            render={({ field: { value } }) => (
-              <DropDownPicker
-                open={genderOpen}
-                value={value}
-                items={genderItems}
-                setOpen={setGenderOpen}
-                setValue={(cb) => setValue("gender", cb(value))}
-                placeholder="Select Gender"
-                style={styles.dropdown}
-                dropDownContainerStyle={styles.dropdownContainer}
-                zIndex={3000}
-                zIndexInverse={1000}
-              />
-            )}
-          />
+          <View style={styles.inputContainer}>
+            <Controller
+              control={control}
+              name="address"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput
+                  mode="outlined"
+                  label="Address"
+                  value={value}
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  multiline
+                  numberOfLines={3}
+                  left={<TextInput.Icon icon={() => <Icon name="location-on" size={20} color="#1C75BC" />} />}
+                  style={styles.paperInput}
+                  outlineColor="#E2E8F0"
+                  activeOutlineColor="#1C75BC"
+                  theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
+                  placeholder="Enter your address"
+                />
+              )}
+            />
+          </View>
 
-          <Text style={[styles.label, { marginTop: 16 }]}>Blood Group</Text>
-          <Controller
-            control={control}
-            name="bloodGrp"
-            render={({ field: { value } }) => (
-              <DropDownPicker
-                open={bloodOpen}
-                value={value}
-                items={bloodItems}
-                setOpen={setBloodOpen}
-                setValue={(cb) => setValue("bloodGrp", cb(value))}
-                placeholder="Select Blood Group"
-                style={styles.dropdown}
-                dropDownContainerStyle={styles.dropdownContainer}
-                scrollViewProps={{
-                  nestedScrollEnabled: true,
-                  keyboardShouldPersistTaps: "handled",
-                }}
-                zIndex={2000}
-                zIndexInverse={3000}
-              />
-            )}
-          />
+          <View style={styles.inputContainer}>
+            <Controller
+              control={control}
+              name="gender"
+              render={({ field: { value } }) => (
+                <TouchableOpacity onPress={() => setShowGenderDropdown(true)} activeOpacity={1}>
+                  <TextInput
+                    label="Gender"
+                    value={value}
+                    mode="outlined"
+                    editable={false}
+                    right={<TextInput.Icon icon="menu-down" />}
+                    left={<TextInput.Icon icon={() => <Icon name="person-outline" size={20} color="#1C75BC" />} />}
+                    style={styles.paperInput}
+                    outlineColor="#E2E8F0"
+                    activeOutlineColor="#1C75BC"
+                    theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
+                    placeholder="Select Gender"
+                    pointerEvents="none"
+                  />
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Controller
+              control={control}
+              name="bloodGrp"
+              render={({ field: { value } }) => (
+                <TouchableOpacity onPress={() => setShowBloodDropdown(true)} activeOpacity={1}>
+                  <TextInput
+                    label="Blood Group"
+                    value={value}
+                    mode="outlined"
+                    editable={false}
+                    right={<TextInput.Icon icon="menu-down" />}
+                    left={<TextInput.Icon icon={() => <Icon name="bloodtype" size={20} color="#1C75BC" />} />}
+                    style={styles.paperInput}
+                    outlineColor="#E2E8F0"
+                    activeOutlineColor="#1C75BC"
+                    theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
+                    placeholder="Select Blood Group"
+                    pointerEvents="none"
+                  />
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+
+          {/* Save Button */}
+          <View style={styles.buttonRow}>
+            <TouchableOpacity
+              style={[styles.btnStyle, styles.btnFilled]}
+              onPress={handleSubmit(onSubmit)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.btnTextFilled}>Save</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* Next Button */}
-        <View style={styles.buttonRow}>
-          <TouchableOpacity
-            style={[styles.btnStyle, styles.btnFilled]}
-            onPress={handleSubmit(onSubmit)}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.btnTextFilled}>Next</Text>
+        {/* Gender Modal */}
+        <Modal visible={showGenderDropdown} transparent animationType='fade'>
+          <TouchableOpacity style={styles.modalOverlay} onPress={() => setShowGenderDropdown(false)}>
+            <View style={styles.modalContent}>
+              <FlatList
+                data={genderItems}
+                keyExtractor={(item) => item.value}
+                renderItem={({item}) => (
+                  <TouchableOpacity 
+                    style={styles.dropdownItem} 
+                    onPress={() => {
+                      setValue('gender', item.value);
+                      setShowGenderDropdown(false);
+                    }}
+                  >
+                    <Text style={styles.dropdownItemText}>{item.label}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
           </TouchableOpacity>
+        </Modal>
 
-         
-        </View>
-      </View>
+        {/* Blood Group Modal */}
+        <Modal visible={showBloodDropdown} transparent animationType='fade'>
+          <TouchableOpacity style={styles.modalOverlay} onPress={() => setShowBloodDropdown(false)}>
+            <View style={styles.modalContent}>
+              <FlatList
+                data={bloodItems}
+                keyExtractor={(item) => item.value}
+                renderItem={({item}) => (
+                  <TouchableOpacity 
+                    style={styles.dropdownItem} 
+                    onPress={() => {
+                      setValue('bloodGrp', item.value);
+                      setShowBloodDropdown(false);
+                    }}
+                  >
+                    <Text style={styles.dropdownItemText}>{item.label}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
+          </TouchableOpacity>
+        </Modal>
+
+        {/* Date Picker */}
+        {showDatePicker && (
+          <DateTimePicker
+            value={(() => {
+              const currentValue = control._formValues.birthDate;
+              if (currentValue) {
+                const parsedDate = new Date(currentValue);
+                return isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
+              }
+              return new Date();
+            })()}
+            mode="date"
+            display="default"
+            onChange={(event, date) => {
+              setShowDatePicker(false);
+              if (date) {
+                setSelectedDate(date);
+                const formattedDate = date.toLocaleDateString('en-GB', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric'
+                });
+                setValue('birthDate', formattedDate);
+              }
+            }}
+            maximumDate={new Date()}
+          />
+        )}
+     
     </ScrollView>
   );
 };
@@ -219,7 +368,12 @@ const PersonalDetails = ({ navigation }) => {
 export default PersonalDetails;
 
 const styles = StyleSheet.create({
-  container: { padding: 20, backgroundColor: "#F8FAFC" },
+  container: { 
+    padding: 20,
+    backgroundColor: "#F8FAFC",
+    flex: 1,
+    justifyContent: "center",
+  },
   heading: {
     fontSize: 24,
     fontWeight: "500",
@@ -227,60 +381,69 @@ const styles = StyleSheet.create({
     margin: 5,
     color: "#1C75BC",
   },
-  viewStyle: { flex: 1 },
-  inputCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 20,
-    elevation: 3, // Android shadow
-    shadowColor: "#000", // iOS shadow
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
+  subtitle: {
+    fontSize: 14,
+    textAlign: "center",
+    marginBottom: 50,
+    color: "#64748B",
+  },
+  viewStyle: {
+     flex: 1,
+    justifyContent: "center",
+    },
+
+
+  inputContainer: {
+    marginBottom: 8,
+    marginTop: 4,
+    width: '100%',
+  },
+  paperInput: {
+    backgroundColor: 'white',
   },
   label: {
     fontWeight: "500",
     fontSize: 16,
     marginBottom: 8,
+    marginTop: 16,
     color: "#374151",
-  },
-  textInputStyle: {
-    color: "#000",
-    backgroundColor: "#F9FAFB",
-    padding: 12,
-    borderRadius: 8,
-    fontSize: 15,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
   },
   error: {
     color: "#EF4444",
     fontSize: 13,
-    marginTop: 5,
+    marginTop: 2,
+    marginBottom: 10,
+    textAlign: "left",
+    marginLeft: 10,
   },
-  dropdown: {
-    backgroundColor: "#F9FAFB",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 8,
-    marginTop: 4,
-    width: "100%",
-    alignSelf: "center",
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 30,
   },
-  dropdownContainer: {
-    backgroundColor: "#F9FAFB",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 8,
-    maxHeight: 320,
-    width: "100%",
-    alignSelf: "center",
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 15,
+    width: '80%',
+    maxHeight: '70%',
+    overflow: 'hidden',
+    elevation: 5,
+  },
+  dropdownItem: {
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  dropdownItemText: {
+    fontSize: 16,
+    color: '#333',
   },
   buttonRow: {
     flexDirection: "row",
     justifyContent: "center",
-    marginTop: 5,
+    marginTop: 20,
   },
   btnStyle: {
     paddingVertical: 12,
