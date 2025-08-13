@@ -45,16 +45,7 @@ const handleSignup = async () => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const uid = userCredential.user.uid;
 
-    // ✅ Show success toast
-    Toast.show('Signed up successfully!', {
-      duration: Toast.durations.SHORT,
-      position: Toast.positions.BOTTOM,
-      shadow: true,
-      animation: true,
-      hideOnPress: true,
-      backgroundColor: '#4CAF50', // green background
-      textColor: '#fff',
-    });
+   
 
     // Navigate to OTP verification
     navigation.navigate('OtpVerification', {
@@ -69,16 +60,7 @@ const handleSignup = async () => {
   } catch (error) {
     console.error('Signup Error:', error);
 
-    // ❌ Show error toast
-    Toast.show(error.message, {
-      duration: Toast.durations.LONG,
-      position: Toast.positions.BOTTOM,
-      shadow: true,
-      animation: true,
-      hideOnPress: true,
-      backgroundColor: '#d9534f', // red background
-      textColor: '#fff',
-    });
+   
   }
 };
 

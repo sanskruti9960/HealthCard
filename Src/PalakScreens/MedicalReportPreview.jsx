@@ -89,7 +89,13 @@ const MedicalReportPreview = ({ navigation }) => {
     }
   };
 
-  const handleBack = () => navigation.goBack();
+const handleBack = () => {
+  navigation.reset({
+    index: 0,
+    routes: [{ name: 'MainTab' }],
+  });
+};
+
 
   const getMedicalFields = (medicalInfo) => [
     ['Medical Conditions', medicalInfo.medicalConditions],

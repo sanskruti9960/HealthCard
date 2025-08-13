@@ -1,19 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
-import { getAuth } from 'firebase/auth';
+import auth from '@react-native-firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../SiddhiScreens/firechifile/firebaseConfig'; // Ensure you import your Firestore config correctly
+import { db } from '../SiddhiScreens/firechifile/firebaseConfig';
 
 const PersonalDetails = () => {
-  const auth = getAuth();
 
-  const userId = 'aPfMrCGlhhXDMyZWqJ0plGMflLg1'; // Replace with dynamic ID if needed
-  // const userId = auth().currentUser?.uid;
+  const userId = auth().currentUser?.uid;
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [Password,setPassword] = useState('');
+  const [Password, setPassword] = useState('');
+  const [personalDetails, setPersonalDetails] = useState({});
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -27,10 +26,22 @@ const PersonalDetails = () => {
 
         if (docSnap.exists()) {
           const userData = docSnap.data();
+
+          // Top-level fields
           setFullName(userData.fullName || '');
           setEmail(userData.email || '');
           setPhone(userData.phone || '');
           setPassword(userData.password || '');
+
+          // Nested map: personalDetails
+          if (userData.personalDetails) {
+            setPersonalDetails({
+              birthDate: userData.personalDetails.birthDate || '',
+              bloodGrp: userData.personalDetails.bloodGrp || '',
+              gender: userData.personalDetails.gender || '',
+
+            });
+          }
         } else {
           console.log('No such user!');
         }
@@ -44,10 +55,11 @@ const PersonalDetails = () => {
     fetchUserDetails();
   }, [userId]);
 
+
   if (loading) {
     return (
       <View style={styles.loader}>
-        <ActivityIndicator size="large" color= '#1b47d2' />
+        <ActivityIndicator size="large" color='#1b47d2' />
       </View>
     );
   }
@@ -69,9 +81,18 @@ const PersonalDetails = () => {
           <Text style={styles.value}>{phone}</Text>
         </View>
         <View style={styles.fieldRow}>
-          <Text style={styles.label}>Password:</Text>
-          <Text style={styles.value}>{Password}</Text>
+          <Text style={styles.label}>Birth Date:</Text>
+          <Text style={styles.value}>{personalDetails.birthDate}</Text>
         </View>
+        <View style={styles.fieldRow}>
+          <Text style={styles.label}>Blood Group:</Text>
+          <Text style={styles.value}>{personalDetails.bloodGrp}</Text>
+        </View>
+        <View style={styles.fieldRow}>
+          <Text style={styles.label}>Gender:</Text>
+          <Text style={styles.value}>{personalDetails.gender}</Text>
+        </View>
+       
       </View>
     </ScrollView>
   );
@@ -100,7 +121,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 20,
-    color:  '#1b47d2',
+    color: '#1b47d2',
     textAlign: 'center',
   },
   fieldRow: {
