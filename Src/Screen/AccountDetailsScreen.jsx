@@ -2,12 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
 import auth from '@react-native-firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
+import { db } from '../SiddhiScreens/firechifile/firebaseConfig';
 
 const PersonalDetails = () => {
 
-  const userId = 'Rxz6OBT6aadCbfJcGXtbmM9UaKE3'; // Replace with dynamic ID if needed
-  // const userId = auth().currentUser?.uid;
+  const userId = auth().currentUser?.uid;
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -39,8 +38,6 @@ const PersonalDetails = () => {
             setPersonalDetails({
               birthDate: userData.personalDetails.birthDate || '',
               bloodGrp: userData.personalDetails.bloodGrp || '',
-              gender: userData.personalDetails.gender || '',
-              gender: userData.personalDetails.gender || '',
               gender: userData.personalDetails.gender || '',
 
             });
