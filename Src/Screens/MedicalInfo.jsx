@@ -13,7 +13,7 @@ import {
 import { Divider, Avatar, Card, TextInput, Button } from "react-native-paper";
 
 import Icon from 'react-native-vector-icons/MaterialIcons'
-import FirestoreService, { USER_DATA_TYPES } from "../Services/FirestoreService";
+import FirestoreService, { USER_DATA_TYPES } from '../Services/firestoreSrevice';
 
 const MedicalInfo = ({ navigation, route }) => {
   const [modalVisible, setModalVisible] = useState(false);

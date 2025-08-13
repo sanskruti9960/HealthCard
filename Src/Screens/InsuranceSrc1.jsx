@@ -4,9 +4,7 @@ import { Card, Divider, Avatar, TextInput } from 'react-native-paper'
 import Icon from 'react-native-vector-icons/MaterialIcons'
 import { useNavigation } from '@react-navigation/native'
 import Tooltip from 'react-native-walkthrough-tooltip'
-
-
-import FirestoreService, { USER_DATA_TYPES } from '../Services/FirestoreService'
+import FirestoreService from '../Services/firestoreSrevice' // Adjust the import path as necessary
 
 const InsuranceSrc1=({navigation, route})=>{
   const [userId, setUserId] = useState(null);

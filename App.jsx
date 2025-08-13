@@ -69,7 +69,7 @@ const App = () => {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName={initialRoute} screenOptions={{ headerShown: false }}>
+      <Stack.Navigator initialRouteName="Onboard" screenOptions={{ headerShown: false }}>
         {/* Auth screens */}
         <Stack.Screen name="Onboard" component={Onboard} />
         <Stack.Screen name="Signup" component={Signup} />

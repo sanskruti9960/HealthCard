@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar, Refres
 import { Card } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import FirestoreService, { USER_DATA_TYPES } from '../Services/FirestoreService';
+import FirestoreService from '../Services/firestoreSrevice'; // Adjust the import path as necessary
 
 const InsurancePreview = ({ navigation, route }) => {
   const [userId, setUserId] = useState(null);

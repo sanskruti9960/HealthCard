@@ -13,7 +13,7 @@ import { TextInput } from "react-native-paper";
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useForm, Controller } from "react-hook-form";
-import FirestoreService, { USER_DATA_TYPES } from "../Services/FirestoreService";
+import FirestoreService, { USER_DATA_TYPES } from "../Services/firestoreSrevice";
 
 const PersonalDetails = ({ navigation }) => {
   const [showGenderDropdown, setShowGenderDropdown] = useState(false);

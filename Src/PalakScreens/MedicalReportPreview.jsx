@@ -10,7 +10,7 @@ import {
 import React, { useState, useEffect } from 'react';
 
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import FirestoreService, { USER_DATA_TYPES } from '../Services/FirestoreService';
+import FirestoreService, { USER_DATA_TYPES } from '../Services/firestoreSrevice';
 
 const MedicalReportPreview = ({ navigation }) => {
   const [medicalInfo, setMedicalInfo] = useState({});
