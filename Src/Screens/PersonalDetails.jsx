@@ -78,10 +78,10 @@ const PersonalDetails = ({ navigation }) => {
         await FirestoreService.saveUserData(USER_DATA_TYPES.PERSONAL, data);
         console.log("Personal details saved successfully");
         Keyboard.dismiss();
-        navigation.navigate("HomeScreen");
+        navigation.navigate("Maintab");
       } catch (error) {
         console.log("Error saving personal details:", error);
-        navigation.navigate("HomeScreen");
+        navigation.navigate("PersonalDetails");
       }
     },
     [navigation]

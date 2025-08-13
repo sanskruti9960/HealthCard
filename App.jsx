@@ -12,7 +12,7 @@ import ForgotPassword from './src/SiddhiScreens/ForgotPassword.jsx';
 import OtpVerification from './src/SiddhiScreens/OtpVerification.jsx';
 import Terms from './src/PalakScreens/Terms.jsx';
 import PersonalDetails from './src/Screens/PersonalDetails.jsx';
-import MainTab from './src/Screen/MainTab.jsx';
+import MainTab from './src/Screen/Maintab.jsx';
 import MultiplePolicy from './src/Screens/MultiplePolicy.jsx';
 import EmergencyContact from './src/Screens/EmergencyContact.jsx';
 import InsuranceSrc1 from './src/Screens/InsuranceSrc1.jsx';
@@ -35,7 +35,7 @@ import AllRecentVisits from './src/Screen/AllRecentVisits.jsx';
 import DocRecommendationScreen from './src/Screen/DocRecommendationScreen.jsx';
 import QRScreen from './src/Screen/QRScreen.jsx';
 import AccountDetailsScreen from './src/Screen/AccountDetailsScreen.jsx';
-import Customloader from './src/Animations/Customloader.jsx';
+import Customloader from './src/Animations/Customloader.js';
 
 const Stack = createNativeStackNavigator();
 
@@ -69,7 +69,7 @@ const App = () => {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Onboard" screenOptions={{ headerShown: false }}>
+      <Stack.Navigator initialRouteName="MainTab" screenOptions={{ headerShown: false }}>
         {/* Auth screens */}
         <Stack.Screen name="Onboard" component={Onboard} />
         <Stack.Screen name="Signup" component={Signup} />

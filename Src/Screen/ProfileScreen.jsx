@@ -20,6 +20,7 @@ import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import LogoutModal from '../Components/LogoutModal';
 import { getDoc, doc, setDoc, deleteField, updateDoc } from 'firebase/firestore';
 import auth from '@react-native-firebase/auth';
+import { db } from '../SiddhiScreens/firechifile/firebaseConfig'; // Adjust the import based on your project structure
 
 const ProfileScreen = ({ navigation }) => {
   const [isLogoutVisible, setLogoutVisible] = useState(false);
@@ -74,7 +75,7 @@ const ProfileScreen = ({ navigation }) => {
       await setDoc(doc(db, "Siddhi", userId), {
         profileImageBase64: base64Image
       }, { merge: true });
-      showWarning("⚠️ Profile image updated ");
+      showWarning(" ✅ Profile image updated ");
 
     } catch (error) {
 
@@ -302,13 +303,7 @@ const ProfileScreen = ({ navigation }) => {
       {/* Modals */}
       <LogoutModal
         visible={isLogoutVisible}
-        onClose={() => {
-          auth().signOut();
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'Login' }],
-          });
-        }}
+        onClose={() => setLogoutVisible(false)}
       />
 
       <Modal

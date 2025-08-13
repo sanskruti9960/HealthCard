@@ -14,7 +14,7 @@ import Feather from "react-native-vector-icons/Feather";
 import QRCode from 'react-native-qrcode-svg';
 import auth from '@react-native-firebase/auth';
 
-import Customloader from '../Animations/Customloader.jsx'; // Adjust the import path as necessary
+import Customloader from '../Animations/Customloader'; // Adjust the import path as necessary
 const QRScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState(null);

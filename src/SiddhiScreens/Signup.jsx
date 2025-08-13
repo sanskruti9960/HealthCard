@@ -14,7 +14,6 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import LottieView from 'lottie-react-native';
 import Animation1 from './img/Animation1.json';
 import { getAuth, createUserWithEmailAndPassword } from '@react-native-firebase/auth';
-import Toast from 'react-native-root-toast';
 
 const Signup = ({ navigation }) => {
   const [fullName, setFullName] = useState('');
