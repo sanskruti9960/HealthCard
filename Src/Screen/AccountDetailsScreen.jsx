@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView, RefreshControl } from 'react-native';
 import auth from '@react-native-firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../SiddhiScreens/firechifile/firebaseConfig';
+import { db } from '../firebaseConfig';
 
 const PersonalDetails = () => {
 
@@ -14,49 +14,55 @@ const PersonalDetails = () => {
   const [Password, setPassword] = useState('');
   const [personalDetails, setPersonalDetails] = useState({});
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchUserDetails = async () => {
+    setLoading(true);
+    try {
+      if (!userId) return;
+
+      const docRef = doc(db, 'Siddhi', userId);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const userData = docSnap.data();
+
+        // Top-level fields
+        setFullName(userData.fullName || '');
+        setEmail(userData.email || '');
+        setPhone(userData.phone || '');
+        // Nested map: personalDetails
+        if (userData.personalDetails) {
+          setPersonalDetails({
+            address: userData.personalDetails.address || 'No data',
+            birthDate: userData.personalDetails.birthDate || 'No data',
+            bloodGrp: userData.personalDetails.bloodGrp || 'No data',
+            gender: userData.personalDetails.gender || 'No data',
+            height: userData.personalDetails.height || 'No data',
+            weight: userData.personalDetails.weight || 'No data',
+          });
+        }
+      } else {
+        console.log('No such user!');
+      }
+    } catch (error) {
+      console.error('Error getting user data:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchUserDetails = async () => {
-      setLoading(true);
-      try {
-        if (!userId) return;
-
-        const docRef = doc(db, 'Siddhi', userId);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-          const userData = docSnap.data();
-
-          // Top-level fields
-          setFullName(userData.fullName || '');
-          setEmail(userData.email || '');
-          setPhone(userData.phone || '');
-          setPassword(userData.password || '');
-
-          // Nested map: personalDetails
-          if (userData.personalDetails) {
-            setPersonalDetails({
-              birthDate: userData.personalDetails.birthDate || '',
-              bloodGrp: userData.personalDetails.bloodGrp || '',
-              gender: userData.personalDetails.gender || '',
-
-            });
-          }
-        } else {
-          console.log('No such user!');
-        }
-      } catch (error) {
-        console.error('Error getting user data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchUserDetails();
   }, [userId]);
 
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchUserDetails();
+  };
 
-  if (loading) {
+  if (loading && !refreshing) {
     return (
       <View style={styles.loader}>
         <ActivityIndicator size="large" color='#1b47d2' />
@@ -65,7 +71,17 @@ const PersonalDetails = () => {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView 
+      contentContainerStyle={styles.container}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={['#1b47d2']} // Android
+          tintColor="#1b47d2" // iOS
+        />
+      }
+    >
       <View style={styles.card}>
         <Text style={styles.title}>Personal Information</Text>
         <View style={styles.fieldRow}>
@@ -85,6 +101,10 @@ const PersonalDetails = () => {
           <Text style={styles.value}>{personalDetails.birthDate}</Text>
         </View>
         <View style={styles.fieldRow}>
+          <Text style={styles.label}>Address:</Text>
+          <Text style={styles.value}>{personalDetails.address}</Text>
+        </View>
+        <View style={styles.fieldRow}>
           <Text style={styles.label}>Blood Group:</Text>
           <Text style={styles.value}>{personalDetails.bloodGrp}</Text>
         </View>
@@ -92,7 +112,14 @@ const PersonalDetails = () => {
           <Text style={styles.label}>Gender:</Text>
           <Text style={styles.value}>{personalDetails.gender}</Text>
         </View>
-       
+        <View style={styles.fieldRow}>
+          <Text style={styles.label}>Height:</Text>
+          <Text style={styles.value}>{personalDetails.height}</Text>
+        </View>
+        <View style={styles.fieldRow}>
+          <Text style={styles.label}>Weight:</Text>
+          <Text style={styles.value}>{personalDetails.weight}</Text>
+        </View>
       </View>
     </ScrollView>
   );
