@@ -20,25 +20,19 @@ import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import LogoutModal from '../Components/LogoutModal';
 import { getDoc, doc, setDoc, deleteField, updateDoc } from 'firebase/firestore';
 import auth from '@react-native-firebase/auth';
-import { db } from '../SiddhiScreens/firechifile/firebaseConfig'; // Adjust the import based on your project structure
+import { db } from '../SiddhiScreens/firechifile/firebaseConfig';
 
 const ProfileScreen = ({ navigation }) => {
   const [isLogoutVisible, setLogoutVisible] = useState(false);
   const [profileImage, setProfileImage] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
-  const [fullName, setFullName] = useState('sa');
-   const [userData, setUserData] = useState({
-    birthDate: '01/01/1990', // Default values
-    bloodGroup: 'A+',
-    gender: 'Female'
-  });
-
+  const [fullName, setFullName] = useState('');
+  const [userData, setUserData] = useState('');
 
   const userId = auth().currentUser?.uid;
-
-  // ... (keep all your existing functions like handleImagePress, selectFromGallery, etc.)
-    const handleImagePress = () => {
+  
+  const handleImagePress = () => {
     setModalVisible(true);
   };
 
@@ -75,7 +69,7 @@ const ProfileScreen = ({ navigation }) => {
       await setDoc(doc(db, "Siddhi", userId), {
         profileImageBase64: base64Image
       }, { merge: true });
-      showWarning(" ✅ Profile image updated ");
+      showWarning("⚠️ Profile image updated ");
 
     } catch (error) {
 
@@ -149,26 +143,32 @@ const ProfileScreen = ({ navigation }) => {
     fetchUserName();
   }, []);
 
-   // Fetch user data from Firestore
+  // Fetch user data from Firestore
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const docRef = doc(db, "Users", userId);
+        const docRef = doc(db, "Siddhi", userId);
         const docSnap = await getDoc(docRef);
-        
+
         if (docSnap.exists()) {
           const data = docSnap.data();
           setUserData({
-            birthDate: data.birthDate || '01/01/1990',
-            bloodGroup: data.bloodGroup || 'A+',
-            gender: data.gender || 'Female'
+            height: data.height ,
+            bloodGroup: data.bloodGroup ,
+            weight: data.weight  
+          });
+        } else {
+          setUserData({
+            height: 'Not set',
+            bloodGroup: 'Not set',
+            weight: 'Not set'
           });
         }
       } catch (error) {
         console.error("Error fetching user data:", error);
       }
     };
-    
+
     if (userId) {
       fetchUserData();
     }
@@ -229,33 +229,37 @@ const ProfileScreen = ({ navigation }) => {
             <Feather name="edit" size={16} color="#000" style={style.editIcon} />
           </TouchableOpacity>
         </View>
-        
+
       </View>
 
       {/* Health Info Cards */}
       <View style={style.cardsContainer}>
-        {/* Birth Date Card */}
-        <View style={[style.card, { backgroundColor: '#F0F7FF' }]}>
-          <Text style={style.cardTitle}>Birth Date</Text>
-          <Text style={style.cardValue}>{userData.birthDate}</Text>
-        </View>
-        
-        {/* Blood Group Card */}
-        <View style={[style.card, { backgroundColor: '#FFF0F5' }]}>
-          <Text style={style.cardTitle}>Blood Group</Text>
-          <Text style={style.cardValue}>{userData.bloodGroup}</Text>
-        </View>
-        
-        {/* Gender Card */}
-        <View style={[style.card, { backgroundColor: '#F0FFF4' }]}>
-          <Text style={style.cardTitle}>Gender</Text>
-          <Text style={style.cardValue}>{userData.gender}</Text>
-        </View>
-      </View>
+  {/* Height Card */}
+  <View style={[style.card, { backgroundColor: '#F0F7FF' }]}>
+    <Text style={style.cardTitle}>Height</Text>
+    <Text style={style.cardValue}>
+      {userData.height} {userData.height !== 'Not set' && 'cm'}
+    </Text>
+  </View>
+  
+  {/* Blood Group Card */}
+  <View style={[style.card, { backgroundColor: '#FFF0F5' }]}>
+    <Text style={style.cardTitle}>Blood Group</Text>
+    <Text style={style.cardValue}>{userData.bloodGroup}</Text>
+  </View>
+  
+  {/* Weight Card */}
+  <View style={[style.card, { backgroundColor: '#F0FFF4' }]}>
+    <Text style={style.cardTitle}>Weight</Text>
+    <Text style={style.cardValue}>
+      {userData.weight} {userData.weight !== 'Not set' && 'kg'}
+    </Text>
+  </View>
+</View>
 
       {/* Menu Items */}
       <View style={style.menuContainer}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={style.menuItem}
           onPress={() => navigation.navigate('AccountDetailsScreen')}
         >
@@ -264,7 +268,7 @@ const ProfileScreen = ({ navigation }) => {
           <Ionicons name="chevron-forward" size={20} color="#ccc" />
         </TouchableOpacity>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={style.menuItem}
           onPress={() => navigation.navigate('QRScreen')}
         >
@@ -273,7 +277,7 @@ const ProfileScreen = ({ navigation }) => {
           <Ionicons name="chevron-forward" size={20} color="#ccc" />
         </TouchableOpacity>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={style.menuItem}
           onPress={() => navigation.navigate('ChangePasswordScreen')}
         >
@@ -282,7 +286,7 @@ const ProfileScreen = ({ navigation }) => {
           <Ionicons name="chevron-forward" size={20} color="#ccc" />
         </TouchableOpacity>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={style.menuItem}
           onPress={() => navigation.navigate('PrivacyPolicyScreen')}
         >
@@ -293,7 +297,7 @@ const ProfileScreen = ({ navigation }) => {
       </View>
 
       {/* Logout Button */}
-      <TouchableOpacity 
+      <TouchableOpacity
         style={style.logoutButton}
         onPress={() => setLogoutVisible(true)}
       >
@@ -303,7 +307,13 @@ const ProfileScreen = ({ navigation }) => {
       {/* Modals */}
       <LogoutModal
         visible={isLogoutVisible}
-        onClose={() => setLogoutVisible(false)}
+        onClose={() => {
+          auth().signOut();
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Login' }],
+          });
+        }}
       />
 
       <Modal
@@ -392,14 +402,14 @@ const style = StyleSheet.create({
     marginTop: 16,
     marginHorizontal: 16,
   },
-   cardsContainer: {
+  cardsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     marginTop: 20,
     marginBottom: 20,
   },
-   card: {
+  card: {
     width: '30%',
     padding: 12,
     borderRadius: 10,
