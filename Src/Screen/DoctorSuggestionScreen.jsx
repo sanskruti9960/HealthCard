@@ -9,7 +9,7 @@ import auth from '@react-native-firebase/auth'
 
 const DoctorSuggestionScreen = ({ navigation }) => {
 
-
+  
   const [fullName, setFullName] = useState('');
   const [searchText, setSearchText] = useState('');
   const screenWidth = Dimensions.get('window').width;

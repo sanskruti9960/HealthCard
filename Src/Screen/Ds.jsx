@@ -1,95 +1,133 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
-import GoogleFit, { Scopes } from 'react-native-google-fit';
-import { initGoogleFit } from '../Screen/Utilfit';
+// LocalRealTimeFitness.js
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import MaterialIcons from "react-native-vector-icons/MaterialIcons";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import FontAwesome5 from "react-native-vector-icons/FontAwesome5";
+import { AnimatedCircularProgress } from 'react-native-circular-progress';
 
-const Dashboard = () => {
-  const [weekData, setWeekData] = useState([]);
-  const [selectedDay, setSelectedDay] = useState(null);
+const LocalRealTimeFitness = () => {
+  const [steps, setSteps] = useState(0);
+  const [minutes, setMinutes] = useState(0);
+  const [kcal, setKcal] = useState(0);
 
-useEffect(() => {
-  const initialize = async () => {
-    try {
-      await initGoogleFit(); // only runs once & no popup if already authorized
-      fetchStepsData();
-    } catch (err) {
-      console.error('Init failed:', err.message);
-    }
-  };
+  useEffect(() => {
+    let interval = setInterval(() => {
+      // Simulating step count increase (e.g., +2 steps/sec)
+      setSteps(prev => {
+        const newSteps = prev + 2; 
+        setMinutes(Math.floor(newSteps / 100)); // assuming 100 steps/min
+        setKcal((newSteps * 0.04).toFixed(2)); // kcal burned per step
+        return newSteps;
+      });
+    }, 1000);
 
-  initialize();
-}, []);
-
-  const renderBars = (type, title) => {
-    const maxBarHeight = 100;
-    const maxValue = Math.max(...weekData.map(item => item[type]));
-
-    const colorMap = {
-      steps: { selected: '#4A90E2', default: '#D0E3FA' },     // Blue
-      min: { selected: '#8B5CF6', default: '#E5D8FA' },       // Violet
-      kcal: { selected: '#FBBF24', default: '#FEF3C7' },      // Yellow
-    };
-
-    return (
-
-      <View style={{ marginBottom: 20 }}>
-        <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 8 }}>{title}</Text>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', height: maxBarHeight + 30 }}>
-          {weekData.map((item, index) => {
-            const value = item[type];
-            const isSelected = selectedDay === item.day;
-            const barHeight = (value / maxValue) * maxBarHeight;
-
-            const label =
-              type === 'steps' ? `${item.steps} steps` :
-                type === 'min' ? `${item.min} min` :
-                  `${item.kcal} kcal`;
-
-            return (
-              <TouchableOpacity
-                key={index}
-                onPress={() => setSelectedDay(item.day)}
-                style={{ alignItems: 'center', marginHorizontal: 4 }}
-              >
-                {isSelected && (
-                  <Text style={{ fontSize: 12, fontWeight: '600', color: '#000', marginBottom: 2 }}>
-                    {label}
-                  </Text>
-                )}
-                <View
-                  style={{
-                    width: 20,
-                    height: barHeight,
-                    backgroundColor: isSelected ? colorMap[type].selected : colorMap[type].default,
-                    borderRadius: 4,
-                  }}
-                />
-                <Text style={{ fontSize: 10, marginTop: 4, color: isSelected ? '#000' : '#777' }}>{item.day}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-        <View style={{ height: 1, backgroundColor: '#eee', marginTop: 8 }} />
-      </View>
-    );
-  };
+    return () => clearInterval(interval);
+  }, []);
 
   return (
-    <View style={{ padding: 16 }}>
-      <View style={{ backgroundColor: '#fff', borderRadius: 20, padding: 16, elevation: 3 }}>
-        {renderBars('steps', 'Steps')}
-        {renderBars('min', 'Minutes')}
-        {renderBars('kcal', 'Calories')}
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.header}>Local Real-Time Fitness Data</Text>
+
+      <View style={styles.row}>
+        <View style={styles.card}>
+          <MaterialIcons name="directions-walk" size={24} color="#4A90E2" />
+          <Text style={styles.value}>{steps}</Text>
+          <Text style={styles.label}>Steps</Text>
+        </View>
+
+        <View style={styles.card}>
+          <Ionicons name="time-outline" size={24} color="#A680FF" />
+          <Text style={styles.value}>{minutes}</Text>
+          <Text style={styles.label}>Minutes</Text>
+        </View>
+
+        <View style={styles.card}>
+          <FontAwesome5 name="fire" size={24} color="#FBC02D" />
+          <Text style={styles.value}>{kcal}</Text>
+          <Text style={styles.label}>Kcal</Text>
+        </View>
       </View>
-      <TouchableOpacity onPress={async () => {
-        const data = await fetchTodayFitnessData();
-        console.log('Today’s Fitness:', data);
-        alert(`Steps: ${data.steps}, Kcal: ${data.kcal}, Time: ${data.minutes} mins`);
-      }}>
-        <Text>Check Fitness Data</Text>
-      </TouchableOpacity>
-    </View>
+
+      <View style={styles.progressContainer}>
+        <AnimatedCircularProgress
+          size={180}
+          width={10}
+          fill={(steps / 10000) * 100}
+          tintColor="#4A90E2"
+          backgroundColor="#e0e0e0"
+          rotation={0}
+        >
+          {() => (
+            <AnimatedCircularProgress
+              size={140}
+              width={10}
+              fill={(minutes / 60) * 100}
+              tintColor="#A680FF"
+              backgroundColor="#e0e0e0"
+              rotation={0}
+            >
+              {() => (
+                <AnimatedCircularProgress
+                  size={100}
+                  width={10}
+                  fill={(kcal / 500) * 100}
+                  tintColor="#FBC02D"
+                  backgroundColor="#e0e0e0"
+                  rotation={0}
+                >
+                  {() => (
+                    <View style={{ alignItems: 'center' }}>
+                      <Text style={{ fontWeight: 'bold', fontSize: 18 }}>{steps}</Text>
+                      <Text style={{ fontSize: 12, color: '#777' }}>Steps</Text>
+                    </View>
+                  )}
+                </AnimatedCircularProgress>
+              )}
+            </AnimatedCircularProgress>
+          )}
+        </AnimatedCircularProgress>
+      </View>
+    </ScrollView>
   );
 };
 
-export default Dashboard;
+export default LocalRealTimeFitness;
+
+const styles = StyleSheet.create({
+  container: {
+    padding: 20,
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  header: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  row: {
+    flexDirection: 'row',
+    marginBottom: 30,
+  },
+  card: {
+    backgroundColor: '#f9f9f9',
+    padding: 15,
+    borderRadius: 15,
+    alignItems: 'center',
+    marginHorizontal: 8,
+    width: 100,
+    elevation: 2,
+  },
+  value: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginTop: 5,
+  },
+  label: {
+    fontSize: 12,
+    color: '#666',
+  },
+  progressContainer: {
+    marginTop: 20,
+  },
+});

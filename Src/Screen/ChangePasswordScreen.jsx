@@ -50,7 +50,7 @@ const handlePasswordChange = async () => {
 
   try {
     const user = "aPfMrCGlhhXDMyZWqJ0plGMflLg1";
-
+    //  const userId = auth().currentUser?.uid;
     if (!user) {
       Alert.alert('Error', 'No authenticated user found.');
       return;

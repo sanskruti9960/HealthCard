@@ -5,67 +5,63 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  PermissionsAndroid,
-  Platform,
   Share,
 } from 'react-native';
-import auth from "@react-native-firebase/auth";
-import firestore from "@react-native-firebase/firestore";
+import { db } from '../firebaseConfig'; // <-- import db here
+import { doc, getDoc } from 'firebase/firestore'; // <-- import needed Firestore functions
 import Ionicons from "react-native-vector-icons/Ionicons";
 import Feather from "react-native-vector-icons/Feather";
 import QRCode from 'react-native-qrcode-svg';
 
-const QRCodeScreen = ({ navigation }) => {
+const QRScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
-  const [userDoc, setUserDoc] = useState('');
+  const [userData, setUserData] = useState(null);
   const qrRef = useRef();
- const uid = "Rn1hkEFgXpfzInVvZSYp8jDg2Lg1"
-  useEffect(() => {
-  if (userDoc) {
-    console.log("QR Data:", userDoc);
-  }
-}, [userDoc]);
+
+  const uid = "4hLVbn80kgfnyGEVm9XUjzII8Bv1";
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-       
-        // const uid = auth().currentUser.uid; // Current user ID
-        const doc = await firestore().collection('userData').doc(uid).get();
-        if (doc.exists) {
-          setUserDoc(doc.data());
-        }
-      } catch (error) {
-        console.log("Error fetching user data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
-
-  const requestStoragePermission = async () => {
-    if (Platform.OS === 'android' && Platform.Version < 33) {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE
-      );
-      return granted === PermissionsAndroid.RESULTS.GRANTED;
-    }
-    return true;
-  };
-
-  const handleShareLink = async () => {
+  const fetchUserData = async () => {
     try {
-      const qrString = JSON.stringify(userDoc); // Store Firestore data
-      const qrLink = `https://health-card-1-git-healthweb-palaks-projects-ef7075f5.vercel.app?data=${encodeURIComponent(qrString)}`;
+      const docRef = doc(db, 'userData', uid);
+      const docSnap = await getDoc(docRef);
 
-      await Share.share({
-        message: `Emergency QR: ${qrLink}`,
-      });
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+
+        // Convert timestamp to readable string (optional)
+        if (data.updatedAt?.toDate) {
+          data.updatedAt = data.updatedAt.toDate().toISOString();
+        }
+
+        setUserData(data); // keep Firestore structure exactly
+        console.log("Fetched user data:", data);
+      } else {
+        console.log("No document found for UID:", uid);
+      }
     } catch (error) {
-      console.log('Error sharing link:', error);
+      console.error("Error fetching user data:", error);
+    } finally {
+      setLoading(false);
     }
   };
+
+  fetchUserData();
+  console.log(userData)
+}, []);
+
+
+const handleShareLink = async () => {
+  try {
+    const qrLink = `https://health-card-1-git-healthweb-palaks-projects-ef7075f5.vercel.app?uid=${uid}`;
+    await Share.share({
+      message: `Emergency QR: ${qrLink}`,
+    });
+  } catch (error) {
+    console.log('Error sharing link:', error);
+  }
+};
+
 
   return (
     <View style={style.Screen}>
@@ -84,20 +80,20 @@ const QRCodeScreen = ({ navigation }) => {
       ) : (
         <>
           <Text style={style.slogan}>Your Health, One Scan Away</Text>
-         <View style={style.QRcard}>
-  {userDoc ? (
-    <QRCode
-      value={JSON.stringify(userDoc)}
-      size={200}
-      color="#4D94CC"
-      backgroundColor="#FFFFFF"
-      getRef={(c) => (qrRef.current = c)} // optional if you want to save/share image
-    />
-  ) : (
-    <Text style={{ color: '#999', textAlign: 'center' }}>No data available</Text>
-  )}
-</View>
+          <View style={style.QRcard}>
+            {userData ? (
+             <QRCode
+  value={`https://health-card-1-git-healthweb-palaks-projects-ef7075f5.vercel.app?uid=${uid}`}
+  size={200}
+  color="#4D94CC"
+  backgroundColor="#FFFFFF"
+  getRef={(c) => (qrRef.current = c)}
+/>
 
+            ) : (
+              <Text style={{ color: '#999', textAlign: 'center' }}>No data available</Text>
+            )}
+          </View>
 
           <View style={style.btnContainer}>
             <TouchableOpacity style={style.qrBtn} onPress={handleShareLink}>
@@ -111,17 +107,79 @@ const QRCodeScreen = ({ navigation }) => {
   );
 };
 
-export default QRCodeScreen;
+export default QRScreen;
+
 
 const style = StyleSheet.create({
-  Screen: { flex: 1, backgroundColor: '#fff' },
-  Header: { justifyContent: 'center', alignItems: 'center', paddingVertical: 20, backgroundColor: '#fff' },
-  backButton: { position: 'absolute', left: 20, top: '70%' },
-  QRcard: { marginTop: 20, alignSelf: 'center', alignItems: 'center', justifyContent: 'center', width: '80%', height: '40%', backgroundColor: '#fff', borderRadius: 50, borderWidth: 2 },
-  btnContainer: { flexDirection: 'row', justifyContent: 'center', paddingHorizontal: 20, marginTop: 30 },
-  qrBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1C75BC', paddingVertical: 12, paddingHorizontal: 30, borderRadius: 12, elevation: 4 },
-  qrBtnText: { color: '#fff', fontSize: 16, fontWeight: '600', marginRight: 8 },
-  icon: { marginRight: 4 },
-  loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  slogan: { textAlign: 'center', fontSize: 18, fontWeight: '800', color: '#4D94CC', marginTop: 40 },
+  Screen: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+
+  Header: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
+    backgroundColor: '#fff',
+  },
+
+  backButton: {
+    position: 'absolute',
+    left: 20,
+    top: '70%',
+  },
+
+  QRcard: {
+    marginTop: 20,
+    alignSelf: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '80%',
+    height: '40%',
+    backgroundColor: '#fff',
+    borderRadius: 50,
+    borderWidth: 2,
+  },
+
+  btnContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    marginTop: 30,
+  },
+
+  qrBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1C75BC',
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 12,
+    elevation: 4,
+  },
+
+  qrBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginRight: 8,
+  },
+
+  icon: {
+    marginRight: 4,
+  },
+
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  slogan: {
+    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#4D94CC',
+    marginTop: 40,
+  },
 });

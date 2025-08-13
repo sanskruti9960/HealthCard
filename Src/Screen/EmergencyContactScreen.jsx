@@ -6,43 +6,49 @@ import {
 import Ionicons from "react-native-vector-icons/Ionicons";
 import FontAwesome from "react-native-vector-icons/FontAwesome";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
-import { collection, addDoc, getDocs, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, getDoc, doc, deleteDoc, updateDoc,arrayRemove, arrayUnion } from 'firebase/firestore';
 import { db } from "../firebaseConfig";
 import auth from '@react-native-firebase/auth'; // ✅ Android Firebase Auth
 
-const saveContactToFirebase = async (userId, contact, setLoading) => {
+const saveContactToFirebase = async (userId, contactData) => {
   try {
-    setLoading(true);
-    const docRef = await addDoc(collection(db, `Siddhi/${userId}/emergencyContacts`), contact);
-    // console.log("Contact saved to Firestore with ID:", docRef.id);
-    return docRef.id;
+    const userDocRef = doc(db, "Siddhi", userId);
+    await updateDoc(userDocRef, {
+      emergency: arrayUnion(contactData)
+    });
+    console.log("Contact added successfully");
   } catch (error) {
-    // console.error("Error saving contact:", error);
-  } finally {
-    setLoading(false);
+    console.error("Error saving contact:", error);
   }
 };
 
-const updateContactInFirebase = async (userId, contactId, updatedContact, setLoading) => {
+const updateContactInFirebase = async (userId, oldContact, updatedContact) => {
   try {
-    setLoading(true);
-    const contactDocRef = doc(db, `Siddhi/${userId}/emergencyContacts/${contactId}`);
-    await updateDoc(contactDocRef, updatedContact);
-    // console.log("Contact updated in Firestore");
+    const userDocRef = doc(db, "Siddhi", userId);
+
+    // Remove old, then add updated
+    await updateDoc(userDocRef, {
+      emergency: arrayRemove(oldContact)
+    });
+    await updateDoc(userDocRef, {
+      emergency: arrayUnion(updatedContact)
+    });
+
+    console.log("Contact updated successfully");
   } catch (error) {
-    // console.error("Error updating contact:", error);
-  } finally {
-    setLoading(false);
+    console.error("Error updating contact:", error);
   }
 };
 
-const deleteContactFromFirebase = async (userId, contactId) => {
+const deleteContactFromFirebase = async (userId, contactData) => {
   try {
-    const contactDocRef = doc(db, `Siddhi/${userId}/emergencyContacts/${contactId}`);
-    await deleteDoc(contactDocRef);
-    // console.log("Deleted successfully");
+    const userDocRef = doc(db, "Siddhi", userId);
+    await updateDoc(userDocRef, {
+      emergency: arrayRemove(contactData)
+    });
+    console.log("Contact deleted successfully");
   } catch (error) {
-    // console.error("Error deleting contact:", error);
+    console.error("Error deleting contact:", error);
   }
 };
 
@@ -57,7 +63,7 @@ const Emergencycontact = ({ navigation }) => {
   const [nameError, setNameError] = useState(''); //1
   const [phoneError, setPhoneError] = useState(''); //2
   const [relationError, setRelationError] = useState(''); //3
-  
+
   const [selectedContact, setSelectedContact] = useState(null);
   const [newName, setNewName] = useState('');
   const [newPhone, setNewPhone] = useState('');
@@ -65,8 +71,8 @@ const Emergencycontact = ({ navigation }) => {
   const [emergencyContacts, setEmergencyContacts] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editContactId, setEditContactId] = useState(null);
-  
-  const userId = "aPfMrCGlhhXDMyZWqJ0plGMflLg1"; // ✅ Authenticated user ID
+
+  const userId = "sAUFysf5nAMhflzRgxpbH26AxCH3"; // ✅ Authenticated user ID
   // const userId = auth().currentUser?.uid;
 
   useEffect(() => {
@@ -85,20 +91,21 @@ const Emergencycontact = ({ navigation }) => {
     setModalVisible(false);
   };
 
-  const fetchContactsFromFirebase = async (userId) => {
+const fetchContactsFromFirebase = async (userId) => {
     try {
       setLoading(true);
-      const querySnapshot = await getDocs(collection(db, `Siddhi/${userId}/emergencyContacts`));
-      const contacts = [];
-      querySnapshot.forEach((doc) => {
-        contacts.push({
-          id: doc.id,
-          ...doc.data(),
-        });
-      });
-      setEmergencyContacts(contacts);
+      const userDocRef = doc(db, "Siddhi", userId);
+      const docSnap = await getDoc(userDocRef);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setEmergencyContacts(data.emergency || []);
+      } else {
+        setEmergencyContacts([]);
+      }
     } catch (error) {
       console.error("Error fetching contacts:", error);
+      setEmergencyContacts([]);
     } finally {
       setLoading(false);
     }
@@ -159,14 +166,19 @@ const Emergencycontact = ({ navigation }) => {
               <TouchableOpacity
                 style={[style.modalBtn, { backgroundColor: 'red' }]}
                 onPress={async () => {
-                  if (!userId) return;
+                  if (!userId || !selectedContact?.id) return;
+
+                  // Optimistic UI update
+                  setEmergencyContacts((prev) => prev.filter(c => c.id !== selectedContact.id));
+                  setModalVisible(false);
+
                   try {
-                    await deleteContactFromFirebase(userId, selectedContact?.id);
-                    await fetchContactsFromFirebase(userId);
-                    setModalVisible(false);
+                    await deleteContactFromFirebase(userId, selectedContact.id);
                   } catch (error) {
                     console.error("Delete failed:", error);
                     Alert.alert("Error", "Contact could not be deleted.");
+                    // Optionally refetch if error
+                    await fetchContactsFromFirebase(userId);
                   }
                 }}
               >
@@ -280,7 +292,7 @@ const Emergencycontact = ({ navigation }) => {
                   if (isEditing) {
                     await updateContactInFirebase(userId, editContactId, contactData, setLoading);
                   } else {
-                    await saveContactToFirebase(userId, contactData, setLoading);
+                    await saveContactToFirebase(userId, contactData);
                   }
 
                   await fetchContactsFromFirebase(userId);

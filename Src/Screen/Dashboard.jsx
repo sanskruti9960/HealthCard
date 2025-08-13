@@ -1,79 +1,160 @@
-// DashboardCardScreen.js (your real-time data card screen)
-import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import Ionicons from "react-native-vector-icons/Ionicons";
-import MaterialIcons from "react-native-vector-icons/MaterialIcons";
-import FontAwesome5 from "react-native-vector-icons/FontAwesome5";
-import { AnimatedCircularProgress } from 'react-native-circular-progress';
-import { fetchTodayFitnessData, initGoogleFit } from '../Screen/Utilfit';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, Animated, StyleSheet } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const Dashboard = ({ navigation }) => {
-  const [data, setData] = useState({ steps: 0, minutes: 0, kcal: 0 });
+const funFacts = [
+  { text: "Bananas are berries, but strawberries aren't.", keyword: "banana" },
+  { text: "Honey never spoils.", keyword: "honey" },
+  { text: "Octopuses have three hearts.", keyword: "octopus" },
+  { text: "A day on Venus is longer than a year on Venus.", keyword: "venus" },
+  { text: "Sharks existed before trees.", keyword: "shark" }
+];
+
+export default function FlipCardBanner() {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isFlipped, setIsFlipped] = useState(false);
+  const flipAnim = useRef(new Animated.Value(0)).current;
+  const autoFlipTimeout = useRef(null);
+
+  // Rotation interpolation
+  const frontInterpolate = flipAnim.interpolate({
+    inputRange: [0, 180],
+    outputRange: ['0deg', '180deg']
+  });
+  const backInterpolate = flipAnim.interpolate({
+    inputRange: [0, 180],
+    outputRange: ['180deg', '360deg']
+  });
+
+  const flipCard = () => {
+    // Clear any pending auto-flip
+    if (autoFlipTimeout.current) {
+      clearTimeout(autoFlipTimeout.current);
+    }
+
+    Animated.spring(flipAnim, {
+      toValue: isFlipped ? 0 : 180,
+      friction: 8,
+      tension: 10,
+      useNativeDriver: true
+    }).start(() => {
+      setIsFlipped(!isFlipped);
+      
+      // Auto-advance after showing fact for 3 seconds
+      if (!isFlipped) {
+        autoFlipTimeout.current = setTimeout(() => {
+          advanceToNextFact();
+        }, 3000);
+      }
+    });
+  };
+
+  const advanceToNextFact = async () => {
+    const nextIndex = (currentIndex + 1) % funFacts.length;
+    setCurrentIndex(nextIndex);
+    await AsyncStorage.setItem('funFactIndex', nextIndex.toString());
+    
+    // Flip back to front immediately
+    Animated.spring(flipAnim, {
+      toValue: 0,
+      friction: 8,
+      tension: 10,
+      useNativeDriver: true
+    }).start(() => {
+      setIsFlipped(false);
+    });
+  };
 
   useEffect(() => {
-    const initialize = async () => {
-      const authorized = await initGoogleFit();
-      if (authorized) {
-        const fitnessData = await fetchTodayFitnessData();
-        setData(fitnessData);
+    // Load saved index
+    const loadIndex = async () => {
+      const savedIndex = await AsyncStorage.getItem('funFactIndex');
+      if (savedIndex) setCurrentIndex(parseInt(savedIndex));
+    };
+    loadIndex();
+
+    return () => {
+      if (autoFlipTimeout.current) {
+        clearTimeout(autoFlipTimeout.current);
       }
     };
-    initialize();
   }, []);
 
   return (
-    <TouchableOpacity onPress={() => navigation.navigate('Ds', { data })} style={HomeStyle.card}>
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <View style={{ flex: 1 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-            <MaterialIcons name="directions-walk" size={20} color="#4A90E2" />
-            <Text style={{ marginLeft: 5, fontWeight: 'bold' }}>{data.steps} Steps</Text>
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-            <Ionicons name="time-outline" size={20} color="#A680FF" />
-            <Text style={{ marginLeft: 5, fontWeight: 'bold' }}>{data.minutes} min</Text>
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-            <FontAwesome5 name="fire" size={20} color="#FBC02D" />
-            <Text style={{ marginLeft: 5, fontWeight: 'bold' }}>{data.kcal} kcal</Text>
-          </View>
+    <View style={styles.container}>
+      <TouchableOpacity activeOpacity={0.9} onPress={flipCard}>
+        <View>
+          {/* Front Card */}
+          <Animated.View style={[styles.card, styles.frontCard, {
+            transform: [{ rotateY: frontInterpolate }],
+            opacity: flipAnim.interpolate({
+              inputRange: [0, 180],
+              outputRange: [1, 0]
+            })
+          }]}>
+            <Text style={styles.cardIcon}>💡</Text>
+            <Text style={styles.cardTitle}>Tap to Reveal Fact!</Text>
+          </Animated.View>
+
+          {/* Back Card */}
+          <Animated.View style={[styles.card, styles.backCard, {
+            transform: [{ rotateY: backInterpolate }],
+            opacity: flipAnim.interpolate({
+              inputRange: [0, 180],
+              outputRange: [0, 1]
+            })
+          }]}>
+            <Text style={styles.factText}>{funFacts[currentIndex].text}</Text>
+          </Animated.View>
         </View>
-        <View style={{ width: 100, height: 100, justifyContent: 'center', alignItems: 'center' }}>
-          <AnimatedCircularProgress size={100} width={6} fill={data.steps / 100} tintColor="#4A90E2" backgroundColor="#e0e0e0" rotation={0}>
-            {() => (
-              <AnimatedCircularProgress size={80} width={6} fill={data.minutes} tintColor="#A680FF" backgroundColor="#e0e0e0" rotation={0}>
-                {() => (
-                  <AnimatedCircularProgress size={60} width={6} fill={data.kcal} tintColor="#FBC02D" backgroundColor="#e0e0e0" rotation={0}>
-                    {() => (
-                      <View style={{ alignItems: 'center' }}>
-                        <Text style={{ fontWeight: 'bold', fontSize: 12 }}>{data.steps}</Text>
-                        <Text style={{ fontSize: 10, color: '#777' }}>Steps</Text>
-                      </View>
-                    )}
-                  </AnimatedCircularProgress>
-                )}
-              </AnimatedCircularProgress>
-            )}
-          </AnimatedCircularProgress>
-        </View>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </View>
   );
-};
+}
 
-export default Dashboard;
-
-const HomeStyle = StyleSheet.create({
-  card: {
-    backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    width: "95%",
-    marginLeft: 10,
-    marginTop: 20,
-    elevation: 3,
+const styles = StyleSheet.create({
+  container: {
+    margin: 20,
+    alignItems: 'center'
   },
+  card: {
+    width: 320,
+    height: 180,
+    borderRadius: 16,
+    padding: 20,
+    backfaceVisibility: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 5
+  },
+  frontCard: {
+    backgroundColor: '#FBC02D'
+  },
+  backCard: {
+    backgroundColor: '#9D50BB',
+    position: 'absolute',
+    top: 0,
+    left: 0
+  },
+  cardIcon: {
+    fontSize: 40,
+    marginBottom: 10
+  },
+  cardTitle: {
+    fontSize: 22,
+    color: 'white',
+    fontWeight: 'bold',
+    textAlign: 'center'
+  },
+  factText: {
+    fontSize: 18,
+    color: 'white',
+    fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: 24
+  }
 });

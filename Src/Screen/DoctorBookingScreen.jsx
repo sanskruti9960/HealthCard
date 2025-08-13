@@ -8,15 +8,20 @@ const DoctorBookingScreen = ({ navigation }) => {
   const [bookingTime, setBookingTime] = useState(null);
   const [showPicker, setShowPicker] = useState(false);
 
-  const handleTimeSelect = (event, selectedTime) => {
+ const handleTimeSelect = (event, selectedTime) => {
+  if (event.type === 'dismissed') {
     setShowPicker(false);
-    if (selectedTime) {
-      const hours = selectedTime.getHours().toString().padStart(2, '0');
-      const minutes = selectedTime.getMinutes().toString().padStart(2, '0');
-      const formattedTime = `${hours}:${minutes}`;
-      setBookingTime(formattedTime);
-    }
-  };
+    return; // User cancelled - don't update time
+  }
+
+  setShowPicker(false);
+
+  if (selectedTime) {
+    const hours = selectedTime.getHours().toString().padStart(2, '0');
+    const minutes = selectedTime.getMinutes().toString().padStart(2, '0');
+    setBookingTime(`${hours}:${minutes}`);
+  }
+};
 
   const cancelBooking = () => {
     setBookingTime(null);
@@ -91,22 +96,116 @@ const DoctorBookingScreen = ({ navigation }) => {
 export default DoctorBookingScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', padding: 20 },
-  imageContainer: { alignItems: 'center', marginVertical: 20 },
-  doctorImage: { width: 120, height: 120, borderRadius: 60 },
-  infoContainer: { alignItems: 'center', marginBottom: 20 },
-  doctorName: { fontSize: 22, fontWeight: 'bold' },
-  speciality: { fontSize: 16, color: 'gray' },
-  scheduleCard: { backgroundColor: '#E3F3FF', borderRadius: 15, padding: 15, marginVertical: 10 },
-  row: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  scheduleText: { marginLeft: 10, fontSize: 16 },
-  aboutCard: { backgroundColor: '#f5f5f5', borderRadius: 15, padding: 15, marginVertical: 10 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 5 },
-  aboutText: { fontSize: 14, color: '#555', lineHeight: 20 },
-  bookButton: { backgroundColor: '#1C75BC', padding: 15, borderRadius: 30, alignItems: 'center', marginTop: 20 },
-  bookButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  warningCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF3E0', padding: 12, borderRadius: 10, marginTop: 20 },
-  warningText: { marginLeft: 8, color: '#ff9800', fontSize: 15, fontWeight: '500', flex: 1 },
-  cancelButton: { backgroundColor: '#ff4d4d', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 8 },
-  cancelButtonText: { color: '#fff', fontSize: 14 }
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    padding: 20,
+  },
+
+  imageContainer: {
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+
+  doctorImage: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+  },
+
+  infoContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+
+  doctorName: {
+    fontSize: 22,
+    fontWeight: 'bold',
+  },
+
+  speciality: {
+    fontSize: 16,
+    color: 'gray',
+  },
+
+  scheduleCard: {
+    backgroundColor: '#E3F3FF',
+    borderRadius: 15,
+    padding: 15,
+    marginVertical: 10,
+  },
+
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+
+  scheduleText: {
+    marginLeft: 10,
+    fontSize: 16,
+  },
+
+  aboutCard: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 15,
+    padding: 15,
+    marginVertical: 10,
+  },
+
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+
+  aboutText: {
+    fontSize: 14,
+    color: '#555',
+    lineHeight: 20,
+  },
+
+  bookButton: {
+    backgroundColor: '#1C75BC',
+    padding: 15,
+    borderRadius: 30,
+    alignItems: 'center',
+    marginTop: 20,
+  },
+
+  bookButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+
+  warningCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF3E0',
+    padding: 12,
+    borderRadius: 10,
+    marginTop: 20,
+  },
+
+  warningText: {
+    marginLeft: 8,
+    color: '#ff9800',
+    fontSize: 15,
+    fontWeight: '500',
+    flex: 1,
+  },
+
+  cancelButton: {
+    backgroundColor: '#ff4d4d',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+
+  cancelButtonText: {
+    color: '#fff',
+    fontSize: 14,
+  },
 });
+
