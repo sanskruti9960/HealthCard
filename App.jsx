@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { View } from 'react-native';
 import auth from '@react-native-firebase/auth';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -12,7 +12,7 @@ import ForgotPassword from './src/SiddhiScreens/ForgotPassword.jsx';
 import OtpVerification from './src/SiddhiScreens/OtpVerification.jsx';
 import Terms from './src/PalakScreens/Terms.jsx';
 import PersonalDetails from './src/Screens/PersonalDetails.jsx';
-import MainTab from './src/Screen/Maintab.jsx';
+import MainTab from './src/Screen/MainTab.jsx';
 import MultiplePolicy from './src/Screens/MultiplePolicy.jsx';
 import EmergencyContact from './src/Screens/EmergencyContact.jsx';
 import InsuranceSrc1 from './src/Screens/InsuranceSrc1.jsx';
@@ -62,14 +62,14 @@ const App = () => {
     // show loader while checking
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#1b47d2" />
+        <Customloader />
       </View>
     );
   }
 
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="MainTab" screenOptions={{ headerShown: false }}>
+      <Stack.Navigator initialRouteName="Onboard" screenOptions={{ headerShown: false }}>
         {/* Auth screens */}
         <Stack.Screen name="Onboard" component={Onboard} />
         <Stack.Screen name="Signup" component={Signup} />
