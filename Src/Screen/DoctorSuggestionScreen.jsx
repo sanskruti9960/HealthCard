@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity, ScrollVi
 import Feather from "react-native-vector-icons/Feather";
 import FontAwesome from "react-native-vector-icons/FontAwesome";
 import LottieView from 'lottie-react-native';
-import { db } from "../firebaseConfig";
+import { db } from "../SiddhiScreens/firechifile/firebaseConfig";
 import {getDoc, doc, setDoc } from 'firebase/firestore';
 import auth from '@react-native-firebase/auth'
 

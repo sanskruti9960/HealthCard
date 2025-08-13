@@ -11,6 +11,7 @@ import {
   Platform,
   Modal,
   RefreshControl,
+  Linking,
 } from "react-native";
 import { Divider, Avatar, Card, TextInput, FAB } from "react-native-paper";
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -24,6 +25,7 @@ const EmergencyContact = ({ navigation }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [contacts, setContacts] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+
 
   const {
     control,
@@ -57,23 +59,57 @@ const EmergencyContact = ({ navigation }) => {
     setRefreshing(false);
   }, []);
 
-  const onSubmit = useCallback(async (data) => {
+  const handleSaveContact = useCallback(async (data) => {
     try {
-      await FirestoreService.saveUserData(USER_DATA_TYPES.EMERGENCY, data);
+      const sanitizedData = {
+        emergencyName: encodeURIComponent(data.emergencyName || ''),
+        emergencyPhone: encodeURIComponent(data.emergencyPhone || ''),
+        emergencyRelation: encodeURIComponent(data.emergencyRelation || '')
+      };
+      console.log('Attempting to save contact:', sanitizedData);
+      
+      if (!data.emergencyName || !data.emergencyPhone) {
+        console.error('Missing required fields');
+        return;
+      }
+      
+      let savedContact;
+      if (isEditing && selectedContact) {
+        const contactWithId = { 
+          ...data, 
+          id: selectedContact.id,
+          createdAt: selectedContact.createdAt 
+        };
+        savedContact = await FirestoreService.saveEmergencyContact(contactWithId);
+        setIsEditing(false);
+        setSelectedContact(null);
+      } else {
+        savedContact = await FirestoreService.saveEmergencyContact(data);
+      }
+      
+      console.log('Contact saved successfully:', encodeURIComponent(savedContact?.id || 'unknown'));
+      await loadData();
+      reset({ emergencyName: "", emergencyPhone: "", emergencyRelation: "" });
+      setModalVisible(false);
       Keyboard.dismiss();
-      console.log("Emergency Contact Data:", data);
-      navigation.navigate("MedicalInfo");
     } catch (error) {
-      console.log('Error saving data:', error);
+      console.error('Error in handleSaveContact:', error.message || error);
+      // Don't close modal on error so user can retry
     }
-  }, [navigation]);
+  }, [isEditing, selectedContact, loadData, reset]);
 
   const handlePrevious = useCallback(() => {
-    navigation.navigate("MainTab");
+    navigation.navigate("PersonalDetails");
   }, [navigation]);
 
-  const AddContact=() => {
-    setModalVisible(true);}
+  const addContact = () => {
+    setModalVisible(true);
+  };
+
+  const handleCall = (phone) => {
+    Linking.openURL(`tel:${phone}`);
+    setDetailModalVisible(false);
+  };
 
   return (
     <KeyboardAvoidingView 
@@ -115,12 +151,17 @@ const EmergencyContact = ({ navigation }) => {
               tintColor="#1C75BC"
             />
           }>
-          {contacts.map((contact, index) => (
-            <TouchableOpacity key={contact.id || index} onPress={() => {
-              setSelectedContact(contact);
-              setDetailModalVisible(true);
-            }}>
-              <Card style={styles.contactCard} elevation={2}>
+          {contacts.map((contact) => (
+            <TouchableOpacity 
+              key={contact.id} 
+              onPress={() => {
+                setSelectedContact(contact);
+                setDetailModalVisible(true);
+              }}
+             
+              style={styles.contactTouchable}
+            >
+              <Card style={styles.contactCard}>
                 <Card.Content style={styles.contactContent}>
                   <View style={styles.contactHeader}>
                     <Icon name="person" size={24} color="#1C75BC" />
@@ -273,18 +314,7 @@ const EmergencyContact = ({ navigation }) => {
                 <View style={styles.modalButtonContainer}>
                   <TouchableOpacity 
                     style={styles.modalButton} 
-                    onPress={handleSubmit(async (data) => {
-                      if (isEditing && selectedContact) {
-                        const contactWithId = { ...data, id: selectedContact.id };
-                        await FirestoreService.saveEmergencyContact(contactWithId);
-                        setIsEditing(false);
-                      } else {
-                        await FirestoreService.saveEmergencyContact(data);
-                      }
-                      await loadData();
-                      reset({ emergencyName: "", emergencyPhone: "", emergencyRelation: "" });
-                      setModalVisible(false);
-                    })}
+                    onPress={handleSubmit(handleSaveContact)}
                     activeOpacity={0.8}>
                     <Icon name={isEditing ? "save" : "add"} size={20} color="#FFF" />
                     <Text style={styles.modalButtonText}>{isEditing ? "Save Changes" : "Add Contact"}</Text>
@@ -297,7 +327,7 @@ const EmergencyContact = ({ navigation }) => {
           </TouchableOpacity>
         </Modal>
         
-        <FAB style={styles.fab} icon="plus" color='white' onPress={AddContact}/>
+        <FAB style={styles.fab} icon="plus" color='white' onPress={addContact}/>
         
         {/* Detail Modal */}
         <Modal 
@@ -311,8 +341,8 @@ const EmergencyContact = ({ navigation }) => {
               setDetailModalVisible(false);
               setIsEditing(false);
             }}>
-            <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
-              <Card style={styles.modalCard} elevation={2}>
+            <TouchableOpacity  onPress={(e) => e.stopPropagation()}>
+              <Card style={styles.modalCard}>
                 <Card.Content>
                   <TouchableOpacity 
                     style={styles.closeButton} 
@@ -320,7 +350,8 @@ const EmergencyContact = ({ navigation }) => {
                       setDetailModalVisible(false);
                       setIsEditing(false);
                     }}
-                    activeOpacity={0.7}>
+                   
+                    >
                     <Icon name="close" size={20} color="#6B7280" />
                   </TouchableOpacity>
 
@@ -349,6 +380,15 @@ const EmergencyContact = ({ navigation }) => {
                       )}
                       
                       <View style={styles.detailButtonContainer}>
+
+                        <TouchableOpacity
+                          style={styles.callButton}
+                          onPress={() => handleCall(selectedContact.emergencyPhone)}
+                          activeOpacity={0.8}>
+                            <Icon name="phone" size={18} color="#FFF" />
+                            <Text style={styles.callButtonText}>Call</Text>
+                          </TouchableOpacity>
+
                         <TouchableOpacity 
                           style={styles.editButton} 
                           onPress={() => {
@@ -365,9 +405,17 @@ const EmergencyContact = ({ navigation }) => {
                         <TouchableOpacity 
                           style={styles.deleteButton} 
                           onPress={async () => {
-                            await FirestoreService.deleteEmergencyContact(selectedContact.id);
-                            await loadData();
-                            setDetailModalVisible(false);
+                            try {
+                              const success = await FirestoreService.deleteEmergencyContact(selectedContact.id);
+                              if (success) {
+                                await loadData();
+                                setDetailModalVisible(false);
+                              } else {
+                                console.error('Failed to delete contact');
+                              }
+                            } catch (error) {
+                              console.error('Error deleting contact:', error);
+                            }
                           }}
                           activeOpacity={0.8}>
                           <Icon name="delete" size={16} color="#FFF" />
@@ -381,6 +429,8 @@ const EmergencyContact = ({ navigation }) => {
             </TouchableOpacity>
           </TouchableOpacity>
         </Modal>
+        
+
       </View>
     </KeyboardAvoidingView>
   );
@@ -446,6 +496,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
   },
+  contactTouchable: {
+    marginBottom: 16,
+  },
 
   modalInputContainer: {
     marginBottom: 18,
@@ -478,9 +531,6 @@ const styles = StyleSheet.create({
     
   },
   modalCard: {
-    // width: '100%',
-    // Width: 380,
-    // Height: 300,
     borderRadius: 16,
     backgroundColor: '#FFF',
     shadowColor: '#000',
@@ -492,20 +542,7 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
     paddingVertical: 8,
   },
-  DetailModalCard:{
-    flex: 1,
-    width: '100%',
-    maxWidth: 400,
-    maxHeight: '80%',
-    padding: 16,
-    borderRadius: 16,
-    backgroundColor: '#FFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 10,
-  },
+
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
@@ -553,17 +590,16 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   contactCard: {
-    marginBottom: 16,
     borderRadius: 16,
     backgroundColor: '#FFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.01,
-    shadowRadius: 4,
-    elevation: 0.5,
     borderWidth: 1,
     borderColor: '#F1F5F9',
     width: '100%',
+    // shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    // elevation: 1,
   },
   contactContent: {
     padding: 16,
@@ -621,13 +657,34 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 8,
     paddingHorizontal: 0,
-    gap: 12,
+    gap: 8,
+  },
+  callButton: {
+    flexDirection: 'row',
+    backgroundColor: '#10B981',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  callButtonText: {
+    color: '#FFF',
+    fontWeight: '600',
+    fontSize: 14,
+    marginLeft: 6,
   },
   editButton: {
     flexDirection: 'row',
     backgroundColor: '#F8FAFC',
     paddingVertical: 12,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
@@ -650,7 +707,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: '#EF4444',
     paddingVertical: 12,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
@@ -676,4 +733,5 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: '#F3F4F6',
   },
+
 });

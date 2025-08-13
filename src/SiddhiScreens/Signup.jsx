@@ -14,6 +14,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import LottieView from 'lottie-react-native';
 import Animation1 from './img/Animation1.json';
 import { getAuth, createUserWithEmailAndPassword } from '@react-native-firebase/auth';
+import { ToastAndroid } from 'react-native';
 
 const Signup = ({ navigation }) => {
   const [fullName, setFullName] = useState('');
@@ -58,10 +59,29 @@ const handleSignup = async () => {
     });
 
   } catch (error) {
-    console.error('Signup Error:', error);
 
-   
+  // Default message
+  let errorMessage = 'Signup failed. Please try again.';
+
+  // Map Firebase error codes to friendly messages
+  if (error.code === 'auth/email-already-in-use') {
+    errorMessage = 'This email is already in use.';
+  } else if (error.code === 'auth/invalid-email') {
+    errorMessage = 'Invalid email address.';
+  } else if (error.code === 'auth/weak-password') {
+    errorMessage = 'Password must be at least 6 characters.';
+  } else if (error.code === 'auth/invalid-credential') {
+    errorMessage = 'Invalid email or password.';
   }
+
+  // Show toast for Android, alert for iOS
+  if (Platform.OS === 'android') {
+    ToastAndroid.show(errorMessage, ToastAndroid.LONG);
+  } else {
+    alert(errorMessage);
+  }
+}
+
 };
 
 

@@ -12,7 +12,7 @@ import ForgotPassword from './src/SiddhiScreens/ForgotPassword.jsx';
 import OtpVerification from './src/SiddhiScreens/OtpVerification.jsx';
 import Terms from './src/PalakScreens/Terms.jsx';
 import PersonalDetails from './src/Screens/PersonalDetails.jsx';
-import MainTab from './src/Screen/MainTab.jsx';
+import MainTab from './src/Screen/Maintab.jsx';
 import MultiplePolicy from './src/Screens/MultiplePolicy.jsx';
 import EmergencyContact from './src/Screens/EmergencyContact.jsx';
 import InsuranceSrc1 from './src/Screens/InsuranceSrc1.jsx';
@@ -69,7 +69,7 @@ const App = () => {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Onboard" screenOptions={{ headerShown: false }}>
+      <Stack.Navigator initialRouteName={initialRoute} screenOptions={{ headerShown: false }}>
         {/* Auth screens */}
         <Stack.Screen name="Onboard" component={Onboard} />
         <Stack.Screen name="Signup" component={Signup} />

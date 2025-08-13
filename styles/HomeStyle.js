@@ -11,7 +11,7 @@ const HomeStyle = StyleSheet.create({
   },
   profile_icon: {
     position: "absolute",
-    top: -11,
+    top: -16,
     right: 0,
     marginRight: 2
   },
@@ -114,12 +114,10 @@ const HomeStyle = StyleSheet.create({
 container: {
   padding: 7,
   flex: 1,
-  alignItems: 'center', // centers horizontally
 },
 
 row: {
   flexDirection: 'row',
-  flexWrap: 'wrap',     // allows wrapping to next line
   justifyContent: 'center', // centers items in row
 },
 

@@ -7,10 +7,10 @@ import HomeStyle from "../../styles/HomeStyle"
 import ActivityCard from "./ActivityCard"
 import Dailycheckout from "../compoenents/Dailycheckout"
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
-import Svg, { Path } from 'react-native-svg'
 import { doc, getDoc } from 'firebase/firestore';
 import auth from '@react-native-firebase/auth';
 import { db } from '../SiddhiScreens/firechifile/firebaseConfig'; // your firebase config file
+import FlipCardBanner from '../Components/FlipCardBanner'
 const { width } = Dimensions.get('window');
 
 const cards = [
@@ -171,7 +171,7 @@ useEffect(() => {
             )}
           </TouchableOpacity>
           {/* name in top bar */}
-          <Text style={{ fontWeight: "500", fontSize: 19, marginLeft: 10, }}>{`👋 Hello, ${fullName} `}</Text>
+          <Text style={{ fontWeight: "700", fontSize: 20, marginLeft: 10 }}>{`👋 Hello, ${fullName} `}</Text>
 
         </View>
 
@@ -181,80 +181,9 @@ useEffect(() => {
 
         {/* stpes progress bar */}
 
-        <View style={HomeStyle.card}>
-          {/* Left side: Icons and counts */}
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-
-            {/* Left icons and values */}
-            <View style={{ flex: 1, justifyContent: 'center' }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-                <MaterialIcons name="directions-walk" size={20} color="#4A90E2" />
-                <Text style={{ marginLeft: 5 }}>4567 Steps</Text>
-              </View>
-
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-                <Ionicons name="time-outline" size={20} color="#A680FF" />
-                <Text style={{ marginLeft: 5 }}>42 min</Text>
-              </View>
-
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-                <FontAwesome5 name="fire" size={20} color="#FBC02D" />
-                <Text style={{ marginLeft: 5 }}>123 kcal</Text>
-              </View>
-            </View>
-
-            {/* Right side: Stacked circles */}
-            <View style={{ width: 100, height: 100, justifyContent: 'center', alignItems: 'center' }}>
-              {/* Outer circle - Steps */}
-              <AnimatedCircularProgress
-                size={100}
-                width={6}
-                fill={80}
-                tintColor="#4A90E2"
-                backgroundColor="#e0e0e0"
-                rotation={0}
-                lineCap="round"
-              >
-                {
-                  () => (
-                    <AnimatedCircularProgress
-                      size={80}
-                      width={6}
-                      fill={60}
-                      tintColor="#A680FF" // pastel purple
-                      backgroundColor="#e0e0e0"
-                      rotation={0}
-                      lineCap="round"
-                    >
-                      {
-                        () => (
-                          <AnimatedCircularProgress
-                            size={60}
-                            width={6}
-                            fill={50}
-                            tintColor="#FBC02D"
-                            backgroundColor="#e0e0e0"
-                            rotation={0}
-                            lineCap="round"
-                          >
-                            {
-                              () => (
-                                <View style={{ alignItems: 'center' }}>
-                                  <Text style={{ fontWeight: 'bold', fontSize: 12 }}>4567</Text>
-                                  <Text style={{ fontSize: 10, color: '#777' }}>Steps</Text>
-                                </View>
-                              )
-                            }
-                          </AnimatedCircularProgress>
-                        )
-                      }
-                    </AnimatedCircularProgress>
-                  )
-                }
-              </AnimatedCircularProgress>
-            </View>
-          </View>
-        </View>
+ 
+        <FlipCardBanner/>
+   
 
         <Text style={{ marginTop: 20, fontSize: 23, marginLeft: 10, fontWeight: "bold" }}>Service</Text>
 

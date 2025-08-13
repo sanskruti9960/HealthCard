@@ -11,12 +11,14 @@ import {
   Image,
   Dimensions,
   Modal,
+  StatusBar
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 const { width } = Dimensions.get('window');
+import { ToastAndroid } from 'react-native';
 
 const Login = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -91,25 +93,44 @@ const handleLogin = async () => {
       from: 'login',
     });
 
-  } catch (error) {
-    console.error('Login Error:', error);
-    let message = error.message;
-
-    if (error.code === 'auth/user-not-found') {
-      message = 'No account found with this email.';
-    } else if (error.code === 'auth/wrong-password') {
-      message = 'Incorrect password.';
-    } else if (error.code === 'auth/invalid-credential') {
-      message = 'Invalid credentials. Please check your email and password.';
-    }
-
-    setModalType('error');
-    setModalMessage(message);
-    setModalVisible(true);
   }
+  catch (error) {
+  
+  let message = error.message;
+
+  if (error.code === 'auth/user-not-found') {
+    message = 'No account found with this email.';
+  } else if (error.code === 'auth/wrong-password') {
+    message = 'Incorrect password.';
+  } else if (error.code === 'auth/invalid-credential') {
+    message = 'Invalid credentials. Please check your email and password.';
+  }
+
+  // For invalid credentials → use Android toast
+  if (
+    error.code === 'auth/user-not-found' ||
+    error.code === 'auth/wrong-password' ||
+    error.code === 'auth/invalid-credential'
+  ) {
+    if (Platform.OS === 'android') {
+      ToastAndroid.show(message, ToastAndroid.LONG);
+      return; // skip modal for these cases
+    } else {
+      alert(message); // iOS fallback
+      return;
+    }
+  }
+
+  // For other errors → show modal
+  setModalType('error');
+  setModalMessage(message);
+  setModalVisible(true);
+}
+
 };
 
   return (
+    
     <LinearGradient colors={['#f0f4ff', '#fff']} style={{ flex: 1 }}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}

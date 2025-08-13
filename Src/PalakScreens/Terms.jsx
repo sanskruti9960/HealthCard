@@ -14,7 +14,6 @@ const Terms = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Card style={styles.cardStyle}>
         <Card.Content>
           <Text style={styles.heading}>Terms and Conditions</Text>
 
@@ -75,7 +74,7 @@ const Terms = ({ navigation }) => {
             <Text style={styles.btnText}>Accept</Text>
           </TouchableOpacity>
         </Card.Content>
-      </Card>
+     
     </View>
   );
 };
@@ -84,13 +83,12 @@ export default Terms;
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
+    padding: 13,
     backgroundColor: '#fff',
-    justifyContent: 'center',
-    alignItems: 'center',
     flex: 1,
   },
   heading: {
+     marginTop: 20,
     marginBottom: 16,
     fontSize: 24,
     fontWeight: 'bold',
@@ -102,16 +100,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
     marginBottom: 7,
-    marginLeft: 20,
+  
   },
   normalText: {
     fontSize: 16,
     color: '#333',
     marginBottom: 10,
-    marginLeft: 20,
+   
   },
   btnStyle: {
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 24,
     borderRadius: 8,
     minWidth: 80,
@@ -125,16 +123,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
-  cardStyle: {
-    borderRadius: 10,
-    backgroundColor: '#fff',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1,
-    marginTop: -20,
-  },
+
   link: {
     color: '#007BFF',
     textDecorationLine: 'underline',
