@@ -1,10 +1,24 @@
 import React from 'react';
-import { Modal, View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
+import { Modal, View, Text, StyleSheet, Pressable } from 'react-native';
+import auth from '@react-native-firebase/auth';
+import { useNavigation } from '@react-navigation/native';
 
-const LogoutModal = ({ visible, onClose }) => {
+const LogoutModal = ({ visible = false, onClose }) => {
+  const navigation = useNavigation(); // ✅ moved inside the component
+
+const handleLogout = async () => {
+  try {
+    await auth().signOut(); // sign out from Firebase
+    navigation.replace('Login'); // replace so back button can't go back
+  } catch (error) {
+    console.log('Logout Error:', error);
+  }
+};
+
+
   return (
     <Modal
-      visible={visible}
+      visible={!!visible} // ensure boolean
       animationType="slide"
       transparent={true}
       onRequestClose={onClose}
@@ -15,27 +29,19 @@ const LogoutModal = ({ visible, onClose }) => {
           <Text style={styles.modalMessage}>Are you sure you want to logout?</Text>
 
           <View style={{ flexDirection: 'row', justifyContent: 'space-evenly', width: '100%' }}>
-
             <Pressable style={styles.closeButton} onPress={onClose}>
               <Text style={styles.closeButtonText}>Close</Text>
             </Pressable>
-            <Pressable style={styles.logoutButton} onPress={() => {
-              // Handle logout logic here
-            
-              onClose();
-            }}>
+
+            <Pressable style={styles.logoutButton} onPress={handleLogout}>
               <Text style={styles.logoutButtonText}>Logout</Text>
             </Pressable>
-
           </View>
-
         </View>
       </View>
     </Modal>
-
-    
-  )
-}
+  );
+};
 
 export default LogoutModal;
 
@@ -85,4 +91,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-})
+});

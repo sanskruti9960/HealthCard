@@ -69,7 +69,7 @@ const EmergencyContact = ({ navigation }) => {
   }, [navigation]);
 
   const handlePrevious = useCallback(() => {
-    navigation.navigate("PersonalDetails");
+    navigation.navigate("MainTab");
   }, [navigation]);
 
   const AddContact=() => {
