@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
     fontSize: 16, 
     marginBottom: 10, 
     color: '#000', 
-    maxValue: 10 // ❓ This property isn't valid in RN; probably you meant "maxWidth"
+    
   },
 
   // Input styles
