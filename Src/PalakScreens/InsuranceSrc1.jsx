@@ -1,5 +1,5 @@
-import { StyleSheet, Text, View, TouchableOpacity, Modal, FlatList, ScrollView, Alert, KeyboardAvoidingView, StatusBar, Platform } from 'react-native'
-import React, { useState, useEffect } from 'react'
+import { StyleSheet, Text, View, TouchableOpacity, Modal, FlatList, ScrollView, KeyboardAvoidingView, StatusBar, Platform } from 'react-native'
+import React, { useState, useEffect,useRef } from 'react'
 import { Card, Divider, Avatar, TextInput } from 'react-native-paper'
 import Icon from 'react-native-vector-icons/MaterialIcons'
 import { useNavigation } from '@react-navigation/native'
@@ -11,6 +11,8 @@ import FirestoreService, { USER_DATA_TYPES } from '../Services/FirestoreService'
 const InsuranceSrc1=({navigation, route})=>{
   const [userId, setUserId] = useState(null);
   const [showTip, setShowTip] = useState(true);
+  const [showValidationTip, setShowValidationTip] = useState(false);
+  const [validationTipField, setValidationTipField] = useState(null);
   
   useEffect(() => {
     initializeUser();
@@ -37,7 +39,100 @@ const InsuranceSrc1=({navigation, route})=>{
     }
   }, []);
 
+  const [isEditable, setIsEditable] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
+  
+  const [formState, setFormState] = useState({
+    companyName: '',
+    serviceNumber: '',
+    emailOfCompany: '',
+    policyHolderName: '',
+    policyNumber: '',
+    policyType: '',
+    sumInsured: '',
+    policyEndDate: '',
+    policyStartDate: '',
+    nomineeName: '',
+    nomineeRelation: '',
+    nomineePhn: '',
+    claimAmount: '',
+    claimLink: '',
+    claimHelpPhn: '',
+    adharcardNo: '',
+    pancardNo: '',
+  });
+
+  const companyNameRef = useRef(null);
+  const policyHolderNameRef = useRef(null);
+  const policyNumberRef = useRef(null);
+  const policyTypeRef = useRef(null);
+  const sumInsuredRef = useRef(null);
+  const nomineeNameRef = useRef(null);
+  const claimAmountRef = useRef(null);
+
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!formState.companyName.trim()) {
+      errors.companyName = 'Company name is required';
+    }
+    
+    if (!formState.policyHolderName.trim()) {
+      errors.policyHolderName = 'Policy holder name is required';
+    }
+    
+    if (!formState.policyNumber.trim()) {
+      errors.policyNumber = 'Policy number is required';
+    }
+    
+    if (!formState.policyType.trim()) {
+      errors.policyType = 'Policy type is required';
+    }
+    
+    if (!formState.sumInsured.trim()) {
+      errors.sumInsured = 'Sum insured amount is required';
+    }
+    
+    if (!formState.nomineeName.trim()) {
+      errors.nomineeName = 'Nominee name is required';
+    }
+    
+    if (!formState.claimAmount.trim()) {
+      errors.claimAmount = 'Claim amount is required';
+    }
+    
+    setValidationErrors(errors);
+    
+    if (Object.keys(errors).length > 0) {
+      const firstErrorField = Object.keys(errors)[0];
+      setShowValidationTip(true);
+      setValidationTipField(firstErrorField);
+      
+      const fieldRefs = {
+        companyName: companyNameRef,
+        policyHolderName: policyHolderNameRef,
+        policyNumber: policyNumberRef,
+        policyType: policyTypeRef,
+        sumInsured: sumInsuredRef,
+        nomineeName: nomineeNameRef,
+        claimAmount: claimAmountRef
+      };
+      
+      fieldRefs[firstErrorField]?.current?.focus();
+    } else {
+      setShowValidationTip(false);
+      setValidationTipField(null);
+    }
+    
+    return Object.keys(errors).length === 0;
+  };
+
   const onSubmit = React.useCallback(async (data) => {
+    if (!validateForm()) {
+     
+      return;
+    }
+    
     try {
       const savedPolicy = await FirestoreService.saveInsurancePolicy(data);
       setModalVisible(true);
@@ -50,7 +145,7 @@ const InsuranceSrc1=({navigation, route})=>{
     } catch (error) {
       console.log('Error saving insurance policy:', error);
     }
-  }, [navigation]);
+  }, [navigation, validateForm]);
     
   const [modalVisible, setModalVisible] = useState(false);
   
@@ -74,28 +169,6 @@ const InsuranceSrc1=({navigation, route})=>{
       if (modalTimer) clearTimeout(modalTimer);
     };
   }, [showTip, modalVisible]);
-  
-  const [isEditable, setIsEditable] = useState(false);
-  
-  const [formState, setFormState] = useState({
-    companyName: '',
-    serviceNumber: '',
-    emailOfCompany: '',
-    policyHolderName: '',
-    policyNumber: '',
-    policyType: '',
-    sumInsured: '',
-    policyEndDate: '',
-    policyStartDate: '',
-    nomineeName: '',
-    nomineeRelation: '',
-    nomineePhn: '',
-    claimAmount: '',
-    claimLink: '',
-    claimHelpPhn: '',
-    adharcardNo: '',
-    pancardNo: '',
-  });
 
   React.useEffect(() => {
     if (route?.params?.createNew || !route?.params?.policyData) {
@@ -145,7 +218,27 @@ const InsuranceSrc1=({navigation, route})=>{
       ...prev,
       [field]: value,
     }));
-  }, []);
+    
+    // Clear validation error when user starts typing
+    if (validationErrors[field]) {
+      setValidationErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+      // Keep tooltip visible until all errors are resolved
+      const remainingErrors = { ...validationErrors };
+      delete remainingErrors[field];
+      if (Object.keys(remainingErrors).length === 0) {
+        setShowValidationTip(false);
+        setValidationTipField(null);
+      } else {
+        // Show tooltip for next error field
+        const nextErrorField = Object.keys(remainingErrors)[0];
+        setValidationTipField(nextErrorField);
+      }
+    }
+  }, [validationErrors]);
 
   const handleDropdownPress = React.useCallback(() => {
     if (isEditable) setShowPolicyDropdown(true);
@@ -207,18 +300,36 @@ const InsuranceSrc1=({navigation, route})=>{
               <Divider style={styles.divider}/>
               
               <View style={styles.inputContainer}>
-                <TextInput
-                  label="Company Name"
-                  value={formState.companyName}
-                  mode="outlined"
-                  disabled={!isEditable}
-                  onChangeText={(text) => handleChange('companyName', text)}
-                  left={<TextInput.Icon icon={() => <Icon name="business" size={20} color="#1C75BC" />} />}
-                  style={styles.paperInput}
-                  outlineColor="#E2E8F0"
-                  activeOutlineColor="#1C75BC"
-                  theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white', } }}
-                />
+                <Tooltip
+                  isVisible={showValidationTip && validationTipField === 'companyName'}
+                  content={<Text style={styles.tooltipText}>Please fill the required Fields</Text>}
+                  placement="top"
+                  showChildInTooltip={false}
+                  disableShadow={false}
+                  onClose={() => {
+                    setShowValidationTip(false);
+                    setValidationTipField(null);
+                  }}
+                  contentStyle={styles.validationTooltipContent}
+                  arrowSize={{ width: 16, height: 8 }}
+                >
+                  <TextInput
+                    ref={companyNameRef}
+                    label="Company Name"
+                    value={formState.companyName}
+                    mode="outlined"
+                    disabled={!isEditable}
+                    onChangeText={(text) => handleChange('companyName', text)}
+                    left={<TextInput.Icon icon={() => <Icon name="business" size={20} color="#1C75BC" />} />}
+                    style={styles.paperInput}
+                    outlineColor="#E2E8F0"
+                    activeOutlineColor="#1C75BC"
+                    theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white', } }}
+                  />
+                </Tooltip>
+                {validationErrors.companyName && (
+                  <Text style={styles.errorText}>{validationErrors.companyName}</Text>
+                )}
               </View>
               
               <View style={styles.inputContainer}>
@@ -261,54 +372,111 @@ const InsuranceSrc1=({navigation, route})=>{
               <Divider style={styles.divider}/>
 
                <View style={styles.inputContainer}>
-                <TextInput
-                  label="Policy Holder Name"
-                  value={formState.policyHolderName}
-                  mode="outlined"
-                  disabled={!isEditable}
-                  keyboardType="default"
-                  onChangeText={(text) => handleChange('policyHolderName', text)}
-                  left={<TextInput.Icon icon={() => <Icon name="description" size={20} color="#3B82F6" />} />}
-                  style={styles.paperInput}
-                  outlineColor="#E2E8F0"
-                  activeOutlineColor="#3B82F6"
-                  theme={{roundness:12, colors: { primary: '#3B82F6', background: 'white' } }}
-                />
+                <Tooltip
+                  isVisible={showValidationTip && validationTipField === 'policyHolderName'}
+                  content={<Text style={styles.tooltipText}>Please fill the required Fields</Text>}
+                  placement="top"
+                  showChildInTooltip={false}
+                  disableShadow={false}
+                  onClose={() => {
+                    setShowValidationTip(false);
+                    setValidationTipField(null);
+                  }}
+                  contentStyle={styles.validationTooltipContent}
+                  arrowSize={{ width: 16, height: 8 }}
+                >
+                  <TextInput
+                    ref={policyHolderNameRef}
+                    label="Policy Holder Name"
+                    value={formState.policyHolderName}
+                    mode="outlined"
+                    disabled={!isEditable}
+                    keyboardType="default"
+                    onChangeText={(text) => handleChange('policyHolderName', text)}
+                    left={<TextInput.Icon icon={() => <Icon name="description" size={20} color="#1C75BC" />} />}
+                    style={styles.paperInput}
+                    outlineColor="#E2E8F0"
+                    activeOutlineColor="#1C75BC"
+                    theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
+                  />
+                </Tooltip>
+                {validationErrors.policyHolderName && (
+                  <Text style={styles.errorText}>{validationErrors.policyHolderName}</Text>
+                )}
               </View>
 
               <View style={styles.inputContainer}>
-                <TextInput
-                  label="Policy Number"
-                  value={formState.policyNumber}
-                  mode="outlined"
-                  disabled={!isEditable}
-                  keyboardType="numeric"
-                  onChangeText={(text) => handleChange('policyNumber', text)}
-                  left={<TextInput.Icon icon={() => <Icon name="description" size={20} color="#3B82F6" />} />}
-                  style={styles.paperInput}
-                  outlineColor="#E2E8F0"
-                  activeOutlineColor="#3B82F6"
-                  theme={{roundness:12, colors: { primary: '#3B82F6', background: 'white' } }}
-                />
+                <Tooltip
+                  isVisible={showValidationTip && validationTipField === 'policyNumber'}
+                  content={<Text style={styles.tooltipText}>Please fill the required Fields</Text>}
+                  placement="top"
+                  showChildInTooltip={false}
+                  disableShadow={false}
+                  onClose={() => {
+                    setShowValidationTip(false);
+                    setValidationTipField(null);
+                  }}
+                  contentStyle={styles.validationTooltipContent}
+                  arrowSize={{ width: 16, height: 8 }}
+                >
+                  <TextInput
+                    ref={policyNumberRef}
+                    label="Policy Number"
+                    value={formState.policyNumber}
+                    mode="outlined"
+                    disabled={!isEditable}
+                    keyboardType="numeric"
+                    onChangeText={(text) => handleChange('policyNumber', text)}
+                    left={<TextInput.Icon icon={() => <Icon name="description" size={20} color="#1C75BC" />} />}
+                    style={styles.paperInput}
+                    outlineColor="#E2E8F0"
+                    activeOutlineColor="#1C75BC"
+                    theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
+                  />
+                </Tooltip>
+                {validationErrors.policyNumber && (
+                  <Text style={styles.errorText}>{validationErrors.policyNumber}</Text>
+                )}
               </View>
 
               <View style={styles.inputContainer}>
-                <TextInput
-                  label="Policy Type"
-                  value={formState.policyType}
-                  mode="outlined"
-                  disabled={!isEditable}
-                  editable={isCustomPolicyType || !isEditable ? isEditable : false}
-                  onChangeText={(text) => handleChange('policyType', text)}
-                  right={<TextInput.Icon icon="menu-down" onPress={handleDropdownPress} />}
-                  left={<TextInput.Icon icon={() => <Icon name="category" size={20} color="#3B82F6" />} />}
-                  style={styles.paperInput}
-                  outlineColor="#E2E8F0"
-                  activeOutlineColor="#3B82F6"
-                  theme={{roundness:12, colors: { primary: '#3B82F6', background: 'white' } }}
-                  onTouchStart={isCustomPolicyType ? undefined : handleDropdownPress}
-                  placeholder={isCustomPolicyType ? "Enter your policy type" : "Select policy type"}
-                />
+
+                <Tooltip
+                  isVisible={showValidationTip && validationTipField === 'policyType'}
+                  content={<Text style={styles.tooltipText}>Please fill the required Fields</Text>}
+                  placement="top"
+                  showChildInTooltip={false}
+                  disableShadow={false}
+                  onClose={() => {
+                    setShowValidationTip(false);
+                    setValidationTipField(null);
+                  }}
+                  contentStyle={styles.validationTooltipContent}
+                  arrowSize={{ width: 16, height: 8 }}
+                >
+                  <TouchableOpacity onPress={handleDropdownPress} >
+                  <TextInput
+                    ref={policyTypeRef}
+                    label="Policy Type"
+                    value={formState.policyType}
+                    mode="outlined"
+                    disabled={!isEditable}
+                    editable={isCustomPolicyType || !isEditable ? isEditable : false}
+                    onChangeText={(text) => handleChange('policyType', text)}
+                    right={<TextInput.Icon icon="menu-down" onPress={handleDropdownPress} />}
+                    left={<TextInput.Icon icon={() => <Icon name="category" size={20} color="#1C75BC" />} />}
+                    style={styles.paperInput}
+                    outlineColor="#E2E8F0"
+                    activeOutlineColor="#1C75BC"
+                    theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
+                    onTouchStart={isCustomPolicyType ? undefined : handleDropdownPress}
+                    placeholder={isCustomPolicyType ? "Enter your policy type" : "Select policy type"}
+                  />
+                   </TouchableOpacity>
+                </Tooltip>
+                {validationErrors.policyType && (
+                  <Text style={styles.errorText}>{validationErrors.policyType}</Text>
+                )}
               </View>
 
               <Modal visible={showPolicyDropdown} transparent animationType='slide'>
@@ -340,19 +508,37 @@ const InsuranceSrc1=({navigation, route})=>{
               </Modal>
 
               <View style={styles.inputContainer}>
-                <TextInput
-                  label="Sum Insured Amount"
-                  value={formState.sumInsured}
-                  mode="outlined"
-                  disabled={!isEditable}
-                  keyboardType="numeric"
-                  onChangeText={(text) => handleChange('sumInsured', text)}
-                  left={<TextInput.Icon icon={() => <Icon name="attach-money" size={20} color="#3B82F6" />} />}
-                  style={styles.paperInput}
-                  outlineColor="#E2E8F0"
-                  activeOutlineColor="#3B82F6"
-                  theme={{ roundness:12,colors: { primary: '#3B82F6', background: 'white' } }}
-                />
+                <Tooltip
+                  isVisible={showValidationTip && validationTipField === 'sumInsured'}
+                  content={<Text style={styles.tooltipText}>Please fill the required Fields</Text>}
+                  placement="top"
+                  showChildInTooltip={false}
+                  disableShadow={false}
+                  onClose={() => {
+                    setShowValidationTip(false);
+                    setValidationTipField(null);
+                  }}
+                  contentStyle={styles.validationTooltipContent}
+                  arrowSize={{ width: 16, height: 8 }}
+                >
+                  <TextInput
+                    ref={sumInsuredRef}
+                    label="Sum Insured Amount"
+                    value={formState.sumInsured}
+                    mode="outlined"
+                    disabled={!isEditable}
+                    keyboardType="numeric"
+                    onChangeText={(text) => handleChange('sumInsured', text)}
+                    left={<TextInput.Icon icon={() => <Icon name="attach-money" size={20} color="#1C75BC" />} />}
+                    style={styles.paperInput}
+                    outlineColor="#E2E8F0"
+                    activeOutlineColor="#1C75BC"
+                    theme={{ roundness:12,colors: { primary: '#1C75BC', background: 'white' } }}
+                  />
+                </Tooltip>
+                {validationErrors.sumInsured && (
+                  <Text style={styles.errorText}>{validationErrors.sumInsured}</Text>
+                )}
               </View>
 
               <View style={styles.dateContainer}>
@@ -362,12 +548,13 @@ const InsuranceSrc1=({navigation, route})=>{
                     value={formState.policyStartDate}
                     mode="outlined"
                     disabled={!isEditable}
+                    keyboardType="numeric"
                     onChangeText={(text) => handleChange('policyStartDate', text)}
-                    left={<TextInput.Icon icon={() => <Icon name="event" size={20} color="#3B82F6" />} />}
+                    left={<TextInput.Icon icon={() => <Icon name="event" size={20} color="#1C75BC" />} />}
                     style={styles.dateInput}
                     outlineColor="#E2E8F0"
-                    activeOutlineColor="#3B82F6"
-                    theme={{roundness:12, colors: { primary: '#3B82F6', background: 'white' } }}
+                    activeOutlineColor="#1C75BC"
+                    theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
                   />
                 </View>
                 
@@ -377,12 +564,13 @@ const InsuranceSrc1=({navigation, route})=>{
                     value={formState.policyEndDate}
                     mode="outlined"
                     disabled={!isEditable}
+                    keyboardType="numeric"
                     onChangeText={(text) => handleChange('policyEndDate', text)}
-                    left={<TextInput.Icon icon={() => <Icon name="event" size={20} color="#3B82F6" />} />}
+                    left={<TextInput.Icon icon={() => <Icon name="event" size={20} color="#1C75BC" />} />}
                     style={styles.dateInput}
                     outlineColor="#E2E8F0"
-                    activeOutlineColor="#3B82F6"
-                    theme={{roundness:12, colors: { primary: '#3B82F6', background: 'white' } }}
+                    activeOutlineColor="#1C75BC"
+                    theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
                   />
                 </View>
               </View>
@@ -395,18 +583,36 @@ const InsuranceSrc1=({navigation, route})=>{
               <Divider style={styles.divider}/>
               
               <View style={styles.inputContainer}>
-                <TextInput
-                  label="Nominee Name"
-                  value={formState.nomineeName}
-                  mode="outlined"
-                  disabled={!isEditable}
-                  onChangeText={(text) => handleChange('nomineeName', text)}
-                  left={<TextInput.Icon icon={() => <Icon name="person" size={20} color="#3B82F6" />} />}
-                  style={styles.paperInput}
-                  outlineColor="#E2E8F0"
-                  activeOutlineColor="#3B82F6"
-                  theme={{roundness:12, colors: { primary: '#3B82F6', background: 'white' } }}
-                />
+                <Tooltip
+                  isVisible={showValidationTip && validationTipField === 'nomineeName'}
+                  content={<Text style={styles.tooltipText}>Please fill the required Fields</Text>}
+                  placement="top"
+                  showChildInTooltip={false}
+                  disableShadow={false}
+                  onClose={() => {
+                    setShowValidationTip(false);
+                    setValidationTipField(null);
+                  }}
+                  contentStyle={styles.validationTooltipContent}
+                  arrowSize={{ width: 16, height: 8 }}
+                >
+                  <TextInput
+                    ref={nomineeNameRef}
+                    label="Nominee Name"
+                    value={formState.nomineeName}
+                    mode="outlined"
+                    disabled={!isEditable}
+                    onChangeText={(text) => handleChange('nomineeName', text)}
+                    left={<TextInput.Icon icon={() => <Icon name="person" size={20} color="#1C75BC" />} />}
+                    style={styles.paperInput}
+                    outlineColor="#E2E8F0"
+                    activeOutlineColor="#1C75BC"
+                    theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
+                  />
+                </Tooltip>
+                {validationErrors.nomineeName && (
+                  <Text style={styles.errorText}>{validationErrors.nomineeName}</Text>
+                )}
               </View>
               
               <View style={styles.inputContainer}>
@@ -416,11 +622,11 @@ const InsuranceSrc1=({navigation, route})=>{
                   mode="outlined"
                   disabled={!isEditable}
                   onChangeText={(text) => handleChange('nomineeRelation', text)}
-                  left={<TextInput.Icon icon={() => <Icon name="people" size={20} color="#3B82F6" />} />}
+                  left={<TextInput.Icon icon={() => <Icon name="people" size={20} color="#1C75BC" />} />}
                   style={styles.paperInput}
                   outlineColor="#E2E8F0"
-                  activeOutlineColor="#3B82F6"
-                  theme={{roundness:12, colors: { primary: '#3B82F6', background: 'white' } }}
+                  activeOutlineColor="#1C75BC"
+                  theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
                 />
               </View>
               
@@ -432,11 +638,11 @@ const InsuranceSrc1=({navigation, route})=>{
                   disabled={!isEditable}
                   keyboardType="numeric"
                   onChangeText={(text) => handleChange('nomineePhn', text)}
-                  left={<TextInput.Icon icon={() => <Icon name="phone" size={20} color="#3B82F6" />} />}
+                  left={<TextInput.Icon icon={() => <Icon name="phone" size={20} color="#1C75BC" />} />}
                   style={styles.paperInput}
                   outlineColor="#E2E8F0"
-                  activeOutlineColor="#3B82F6"
-                  theme={{roundness:12, colors: { primary: '#3B82F6', background: 'white' } }}
+                  activeOutlineColor="#1C75BC"
+                  theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
                 />
               </View>
             </Card.Content>
@@ -448,19 +654,37 @@ const InsuranceSrc1=({navigation, route})=>{
               <Divider style={styles.divider}/>
             
               <View style={styles.inputContainer}>
-                <TextInput
-                  label="Claim Amount"
-                  value={formState.claimAmount}
-                  mode="outlined"
-                  disabled={!isEditable}
-                  keyboardType="numeric"
-                  onChangeText={(text) => handleChange('claimAmount', text)}
-                  left={<TextInput.Icon icon={() => <Icon name="money" size={20} color="#3B82F6" />} />}
-                  style={styles.paperInput}
-                  outlineColor="#E2E8F0"
-                  activeOutlineColor="#3B82F6"
-                  theme={{roundness:12, colors: { primary: '#3B82F6', background: 'white' } }}
-                />
+                <Tooltip
+                  isVisible={showValidationTip && validationTipField === 'claimAmount'}
+                  content={<Text style={styles.tooltipText}>Please fill the required Fields</Text>}
+                  placement="top"
+                  showChildInTooltip={false}
+                  disableShadow={false}
+                  onClose={() => {
+                    setShowValidationTip(false);
+                    setValidationTipField(null);
+                  }}
+                  contentStyle={styles.validationTooltipContent}
+                  arrowSize={{ width: 16, height: 8 }}
+                >
+                  <TextInput
+                    ref={claimAmountRef}
+                    label="Claim Amount"
+                    value={formState.claimAmount}
+                    mode="outlined"
+                    disabled={!isEditable}
+                    keyboardType="numeric"
+                    onChangeText={(text) => handleChange('claimAmount', text)}
+                    left={<TextInput.Icon icon={() => <Icon name="money" size={20} color="#1C75BC" />} />}
+                    style={styles.paperInput}
+                    outlineColor="#E2E8F0"
+                    activeOutlineColor="#1C75BC"
+                    theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
+                  />
+                </Tooltip>
+                {validationErrors.claimAmount && (
+                  <Text style={styles.errorText}>{validationErrors.claimAmount}</Text>
+                )}
               </View>
 
               <View style={styles.inputContainer}>
@@ -470,11 +694,11 @@ const InsuranceSrc1=({navigation, route})=>{
                   mode="outlined"
                   disabled={!isEditable}
                   onChangeText={(text) => handleChange('claimLink', text)}
-                  left={<TextInput.Icon icon={() => <Icon name="local-hospital" size={20} color="#3B82F6" />} />}
+                  left={<TextInput.Icon icon={() => <Icon name="local-hospital" size={20} color="#1C75BC" />} />}
                   style={styles.paperInput}
                   outlineColor="#E2E8F0"
-                  activeOutlineColor="#3B82F6"
-                  theme={{roundness:12, colors: { primary: '#3B82F6', background: 'white' } }}
+                  activeOutlineColor="#1C75BC"
+                  theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
                 />
               </View>
 
@@ -486,11 +710,11 @@ const InsuranceSrc1=({navigation, route})=>{
                   disabled={!isEditable}
                   keyboardType="numeric"
                   onChangeText={(text) => handleChange('claimHelpPhn', text)}
-                  left={<TextInput.Icon icon={() => <Icon name="support-agent" size={20} color="#3B82F6" />} />}
+                  left={<TextInput.Icon icon={() => <Icon name="support-agent" size={20} color="#1C75BC" />} />}
                   style={styles.paperInput}
                   outlineColor="#E2E8F0"
-                  activeOutlineColor="#3B82F6"
-                  theme={{roundness:12, colors: { primary: '#3B82F6', background: 'white' } }}
+                  activeOutlineColor="#1C75BC"
+                  theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
                 />
               </View>
             </Card.Content>
@@ -509,11 +733,11 @@ const InsuranceSrc1=({navigation, route})=>{
                   keyboardType="numeric"
                   disabled={!isEditable}
                   onChangeText={(text) => handleChange('adharcardNo', text)}
-                  left={<TextInput.Icon icon={() => <Icon name="fingerprint" size={20} color="#3B82F6" />} />}
+                  left={<TextInput.Icon icon={() => <Icon name="fingerprint" size={20} color="#1C75BC" />} />}
                   style={styles.paperInput}
                   outlineColor="#E2E8F0"
-                  activeOutlineColor="#3B82F6"
-                  theme={{roundness:12, colors: { primary: '#3B82F6', background: 'white' } }}
+                  activeOutlineColor="#1C75BC"
+                  theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
                 />
               </View>
           
@@ -525,11 +749,11 @@ const InsuranceSrc1=({navigation, route})=>{
                   keyboardType="numeric"
                   disabled={!isEditable}
                   onChangeText={(text) => handleChange('pancardNo', text)}
-                  left={<TextInput.Icon icon={() => <Icon name="badge" size={20} color="#3B82F6" />} />}
+                  left={<TextInput.Icon icon={() => <Icon name="badge" size={20} color="#1C75BC" />} />}
                   style={styles.paperInput}
                   outlineColor="#E2E8F0"
-                  activeOutlineColor="#3B82F6"
-                  theme={{roundness:12, colors: { primary: '#3B82F6', background: 'white' } }}
+                  activeOutlineColor="#1C75BC"
+                  theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
                 />
               </View>
             </Card.Content>
@@ -596,14 +820,7 @@ const styles=StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 5,
   },
-  mainHeading: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#2E3A59',
-    flex: 1,
-    textAlign: 'center',
-    letterSpacing: 0.5,
-  },
+
   heroContainer: {
     alignItems: 'center',
     paddingHorizontal: 20,
@@ -648,7 +865,7 @@ const styles=StyleSheet.create({
     borderColor: '#F1F5F9',
   },
   HeaderStyle: {
-    fontWeight: '700',
+    fontWeight: '500',
     fontSize: 18,
     color: '#1E293B',
     marginBottom: 12,
@@ -668,16 +885,7 @@ const styles=StyleSheet.create({
   paperInput: {
     backgroundColor: 'white',
   },
-  textInputWithIcon: {
-    flex: 1,
-    color: '#333',
-    marginLeft: 10,
-    fontSize: 14,
-  },
-  icon: {
-    marginRight: 8,
-    color: '#0A66C2',
-  },
+
   editButtonHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -703,13 +911,7 @@ const styles=StyleSheet.create({
     alignSelf: 'center',
     alignItems: 'center',
   },
-  gradientButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    borderRadius: 10,
-  },
+
   buttonText: {
     color: '#1C75BC',
     fontWeight: '700',
@@ -769,7 +971,17 @@ const styles=StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
   },
+  validationTooltipContent: {
+    backgroundColor: '#EF4444',
+    width: 220,
+  },
   btnStyle: {
     padding: 8,
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
   },
 })

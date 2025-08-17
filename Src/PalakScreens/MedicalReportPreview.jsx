@@ -5,15 +5,12 @@ import {
   TouchableOpacity, 
   ScrollView, 
   RefreshControl, 
-  ActivityIndicator ,
-  Button
+  ActivityIndicator
 } from 'react-native';
 import React, { useState, useEffect } from 'react';
 
-import { Card } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import FirestoreService, { USER_DATA_TYPES } from '../Services/FirestoreService';
-import MultiplePolicy from './MultiplePolicy';
 
 const MedicalReportPreview = ({ navigation }) => {
   const [medicalInfo, setMedicalInfo] = useState({});
@@ -136,8 +133,7 @@ const MedicalReportPreview = ({ navigation }) => {
           <Text style={styles.heroSubtitle}>Report Details</Text>
         </View>
 
-        <Card style={styles.cardStyle} elevation={4}>
-          <Card.Content>
+        
             <View style={styles.container}>
               {loading ? (
                 <View style={styles.loadingContainer}>
@@ -154,7 +150,7 @@ const MedicalReportPreview = ({ navigation }) => {
                 </View>
               ) : (
                 getMedicalFields(medicalInfo).map(([label, value], index) => (
-                  <View key={label} style={[styles.dataRow, index % 2 === 0 ? styles.evenRow : null]}>
+                  <View key={label} style={styles.dataRow}>
                     <Text style={styles.label}>{label}</Text>
                     <Text style={[styles.value, !value || value.toString().trim() === '' ? styles.noDataText : null]}>
                       {value && value.toString().trim() !== '' ? value : '-- Not Provided --'}
@@ -163,8 +159,7 @@ const MedicalReportPreview = ({ navigation }) => {
                 ))
               )}
             </View>
-          </Card.Content>
-        </Card>
+          
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity
@@ -174,13 +169,7 @@ const MedicalReportPreview = ({ navigation }) => {
             <Icon name="edit" size={20} color="#1C75BC" />
             <Text style={styles.editButtonText}>Edit Medical Info</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.nextButton}
-            onPress={() => navigation.navigate('MultiplePolicy')}
-          >
-            <Icon name="arrow-forward" size={20} color="#FFF" />
-            <Text style={styles.nextButtonText}>Next</Text>
-          </TouchableOpacity>
+          
         </View>
       </ScrollView>
     </View>
@@ -241,31 +230,14 @@ const styles = StyleSheet.create({
   container: {
     padding: 10,
   },
-  cardStyle: {
-    backgroundColor: '#FFF',
-    borderRadius: 20,
-    marginHorizontal: 20,
-    marginBottom: 20,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
-  },
+
   dataRow: {
     padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EFEFEF',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  evenRow: {
-    backgroundColor: '#F8FAFF',
-  },
+
   label: {
     fontWeight: '600',
     fontSize: 15,
@@ -281,7 +253,7 @@ const styles = StyleSheet.create({
   },
   noDataText: {
     color: '#ff3b30',
-    fontStyle: 'italic',
+    fontWeight: '400',
   },
   editButton: {
     flexDirection: 'row',
@@ -352,19 +324,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  nextButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1C75BC',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 10,
-    marginTop: 10,
-  },
-  nextButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
-  },
+
 });
