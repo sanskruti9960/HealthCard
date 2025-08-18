@@ -8,6 +8,8 @@ import {
   Keyboard,
   Modal,
   FlatList,
+  ActivityIndicator,
+  ToastAndroid,
 } from "react-native";
 import { TextInput } from "react-native-paper";
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -19,7 +21,8 @@ const PersonalDetails = ({ navigation }) => {
   const [showGenderDropdown, setShowGenderDropdown] = useState(false);
   const [showBloodDropdown, setShowBloodDropdown] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
-const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [loading, setLoading] = useState(false); // ✅ loader state
 
   const genderItems = [
     { label: "Male", value: "male" },
@@ -55,9 +58,11 @@ const [selectedDate, setSelectedDate] = useState(new Date());
       bloodGrp: "",
     },
   });
-const handleShowDatePicker = () => {
-  setShowDatePicker(true);
-};
+
+  const handleShowDatePicker = () => {
+    setShowDatePicker(true);
+  };
+
   useEffect(() => {
     (async () => {
       try {
@@ -77,13 +82,17 @@ const handleShowDatePicker = () => {
   const onSubmit = useCallback(
     async (data) => {
       try {
+        setLoading(true); // ✅ Show loader
         await FirestoreService.saveUserData(USER_DATA_TYPES.PERSONAL, data);
-        console.log("Personal details saved successfully");
+        setLoading(false);
+        ToastAndroid.show("Details saved successfully!", ToastAndroid.SHORT);
         Keyboard.dismiss();
         navigation.navigate("MainTab");
       } catch (error) {
+        setLoading(false);
         console.log("Error saving personal details:", error);
-        navigation.navigate("Maintab");
+        ToastAndroid.show("Failed to save details!", ToastAndroid.SHORT);
+        navigation.navigate("MainTab");
       }
     },
     [navigation]
@@ -134,17 +143,12 @@ const handleShowDatePicker = () => {
                 style={styles.paperInput}
                 outlineColor="#E2E8F0"
                 activeOutlineColor="#1C75BC"
-                theme={{
-                  roundness: 12,
-                  colors: { primary: "#1C75BC", background: "white" },
-                }}
+                theme={{ roundness: 12, colors: { primary: "#1C75BC", background: "white" } }}
               />
             )}
           />
         </View>
-        {errors.fullName && (
-          <Text style={styles.error}>{errors.fullName.message}</Text>
-        )}
+        {errors.fullName && <Text style={styles.error}>{errors.fullName.message}</Text>}
 
         {/* Height */}
         <View style={styles.inputContainer}>
@@ -168,17 +172,12 @@ const handleShowDatePicker = () => {
                 style={styles.paperInput}
                 outlineColor="#E2E8F0"
                 activeOutlineColor="#1C75BC"
-                theme={{
-                  roundness: 12,
-                  colors: { primary: "#1C75BC", background: "white" },
-                }}
+                theme={{ roundness: 12, colors: { primary: "#1C75BC", background: "white" } }}
               />
             )}
           />
         </View>
-        {errors.height && (
-          <Text style={styles.error}>{errors.height.message}</Text>
-        )}
+        {errors.height && <Text style={styles.error}>{errors.height.message}</Text>}
 
         {/* Weight */}
         <View style={styles.inputContainer}>
@@ -196,80 +195,66 @@ const handleShowDatePicker = () => {
                 onChangeText={onChange}
                 left={
                   <TextInput.Icon
-                    icon={() => (
-                      <Icon name="monitor-weight" size={20} color="#1C75BC" />
-                    )}
+                    icon={() => <Icon name="monitor-weight" size={20} color="#1C75BC" />}
                   />
                 }
                 style={styles.paperInput}
                 outlineColor="#E2E8F0"
                 activeOutlineColor="#1C75BC"
-                theme={{
-                  roundness: 12,
-                  colors: { primary: "#1C75BC", background: "white" },
-                }}
+                theme={{ roundness: 12, colors: { primary: "#1C75BC", background: "white" } }}
               />
             )}
           />
         </View>
-        {errors.weight && (
-          <Text style={styles.error}>{errors.weight.message}</Text>
+        {errors.weight && <Text style={styles.error}>{errors.weight.message}</Text>}
+
+        {/* Birth Date */}
+        <View style={styles.inputContainer}>
+          <Controller
+            control={control}
+            name="birthDate"
+            rules={{ required: "Birth date is required" }}
+            render={({ field: { value } }) => (
+              <TouchableOpacity onPress={handleShowDatePicker} activeOpacity={0.7}>
+                <TextInput
+                  mode="outlined"
+                  label="Birth Date"
+                  value={value}
+                  editable={false}
+                  left={<TextInput.Icon icon={() => <Icon name="event" size={20} color="#1C75BC" />} />}
+                  style={styles.paperInput}
+                  outlineColor="#E2E8F0"
+                  activeOutlineColor="#1C75BC"
+                  theme={{ roundness: 12, colors: { primary: '#1C75BC', background: 'white' } }}
+                  placeholder="Select Birth Date"
+                />
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+        {errors.birthDate && <Text style={styles.error}>{errors.birthDate.message}</Text>}
+
+        {showDatePicker && (
+          <DateTimePicker
+            value={selectedDate}
+            mode="date"
+            display="default"
+            maximumDate={new Date()}
+            onChange={(event, date) => {
+              setShowDatePicker(false);
+              if (date) {
+                setSelectedDate(date);
+                const formattedDate = date.toLocaleDateString('en-GB', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric'
+                });
+                setValue('birthDate', formattedDate);
+              }
+            }}
+          />
         )}
 
-        {/* Birth Date - Fast Response */}
-
-        
-       <View style={styles.inputContainer}>
-  <Controller
-    control={control}
-    name="birthDate"
-    rules={{ required: "Birth date is required" }}
-    render={({ field: { value } }) => (
-      <TouchableOpacity onPress={handleShowDatePicker} activeOpacity={0.7}>
-        <TextInput
-          mode="outlined"
-          label="Birth Date"
-          value={value}
-          editable={false}
-          left={<TextInput.Icon icon={() => <Icon name="event" size={20} color="#1C75BC" />} />}
-          style={styles.paperInput}
-          outlineColor="#E2E8F0"
-          activeOutlineColor="#1C75BC"
-          theme={{
-            roundness: 12,
-            colors: { primary: '#1C75BC', background: 'white' }
-          }}
-          placeholder="Select Birth Date"
-        />
-      </TouchableOpacity>
-    )}
-  />
-</View>
-        {errors.birthDate && (
-          <Text style={styles.error}>{errors.birthDate.message}</Text>
-        )}
-
-        {/* Date Picker */}
-   {showDatePicker && (
-  <DateTimePicker
-    value={selectedDate}
-    mode="date"
-    display="default"
-    maximumDate={new Date()}
-    onChange={(event, date) => {
-      setShowDatePicker(false);
-      if (date) {
-        setSelectedDate(date);
-        const formattedDate = date.toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric'
-        });
-        setValue('birthDate', formattedDate);
-      }
-    }}
-  />
-)}
         {/* Address */}
         <View style={styles.inputContainer}>
           <Controller
@@ -284,20 +269,11 @@ const handleShowDatePicker = () => {
                 onChangeText={onChange}
                 multiline
                 numberOfLines={3}
-                left={
-                  <TextInput.Icon
-                    icon={() => (
-                      <Icon name="location-on" size={20} color="#1C75BC" />
-                    )}
-                  />
-                }
+                left={<TextInput.Icon icon={() => <Icon name="location-on" size={20} color="#1C75BC" />} />}
                 style={styles.paperInput}
                 outlineColor="#E2E8F0"
                 activeOutlineColor="#1C75BC"
-                theme={{
-                  roundness: 12,
-                  colors: { primary: "#1C75BC", background: "white" },
-                }}
+                theme={{ roundness: 12, colors: { primary: "#1C75BC", background: "white" } }}
                 placeholder="Enter your address"
               />
             )}
@@ -310,30 +286,18 @@ const handleShowDatePicker = () => {
             control={control}
             name="gender"
             render={({ field: { value } }) => (
-              <TouchableOpacity
-                onPress={() => setShowGenderDropdown(true)}
-                activeOpacity={1}
-              >
+              <TouchableOpacity onPress={() => setShowGenderDropdown(true)} activeOpacity={1}>
                 <TextInput
                   label="Gender"
                   value={value}
                   mode="outlined"
                   editable={false}
                   right={<TextInput.Icon icon="menu-down" />}
-                  left={
-                    <TextInput.Icon
-                      icon={() => (
-                        <Icon name="person-outline" size={20} color="#1C75BC" />
-                      )}
-                    />
-                  }
+                  left={<TextInput.Icon icon={() => <Icon name="person-outline" size={20} color="#1C75BC" />} />}
                   style={styles.paperInput}
                   outlineColor="#E2E8F0"
                   activeOutlineColor="#1C75BC"
-                  theme={{
-                    roundness: 12,
-                    colors: { primary: "#1C75BC", background: "white" },
-                  }}
+                  theme={{ roundness: 12, colors: { primary: "#1C75BC", background: "white" } }}
                   placeholder="Select Gender"
                 />
               </TouchableOpacity>
@@ -347,30 +311,18 @@ const handleShowDatePicker = () => {
             control={control}
             name="bloodGrp"
             render={({ field: { value } }) => (
-              <TouchableOpacity
-                onPress={() => setShowBloodDropdown(true)}
-                activeOpacity={1}
-              >
+              <TouchableOpacity onPress={() => setShowBloodDropdown(true)} activeOpacity={1}>
                 <TextInput
                   label="Blood Group"
                   value={value}
                   mode="outlined"
                   editable={false}
                   right={<TextInput.Icon icon="menu-down" />}
-                  left={
-                    <TextInput.Icon
-                      icon={() => (
-                        <Icon name="bloodtype" size={20} color="#1C75BC" />
-                      )}
-                    />
-                  }
+                  left={<TextInput.Icon icon={() => <Icon name="bloodtype" size={20} color="#1C75BC" />} />}
                   style={styles.paperInput}
                   outlineColor="#E2E8F0"
                   activeOutlineColor="#1C75BC"
-                  theme={{
-                    roundness: 12,
-                    colors: { primary: "#1C75BC", background: "white" },
-                  }}
+                  theme={{ roundness: 12, colors: { primary: "#1C75BC", background: "white" } }}
                   placeholder="Select Blood Group"
                 />
               </TouchableOpacity>
@@ -381,11 +333,16 @@ const handleShowDatePicker = () => {
         {/* Save Button */}
         <View style={styles.buttonRow}>
           <TouchableOpacity
-            style={[styles.btnStyle, styles.btnFilled]}
+            style={[styles.btnStyle, styles.btnFilled, loading && { opacity: 0.6 }]}
             onPress={handleSubmit(onSubmit)}
+            disabled={loading} // ✅ disable while saving
             activeOpacity={0.8}
           >
-            <Text style={styles.btnTextFilled}>Save</Text>
+            {loading ? (
+              <ActivityIndicator size="small" color="#1C75BC" /> // ✅ loader
+            ) : (
+              <Text style={styles.btnTextFilled}>Save</Text>
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -447,91 +404,21 @@ const handleShowDatePicker = () => {
 
 export default PersonalDetails;
 
-// Styles same as yours
+// Styles remain same
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-    backgroundColor: "#F8FAFC",
-    flex: 1,
-    justifyContent: "center",
-  },
-  heading: {
-    fontSize: 24,
-    fontWeight: "500",
-    textAlign: "center",
-    margin: 5,
-    color: "#1C75BC",
-  },
-  subtitle: {
-    fontSize: 14,
-    textAlign: "center",
-    marginBottom: 50,
-    color: "#64748B",
-  },
-  viewStyle: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  inputContainer: {
-    marginBottom: 8,
-    marginTop: 4,
-    width: "100%",
-  },
-  paperInput: {
-    backgroundColor: "white",
-  },
-  error: {
-    color: "#EF4444",
-    fontSize: 13,
-    marginTop: 2,
-    marginBottom: 10,
-    textAlign: "left",
-    marginLeft: 10,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 30,
-  },
-  modalContent: {
-    backgroundColor: "white",
-    borderRadius: 15,
-    width: "80%",
-    maxHeight: "70%",
-    overflow: "hidden",
-    elevation: 5,
-  },
-  dropdownItem: {
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-  },
-  dropdownItemText: {
-    fontSize: 16,
-    color: "#333",
-  },
-  buttonRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 20,
-  },
-  btnStyle: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 30,
-    minWidth: 120,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  btnFilled: {
-    backgroundColor: "transparent",
-    elevation: 0,
-  },
-  btnTextFilled: {
-    color: "#1C75BC",
-    fontWeight: "bold",
-    fontSize: 20,
-  },
+  container: { padding: 20, backgroundColor: "#F8FAFC", flex: 1, justifyContent: "center" },
+  heading: { fontSize: 24, fontWeight: "500", textAlign: "center", margin: 5, color: "#1C75BC" },
+  subtitle: { fontSize: 14, textAlign: "center", marginBottom: 50, color: "#64748B" },
+  viewStyle: { flex: 1, justifyContent: "center" },
+  inputContainer: { marginBottom: 8, marginTop: 4, width: "100%" },
+  paperInput: { backgroundColor: "white" },
+  error: { color: "#EF4444", fontSize: 13, marginTop: 2, marginBottom: 10, textAlign: "left", marginLeft: 10 },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center", padding: 30 },
+  modalContent: { backgroundColor: "white", borderRadius: 15, width: "80%", maxHeight: "70%", overflow: "hidden", elevation: 5 },
+  dropdownItem: { padding: 15, borderBottomWidth: 1, borderBottomColor: "#f0f0f0" },
+  dropdownItemText: { fontSize: 16, color: "#333" },
+  buttonRow: { flexDirection: "row", justifyContent: "center", marginTop: 20 },
+  btnStyle: { paddingVertical: 12, paddingHorizontal: 24, borderRadius: 30, minWidth: 120, alignItems: "center", justifyContent: "center" },
+  btnFilled: { backgroundColor: "transparent", elevation: 0 },
+  btnTextFilled: { color: "#1C75BC", fontWeight: "bold", fontSize: 20 },
 });

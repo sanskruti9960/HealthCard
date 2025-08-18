@@ -69,7 +69,6 @@ const QRScreen = ({ navigation }) => {
       {loading ? (
         <View style={style.loaderContainer}>
 <Customloader width={200} height={200} visible={loading} minVisibleTime={10} />
-          <Text style={{ marginTop: 10, color: '#555' }}>Loading QR...</Text>
         </View>
       ) : (
         <>

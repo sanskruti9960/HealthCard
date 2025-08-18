@@ -5,13 +5,14 @@ import Icon from 'react-native-vector-icons/MaterialIcons'
 import { useNavigation } from '@react-navigation/native'
 import Tooltip from 'react-native-walkthrough-tooltip'
 import FirestoreService from '../Services/firestoreSrevice' // Adjust the import path as necessary
+import { ActivityIndicator } from 'react-native';
 
 const InsuranceSrc1=({navigation, route})=>{
   const [userId, setUserId] = useState(null);
   const [showTip, setShowTip] = useState(true);
   const [showValidationTip, setShowValidationTip] = useState(false);
   const [validationTipField, setValidationTipField] = useState(null);
-  
+    const [saving, setSaving] = useState(false);
   useEffect(() => {
     initializeUser();
     loadExistingData();
@@ -127,10 +128,9 @@ const InsuranceSrc1=({navigation, route})=>{
 
   const onSubmit = React.useCallback(async (data) => {
     if (!validateForm()) {
-     
       return;
     }
-    
+    setSaving(true); // Show loader
     try {
       const savedPolicy = await FirestoreService.saveInsurancePolicy(data);
       setModalVisible(true);
@@ -142,6 +142,8 @@ const InsuranceSrc1=({navigation, route})=>{
       }, 2000);
     } catch (error) {
       console.log('Error saving insurance policy:', error);
+    } finally {
+      setSaving(false); // Hide loader
     }
   }, [navigation, validateForm]);
     
@@ -252,7 +254,12 @@ const InsuranceSrc1=({navigation, route})=>{
       style={styles.keyboardAvoidStyle}
     >
       <StatusBar backgroundColor="#F8FAFC" barStyle="dark-content" />
-      
+      {/* Loader overlay while saving */}
+      {saving && (
+        <View style={styles.loaderOverlay}>
+          <ActivityIndicator size="large" color="#1C75BC" />
+        </View>
+      )}
       <View style={styles.viewStyle}>
         <View style={styles.headerContainer}>
           <TouchableOpacity style={styles.btnStyle} onPress={handleGoBack}>
@@ -549,7 +556,7 @@ const InsuranceSrc1=({navigation, route})=>{
                     keyboardType="numeric"
                     onChangeText={(text) => handleChange('policyStartDate', text)}
                     left={<TextInput.Icon icon={() => <Icon name="event" size={20} color="#1C75BC" />} />}
-                    style={styles.dateInput}
+                  style={styles.dateInput}
                     outlineColor="#E2E8F0"
                     activeOutlineColor="#1C75BC"
                     theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
@@ -799,6 +806,17 @@ const styles=StyleSheet.create({
   dateInputWrapper: {
     flex: 1,
     marginHorizontal: 5,
+  },
+    loaderOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 99,
   },
   dateInput: {
     flex: 1,

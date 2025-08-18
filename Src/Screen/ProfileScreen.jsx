@@ -10,8 +10,11 @@ import {
   Alert,
   TextInput,
   ToastAndroid,
-  Platform
+  Platform,
+  ScrollView,
+  RefreshControl
 } from "react-native";
+
 import ImageCropPicker from 'react-native-image-crop-picker';
 import Feather from "react-native-vector-icons/Feather";
 import Ionicons from "react-native-vector-icons/Ionicons";
@@ -124,57 +127,68 @@ const ProfileScreen = ({ navigation }) => {
   };
 
 
-  useEffect(() => {
-    const fetchUserName = async () => {
-      try {
-        const docRef = doc(db, 'Siddhi', userId);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-          const userData = docSnap.data();
-          setFullName(userData.fullName); //Set the name to state
-        } else {
-          // console.log('No such user!');
-        }
-      } catch (error) {
-        // console.error('Error getting user data:', error);
-      }
-    };
-    fetchUserName();
-  }, []);
-
-  // Fetch user data from Firestore
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const docRef = doc(db, "Siddhi", userId);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setUserData({
-            height: data.personalDetails.height ,
-            bloodGrp: data.personalDetails.bloodGrp ,
-            weight: data.personalDetails.weight  
-          });
-        } else {
-          setUserData({
-            height: 'Not set',
-            bloodGrp: 'Not set',
-            weight: 'Not set'
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-      }
-    };
-
-    if (userId) {
-      fetchUserData();
+const fetchUserName = async () => {
+  try {
+    const docRef = doc(db, 'Siddhi', userId);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const userData = docSnap.data();
+      setFullName(userData.fullName);
     }
-  }, [userId]);
+  } catch (error) {
+    console.error('Error getting user data:', error);
+  }
+};
+
+const fetchUserData = async () => {
+  try {
+    const docRef = doc(db, "Siddhi", userId);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      setUserData({
+        height: data.personalDetails.height,
+        bloodGrp: data.personalDetails.bloodGrp,
+        weight: data.personalDetails.weight
+      });
+    } else {
+      setUserData({
+        height: 'Not set',
+        bloodGrp: 'Not set',
+        weight: 'Not set'
+      });
+    }
+  } catch (error) {
+    console.error("Error fetching user data:", error);
+  }
+};
+
+// refreash loader 
+const [refreshing, setRefreshing] = useState(false);
+
+const onRefresh = async () => {
+  setRefreshing(true);
+  try {
+    await fetchProfileFromFirestore();
+    await fetchUserName();
+    await fetchUserData();
+    if (Platform.OS === "android") {
+      ToastAndroid.show("Profile refreshed ✅", ToastAndroid.SHORT);
+    }
+  } catch (error) {
+    console.error("Refresh error:", error);
+  } finally {
+    setRefreshing(false);
+  }
+};
 
   return (
+      <ScrollView
+    style={{ flex: 1, backgroundColor: "#fff" }}
+    refreshControl={
+      <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+    }
+  >
     <View style={style.screen}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
@@ -343,6 +357,7 @@ const ProfileScreen = ({ navigation }) => {
         </TouchableOpacity>
       </Modal>
     </View>
+    </ScrollView>
   );
 };
 

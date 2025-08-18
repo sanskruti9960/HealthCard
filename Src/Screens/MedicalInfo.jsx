@@ -11,15 +11,17 @@ import {
   Modal,
 } from "react-native";
 import { Divider, Avatar, Card, TextInput, Button } from "react-native-paper";
-
-import Icon from 'react-native-vector-icons/MaterialIcons'
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import FirestoreService, { USER_DATA_TYPES } from '../Services/firestoreSrevice';
+import HeartLoader from '../Animations/Customloader'; // adjust path if needed
 
 const MedicalInfo = ({ navigation, route }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [isEditable, setIsEditable] = useState(true);
   const [validationErrors, setValidationErrors] = useState({});
-  
+  const [saving, setSaving] = useState(false); // <-- Added
+const [initialLoading, setInitialLoading] = useState(true);
+
   const [formState, setFormState] = useState({
     medicalConditions: '',
     allergies: '',
@@ -32,60 +34,52 @@ const MedicalInfo = ({ navigation, route }) => {
   const allergiesRef = useRef(null);
   const familyMedicalHistoryRef = useRef(null);
 
+  // Memoize loadExistingData for optimization
+const loadExistingData = useCallback(async () => {
+  try {
+    const userData = await FirestoreService.getUserDataByType(USER_DATA_TYPES.MEDICAL);
+    if (userData) {
+      setFormState(userData);
+    }
+  } catch (error) {
+    console.log('Error loading medical data:', error);
+  } finally {
++   setInitialLoading(false); // 🔑 hide start-up loader
+  }
+}, []);
+
+
   useEffect(() => {
     loadExistingData();
-  }, []);
+  }, [loadExistingData]);
 
-  const loadExistingData = useCallback(async () => {
-    try {
-      const userData = await FirestoreService.getUserDataByType(USER_DATA_TYPES.MEDICAL);
-      if (userData) {
-        setFormState(userData);
-        console.log('Loaded existing medical data');
-      }
-    } catch (error) {
-      console.log('Error loading medical data:', error);
-    }
-  }, []);
-
-  const validateForm = () => {
+  // Memoize validateForm for optimization
+  const validateForm = useCallback(() => {
     const errors = {};
-    
-    if (!formState.medicalConditions.trim()) {
-      errors.medicalConditions = 'Medical conditions field is required';
-    }
-    
-    if (!formState.allergies.trim()) {
-      errors.allergies = 'Allergies field is required';
-    }
-    
-    if (!formState.familyMedicalHistory.trim()) {
-      errors.familyMedicalHistory = 'Family medical history field is required';
-    }
-    
+    if (!formState.medicalConditions.trim()) errors.medicalConditions = 'Medical conditions field is required';
+    if (!formState.allergies.trim()) errors.allergies = 'Allergies field is required';
+    if (!formState.familyMedicalHistory.trim()) errors.familyMedicalHistory = 'Family medical history field is required';
+
     setValidationErrors(errors);
-    
+
     if (Object.keys(errors).length > 0) {
       const fieldRefs = {
         medicalConditions: medicalConditionsRef,
         allergies: allergiesRef,
         familyMedicalHistory: familyMedicalHistoryRef
       };
-      
       const firstErrorField = Object.keys(errors)[0];
       fieldRefs[firstErrorField]?.current?.focus();
     }
-    
     return Object.keys(errors).length === 0;
-  };
+  }, [formState]);
 
+  // Memoize handleChange for optimization
   const handleChange = useCallback((field, value) => {
     setFormState((prev) => ({
       ...prev,
       [field]: value,
     }));
-    
-    // Clear validation error when user starts typing
     if (validationErrors[field]) {
       setValidationErrors((prev) => {
         const newErrors = { ...prev };
@@ -99,11 +93,10 @@ const MedicalInfo = ({ navigation, route }) => {
     navigation.goBack();
   }, [navigation]);
 
+  // Show loader while saving
   const onSubmit = useCallback(async () => {
-    if (!validateForm()) {
-      return;
-    }
-    
+    if (!validateForm()) return;
+    setSaving(true);
     try {
       await FirestoreService.saveUserData(USER_DATA_TYPES.MEDICAL, formState);
       setModalVisible(true);
@@ -113,17 +106,25 @@ const MedicalInfo = ({ navigation, route }) => {
       }, 2000);
     } catch (error) {
       console.log('Error saving medical info:', error);
+    } finally {
+      setSaving(false);
     }
   }, [formState, navigation, validateForm]);
 
-
   return (
-     <KeyboardAvoidingView 
+    <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.keyboardAvoidStyle}
     >
       <StatusBar backgroundColor="#FFF" barStyle="dark-content" />
-      
+
+    {/* Start-up loader while fetching existing data */}
+<HeartLoader visible={initialLoading} />
+
+{/* Save loader while saving form */}
+<HeartLoader visible={saving} />
+
+
       <View style={styles.viewStyle}>
         <View style={styles.headerContainer}>
           <TouchableOpacity style={styles.btnStyle} onPress={handleGoBack}>
@@ -132,7 +133,7 @@ const MedicalInfo = ({ navigation, route }) => {
           <Text style={styles.mainHeading}>Medical Information</Text>
           <View style={styles.placeholder} />
         </View>
-        
+
         <View style={styles.heroContainer}>
           <View style={styles.iconWrapper}>
             <Avatar.Icon 
@@ -145,115 +146,109 @@ const MedicalInfo = ({ navigation, route }) => {
           <Text style={styles.heroTitle}>Your Health Profile</Text>
           <Text style={styles.heroSubtitle}>Complete your medical information for better care</Text>
         </View>
-        
+
         <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollContainer}>
-          {/* <Card style={styles.sectionCard} elevation={2}>
-            <Card.Content> */}
-              <Text style={styles.HeaderStyle}>MEDICAL CONDITIONS :</Text>
-              {/* <Divider style={styles.divider}/> */}
-              
-              <View style={styles.inputContainer}>
-                <TextInput
-                  ref={medicalConditionsRef}
-                  label="Existing Medical Condition(If Any/None)"
-                  value={formState.medicalConditions}
-                  mode="outlined"
-                  disabled={!isEditable}
-                  onChangeText={(text) => handleChange('medicalConditions', text)}
-                  placeholder="e.g. Asthma, Diabetes / None"
-                  left={<TextInput.Icon icon={() => <Icon name="local-hospital" size={20} color="#1C75BC" />} />}
-                  style={styles.paperInput}
-                  outlineColor="#E2E8F0"
-                  activeOutlineColor="#1C75BC"
-                  theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
-                />
-                {validationErrors.medicalConditions && (
-                  <Text style={styles.errorText}>{validationErrors.medicalConditions}</Text>
-                )}
-              </View>
+          <Text style={styles.HeaderStyle}>MEDICAL CONDITIONS :</Text>
+          <View style={styles.inputContainer}>
+            <TextInput
+              ref={medicalConditionsRef}
+              label="Existing Medical Condition(If Any/None)"
+              value={formState.medicalConditions}
+              mode="outlined"
+              disabled={!isEditable}
+              onChangeText={(text) => handleChange('medicalConditions', text)}
+              placeholder="e.g. Asthma, Diabetes / None"
+              left={<TextInput.Icon icon={() => <Icon name="local-hospital" size={20} color="#1C75BC" />} />}
+              style={styles.paperInput}
+              outlineColor="#E2E8F0"
+              activeOutlineColor="#1C75BC"
+              theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
+            />
+            {validationErrors.medicalConditions && (
+              <Text style={styles.errorText}>{validationErrors.medicalConditions}</Text>
+            )}
+          </View>
 
-              <View style={styles.inputContainer}>
-                <TextInput
-                  ref={allergiesRef}
-                  label="Allergies(If Any)"
-                  value={formState.allergies}
-                  mode="outlined"
-                  disabled={!isEditable}
-                  onChangeText={(text) => handleChange('allergies', text)}
-                  placeholder="e.g. Pollen, Milk, Dust"
-                  left={<TextInput.Icon icon={() => <Icon name="warning" size={20} color="#1C75BC" />} />}
-                  style={styles.paperInput}
-                  outlineColor="#E2E8F0"
-                  activeOutlineColor="#1C75BC"
-                  theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
-                />
-                {validationErrors.allergies && (
-                  <Text style={styles.errorText}>{validationErrors.allergies}</Text>
-                )}
-              </View>
+          <View style={styles.inputContainer}>
+            <TextInput
+              ref={allergiesRef}
+              label="Allergies(If Any)"
+              value={formState.allergies}
+              mode="outlined"
+              disabled={!isEditable}
+              onChangeText={(text) => handleChange('allergies', text)}
+              placeholder="e.g. Pollen, Milk, Dust"
+              left={<TextInput.Icon icon={() => <Icon name="warning" size={20} color="#1C75BC" />} />}
+              style={styles.paperInput}
+              outlineColor="#E2E8F0"
+              activeOutlineColor="#1C75BC"
+              theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
+            />
+            {validationErrors.allergies && (
+              <Text style={styles.errorText}>{validationErrors.allergies}</Text>
+            )}
+          </View>
 
-              <View style={styles.inputContainer}>
-                <TextInput
-                  label="Past Surgeries"
-                  value={formState.pastSurgery}
-                  mode="outlined"
-                  disabled={!isEditable}
-                  onChangeText={(text) => handleChange('pastSurgery', text)}
-                  placeholder="If any"
-                  left={<TextInput.Icon icon={() => <Icon name="healing" size={20} color="#1C75BC" />} />}
-                  style={styles.paperInput}
-                  outlineColor="#E2E8F0"
-                  activeOutlineColor="#1C75BC"
-                  theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
-                />
-              </View>
+          <View style={styles.inputContainer}>
+            <TextInput
+              label="Past Surgeries"
+              value={formState.pastSurgery}
+              mode="outlined"
+              disabled={!isEditable}
+              onChangeText={(text) => handleChange('pastSurgery', text)}
+              placeholder="If any"
+              left={<TextInput.Icon icon={() => <Icon name="healing" size={20} color="#1C75BC" />} />}
+              style={styles.paperInput}
+              outlineColor="#E2E8F0"
+              activeOutlineColor="#1C75BC"
+              theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
+            />
+          </View>
 
-              <View style={styles.inputContainer}>
-                <TextInput
-                  label="Chronic Illness"
-                  value={formState.chronicIllnesses}
-                  mode="outlined"
-                  disabled={!isEditable}
-                  onChangeText={(text) => handleChange('chronicIllnesses', text)}
-                  placeholder="If any"
-                  left={<TextInput.Icon icon={() => <Icon name="favorite" size={20} color="#1C75BC" />} />}
-                  style={styles.paperInput}
-                  outlineColor="#E2E8F0"
-                  activeOutlineColor="#1C75BC"
-                  theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
-                />
-              </View>
+          <View style={styles.inputContainer}>
+            <TextInput
+              label="Chronic Illness"
+              value={formState.chronicIllnesses}
+              mode="outlined"
+              disabled={!isEditable}
+              onChangeText={(text) => handleChange('chronicIllnesses', text)}
+              placeholder="If any"
+              left={<TextInput.Icon icon={() => <Icon name="favorite" size={20} color="#1C75BC" />} />}
+              style={styles.paperInput}
+              outlineColor="#E2E8F0"
+              activeOutlineColor="#1C75BC"
+              theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
+            />
+          </View>
 
-              <View style={styles.inputContainer}>
-                <TextInput
-                  ref={familyMedicalHistoryRef}
-                  label="Family Medical History (If Any)"
-                  value={formState.familyMedicalHistory}
-                  mode="outlined"
-                  disabled={!isEditable}
-                  onChangeText={(text) => handleChange('familyMedicalHistory', text)}
-                  placeholder="If any"
-                  left={<TextInput.Icon icon={() => <Icon name="family-restroom" size={20} color="#1C75BC" />} />}
-                  style={styles.paperInput}
-                  outlineColor="#E2E8F0"
-                  activeOutlineColor="#1C75BC"
-                  theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
-                />
-                {validationErrors.familyMedicalHistory && (
-                  <Text style={styles.errorText}>{validationErrors.familyMedicalHistory}</Text>
-                )}
-              </View>
-            {/* </Card.Content>
-          </Card> */}
-
+          <View style={styles.inputContainer}>
+            <TextInput
+              ref={familyMedicalHistoryRef}
+              label="Family Medical History (If Any)"
+              value={formState.familyMedicalHistory}
+              mode="outlined"
+              disabled={!isEditable}
+              onChangeText={(text) => handleChange('familyMedicalHistory', text)}
+              placeholder="If any"
+              left={<TextInput.Icon icon={() => <Icon name="family-restroom" size={20} color="#1C75BC" />} />}
+              style={styles.paperInput}
+              outlineColor="#E2E8F0"
+              activeOutlineColor="#1C75BC"
+              theme={{roundness:12, colors: { primary: '#1C75BC', background: 'white' } }}
+            />
+            {validationErrors.familyMedicalHistory && (
+              <Text style={styles.errorText}>{validationErrors.familyMedicalHistory}</Text>
+            )}
+          </View>
 
           <View style={styles.buttonContainer}>
             <TouchableOpacity
               style={styles.actionButton}
               onPress={onSubmit}
               activeOpacity={0.8}
+              disabled={saving} // Prevent double save
             >
-             <Icon name="save" size={24} color="#1C75BC" />
+              <Icon name="save" size={24} color="#1C75BC" />
               <Text style={styles.buttonText}>Save</Text>
             </TouchableOpacity>
           </View>
@@ -285,7 +280,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8FAFC',
   },
-
+  loaderOverlay: { // <-- Added
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 99,
+  },
   headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',

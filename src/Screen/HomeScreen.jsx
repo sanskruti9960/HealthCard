@@ -1,4 +1,4 @@
-import { Text, View, TouchableOpacity, FlatList, Dimensions, Image, ScrollView, ActivityIndicator } from 'react-native'
+import { Text, View, TouchableOpacity, FlatList, Dimensions, Image, ScrollView, RefreshControl } from 'react-native'
 import React, { useState, useRef, useEffect } from 'react'
 import Ionicons from "react-native-vector-icons/Ionicons"
 import MaterialIcons from "react-native-vector-icons/MaterialIcons"
@@ -6,7 +6,6 @@ import FontAwesome5 from "react-native-vector-icons/FontAwesome5"
 import HomeStyle from "../../styles/HomeStyle"
 import ActivityCard from "./ActivityCard"
 import Dailycheckout from "../compoenents/Dailycheckout"
-import { AnimatedCircularProgress } from 'react-native-circular-progress';
 import { doc, getDoc } from 'firebase/firestore';
 import auth from '@react-native-firebase/auth';
 import { db } from '../SiddhiScreens/firechifile/firebaseConfig'; // your firebase config file
@@ -55,36 +54,31 @@ const HomeScreen = ({ navigation }) => {
   // ===============for database of name , prfileimage =================
   const [fullName, setFullName] = useState('');
   const [profileImage, setProfileImage] = useState(null); // store Base64 image
+  const [refreshing, setRefreshing] = useState(false);
   const user = auth().currentUser;
-
-useEffect(() => {
-  const fetchUserData = async () => {
-    if (!user?.uid) return;
-
-    try {
+const onRefresh = async () => {
+  setRefreshing(true);
+  try {
+    if (user?.uid) {
       const docRef = doc(db, 'Siddhi', user.uid);
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
         const userData = docSnap.data();
         setFullName(userData.fullName || '');
-
         if (userData.profileImageBase64) {
-          // Use as-is because it already has 'data:image/jpeg;base64,'
           setProfileImage(userData.profileImageBase64);
         } else {
           setProfileImage(null);
         }
-      } else {
-        console.log('No such user!');
       }
-    } catch (error) {
-      console.error('Error getting user data:', error);
     }
-  };
-
-  fetchUserData();
-}, [user]);
+  } catch (error) {
+    console.error('Error refreshing user data:', error);
+  } finally {
+    setRefreshing(false);
+  }
+};
 
   // =====================================================
   const flatListRef = useRef(null);
@@ -146,7 +140,7 @@ useEffect(() => {
   // ==============================================
   return (
     // main container
-    <View style={HomeStyle.main}>
+<View style={HomeStyle.main}>
       {/* Topbar container */}
       <View style={HomeStyle.Topbar}>
         <View style={HomeStyle.profile_name}>
@@ -176,16 +170,18 @@ useEffect(() => {
         </View>
 
       </View>
-      <ScrollView style={HomeStyle.main} contentContainerStyle={{ paddingBottom: 80 }}
-        decelerationRate='fast'>
+      <ScrollView
+  style={HomeStyle.main}
+  contentContainerStyle={{ paddingBottom: 80 }}
+  decelerationRate="fast"
+  refreshControl={
+    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+  }
+>
 
-        {/* stpes progress bar */}
-
- 
         <FlipCardBanner/>
    
-
-        <Text style={{ marginTop: 20, fontSize: 23, marginLeft: 10, fontWeight: "bold" }}>Service</Text>
+     <Text style={{ marginTop: 20, fontSize: 23, marginLeft: 10, fontWeight: "bold" }}>Service</Text>
 
         {/* four icons  */}
         <View style={HomeStyle.facility}>
@@ -304,7 +300,7 @@ useEffect(() => {
         </View>
       </ScrollView>
 
-    </View>
+</View>
 
 
   )

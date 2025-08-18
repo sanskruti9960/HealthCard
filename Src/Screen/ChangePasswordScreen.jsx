@@ -6,7 +6,7 @@ import {
   TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  Alert,
+  Alert,ToastAndroid, Platform 
 } from 'react-native';
  import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
@@ -55,34 +55,29 @@ const handlePasswordChange = async () => {
       Alert.alert('Error', 'No authenticated user found.');
       return;
     }
+   await firestore().collection('Siddhi').doc(user.uid).update({
+  password: newPassword,
+});
 
-    // 🔁 Step 1: Re-authenticate with Email and Password
-    // const credential = auth.EmailAuthProvider.credential(user.email, currentPassword);
+if (Platform.OS === 'android') {
+  ToastAndroid.show('Password updated successfully ✅', ToastAndroid.SHORT)
+      navigation.goBack(); // Navigate back after showing toast 
+    ;
+}
+} catch (error) {
+  console.error('Password update error:', error);
+  let msg = error.message;
 
-    // // This works on Android!
-    // await user.reauthenticateWithCredential(credential);
-
-    // // 🔁 Step 2: Update password in Firebase Auth
-    // await user.updatePassword(newPassword);
-
-    // // 🔁 Step 3: Update password in Firestore
-    await firestore().collection('Siddhi').doc(user.uid).update({
-      password: newPassword,
-    });
-
-    Alert.alert('Success', 'Your password has been changed successfully.', [
-      { text: 'OK', onPress: () => navigation.goBack() },
-    ]);
-  } catch (error) {
-    console.error('Password update error:', error);
-    let msg = error.message;
-
-    if (msg.includes('auth/wrong-password')) {
-      msg = 'Current password is incorrect.';
-    }
-
-    Alert.alert('Error', msg || 'Password update failed. Try again.');
+  if (msg.includes('auth/wrong-password')) {
+    msg = 'Current password is incorrect.';
   }
+
+  if (Platform.OS === 'android') {
+    ToastAndroid.show(msg || 'Password update failed ❌', ToastAndroid.SHORT);
+  }
+
+  Alert.alert('Error', msg || 'Password update failed. Try again.');
+}
 };
 
   const renderPasswordInput = (

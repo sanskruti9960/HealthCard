@@ -12,7 +12,7 @@ import ForgotPassword from './src/SiddhiScreens/ForgotPassword.jsx';
 import OtpVerification from './src/SiddhiScreens/OtpVerification.jsx';
 import Terms from './src/PalakScreens/Terms.jsx';
 import PersonalDetails from './src/Screens/PersonalDetails.jsx';
-import MainTab from './src/Screen/Maintab.jsx';
+import MainTab from './src/Screen/MainTab.jsx';
 import MultiplePolicy from './src/Screens/MultiplePolicy.jsx';
 import EmergencyContact from './src/Screens/EmergencyContact.jsx';
 import InsuranceSrc1 from './src/Screens/InsuranceSrc1.jsx';
@@ -46,7 +46,7 @@ const App = () => {
   useEffect(() => {
     const unsubscribe = auth().onAuthStateChanged(user => {
       if (user) {
-        // User is signed in → go to MainTab
+        // User is signed in → go to Maintab
         setInitialRoute('MainTab');
       } else {
         // User not signed in → go to Onboard
