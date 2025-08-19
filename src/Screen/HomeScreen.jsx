@@ -178,7 +178,6 @@ const onRefresh = async () => {
     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
   }
 >
-
         <FlipCardBanner/>
    
      <Text style={{ marginTop: 20, fontSize: 23, marginLeft: 10, fontWeight: "bold" }}>Service</Text>
