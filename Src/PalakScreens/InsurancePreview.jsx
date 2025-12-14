@@ -213,9 +213,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  evenRow: {
-    backgroundColor: '#F8FAFF',
-  },
   label: {
     fontWeight: '600',
     fontSize: 15,
@@ -247,13 +244,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
-  },
-  btnStyle: {
-    padding: 8,
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   buttonContainer: {
     flexDirection: 'row',

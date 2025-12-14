@@ -8,7 +8,7 @@ import {
   ActivityIndicator
 } from 'react-native';
 import React, { useState, useEffect } from 'react';
-
+import MedicalInfo from './MedicalInfo';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import FirestoreService, { USER_DATA_TYPES } from '../Services/FirestoreService';
 
@@ -169,7 +169,7 @@ const MedicalReportPreview = ({ navigation }) => {
             <Icon name="edit" size={20} color="#1C75BC" />
             <Text style={styles.editButtonText}>Edit Medical Info</Text>
           </TouchableOpacity>
-          
+
         </View>
       </ScrollView>
     </View>
@@ -230,14 +230,12 @@ const styles = StyleSheet.create({
   container: {
     padding: 10,
   },
-
   dataRow: {
     padding: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-
   label: {
     fontWeight: '600',
     fontSize: 15,
@@ -324,5 +322,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-
 });

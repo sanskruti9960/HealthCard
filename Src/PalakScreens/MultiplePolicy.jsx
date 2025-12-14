@@ -4,21 +4,19 @@ import { StyleSheet,
   View, FlatList,
   ScrollView,
   SafeAreaView,
-  ImageBackground,
   StatusBar,
   Modal,
-  Alert,
   RefreshControl, } from 'react-native';
 import React, { useState, useEffect } from 'react';
-import { Button, Card, FAB } from 'react-native-paper';
+import { Card, FAB } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useNavigation} from '@react-navigation/native';
 
-import FirestoreService, { USER_DATA_TYPES } from '../Services/FirestoreService';
+import FirestoreService from '../Services/FirestoreService';
 
 const MultiplePolicy = () => {
-  const navigation=useNavigation();
+  const navigation = useNavigation();
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedPolicy, setSelectedPolicy] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -89,7 +87,6 @@ const MultiplePolicy = () => {
       } catch (error) {
         console.log('Error deleting policy:', error);
       }
-      
       setModalVisible(false);
       setSelectedPolicy(null);
     }
@@ -113,6 +110,7 @@ const MultiplePolicy = () => {
         <Text style={styles.heroTitle}>Insurance Policies</Text>
         <Text style={styles.heroSubtitle}>Manage your insurance coverage</Text>
       </View>
+      
       <View style={styles.contentContainer}>
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
@@ -137,47 +135,47 @@ const MultiplePolicy = () => {
                 <Text style={styles.emptySubtext}>Tap the + button to add your first policy</Text>
               </View>
             ) : (
-              <FlatList
-                data={policies}
-                renderItem={({ item }) => (
-                  <Card 
-                    style={styles.container} 
-                    onPress={() => handleViewPolicy(item)}
-                    onLongPress={() => handleLongPress(item)}
-                  >
-                    <Card.Content style={styles.policyCard}>
-                      <View style={styles.iconContainer}>
-                        <MaterialCommunityIcons 
-                          name={item.insuranceType?.toLowerCase().includes('health') ? 'medical-bag' : 'shield-account'} 
-                          size={30} 
-                          color="#1C75BC" 
-                        />
-                      </View>
-                      <View style={styles.policyDetails}>
-                        <Text style={styles.policyName}>{item.name}</Text>
-                        <Text style={styles.policyType}>{item.insuranceType}</Text>
-                        <Text style={styles.policyNumber}>Policy #: {item.policyNumber}</Text>
-                      </View>
-                      <Icon name="chevron-right" size={24} color="#1C75BC" />
-                      
-                    </Card.Content>
-                  </Card>
-                )}
-                keyExtractor={(item) => item.id.toString()}
-                contentContainerStyle={{ paddingBottom: 20 }}
-                refreshControl={
-                  <RefreshControl
-                    refreshing={refreshing}
-                    onRefresh={onRefresh}
-                    colors={['#1C75BC']}
-                    tintColor="#1C75BC"
-                  />
-                }
-                removeClippedSubviews={true}
-                maxToRenderPerBatch={10}
-                windowSize={10}
-              />
-              
+              <View style={styles.flatListWrapper}>
+                <FlatList
+                  data={policies}
+                  renderItem={({ item }) => (
+                    <Card 
+                      style={styles.container} 
+                      onPress={() => handleViewPolicy(item)}
+                      onLongPress={() => handleLongPress(item)}
+                    >
+                      <Card.Content style={styles.policyCard}>
+                        <View style={styles.iconContainer}>
+                          <MaterialCommunityIcons 
+                            name={item.insuranceType?.toLowerCase().includes('health') ? 'medical-bag' : 'shield-account'} 
+                            size={30} 
+                            color="#1C75BC" 
+                          />
+                        </View>
+                        <View style={styles.policyDetails}>
+                          <Text style={styles.policyName}>{item.name}</Text>
+                          <Text style={styles.policyType}>{item.insuranceType}</Text>
+                          <Text style={styles.policyNumber}>Policy #: {item.policyNumber}</Text>
+                        </View>
+                        <Icon name="chevron-right" size={24} color="#1C75BC" />
+                      </Card.Content>
+                    </Card>
+                  )}
+                  keyExtractor={(item) => item.id.toString()}
+                  contentContainerStyle={{ paddingBottom: 20 }}
+                  refreshControl={
+                    <RefreshControl
+                      refreshing={refreshing}
+                      onRefresh={onRefresh}
+                      colors={['#1C75BC']}
+                      tintColor="#1C75BC"
+                    />
+                  }
+                  removeClippedSubviews={true}
+                  maxToRenderPerBatch={10}
+                  windowSize={10}
+                />
+              </View>
             )}
           </Card.Content>
         </Card>
@@ -220,14 +218,8 @@ const MultiplePolicy = () => {
 export default MultiplePolicy;
 
 const styles = StyleSheet.create({
-  viewStyle1: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
-  contentContainer: {
-    flex: 1,
-    padding: 10,
-  },
+  viewStyle1: { flex: 1, backgroundColor: '#F8FAFC' },
+  contentContainer: { flex: 1, padding: 10 },
   headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -236,9 +228,7 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 5,
   },
-  placeholder: {
-    width: 40,
-  },
+  placeholder: { width: 40 },
   header: {
     fontSize: 20,
     fontWeight: '700',
@@ -252,10 +242,7 @@ const styles = StyleSheet.create({
     paddingTop: 5,
     paddingBottom: 10,
   },
-  iconWrapper: {
-    borderRadius: 25,
-    padding: 8,
-  },
+  iconWrapper: { borderRadius: 25, padding: 8 },
   heroTitle: {
     fontSize: 24,
     fontWeight: '700',
@@ -269,16 +256,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
   },
-  btnStyle: {
-    padding: 8,
-  },
-  textStyle: {
-    fontSize: 16,
-    fontWeight: '500',
-    padding: 5,
-    color: 'white',
-    textAlign: 'left',
-  },
+  btnStyle: { padding: 8 },
   container: {
     backgroundColor: 'white',
     borderRadius: 12,
@@ -324,52 +302,25 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 3,
   },
-  statNumber: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1C75BC',
-  },
-  statLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 5,
-    color: '#1C75BC',
-  },
+  statNumber: { fontSize: 24, fontWeight: 'bold', color: '#1C75BC' },
+  statLabel: { fontSize: 14, color: '#1C75BC', marginTop: 5 },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 15,
     color: '#333',
   },
-  policyCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 5,
-  },
+  policyCard: { flexDirection: 'row', alignItems: 'center', padding: 5 },
   iconContainer: {
     backgroundColor: '#E8F4FD',
     padding: 10,
     borderRadius: 10,
     marginRight: 15,
   },
-  policyDetails: {
-    flex: 1,
-  },
-  policyName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  policyType: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 2,
-  },
-  policyNumber: {
-    fontSize: 12,
-    color: '#888',
-    marginTop: 2,
-  },
+  policyDetails: { flex: 1 },
+  policyName: { fontSize: 16, fontWeight: 'bold', color: '#333' },
+  policyType: { fontSize: 14, color: '#666', marginTop: 2 },
+  policyNumber: { fontSize: 12, color: '#888', marginTop: 2 },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -411,12 +362,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
   },
-  cancelButton: {
-    backgroundColor: '#a39a9aff',
-  },
-  deleteButton: {
-    backgroundColor: '#ff3b30',
-  },
+  cancelButton: { backgroundColor: '#a39a9aff' },
+  deleteButton: { backgroundColor: '#ff3b30' },
   buttonText: {
     fontSize: 16,
     fontWeight: '500',
@@ -434,16 +381,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 40,
   },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#666',
-    marginTop: 16,
-  },
+  emptyText: { fontSize: 18, fontWeight: 'bold', color: '#666', marginTop: 16 },
   emptySubtext: {
     fontSize: 14,
     color: '#999',
     marginTop: 8,
     textAlign: 'center',
   },
+  flatListWrapper: { maxHeight: 400, overflow: 'hidden' }, // ✅ Fix for FlatList inside main card
 });

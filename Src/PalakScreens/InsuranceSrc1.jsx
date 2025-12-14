@@ -1,4 +1,15 @@
-import { StyleSheet, Text, View, TouchableOpacity, Modal, FlatList, ScrollView, KeyboardAvoidingView, StatusBar, Platform } from 'react-native'
+import { 
+  StyleSheet, 
+  Text, 
+  View, 
+  TouchableOpacity,
+  Modal, 
+  FlatList, 
+  ScrollView, 
+  KeyboardAvoidingView,
+  StatusBar, 
+  Platform 
+  } from 'react-native'
 import React, { useState, useEffect,useRef } from 'react'
 import { Card, Divider, Avatar, TextInput } from 'react-native-paper'
 import Icon from 'react-native-vector-icons/MaterialIcons'
@@ -791,22 +802,9 @@ const InsuranceSrc1=({navigation, route})=>{
 
 export default InsuranceSrc1
 
-const styles=StyleSheet.create({
- 
-  dateContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginVertical: 5,
-   },
-  dateInputWrapper: {
+const styles = StyleSheet.create({
+  keyboardAvoidStyle: {
     flex: 1,
-    marginHorizontal: 5,
-  },
-  dateInput: {
-    flex: 1,
-  },
-  keyboardAvoidStyle:{
-    flex:1
   },
   viewStyle: {
     flex: 1,
@@ -820,20 +818,18 @@ const styles=StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 5,
   },
-
+  headerIconWrapper: {
+    borderRadius: 25,
+  },
+  headerAvatar: {
+    backgroundColor: '#1C75BC',
+  },
   heroContainer: {
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 5,
     paddingBottom: 15,
     marginBottom: 10,
-  },
-  headerIconWrapper: {
-    borderRadius: 25,
-   
-  },
-  headerAvatar: {
-    backgroundColor: '#1C75BC',
   },
   heroTitle: {
     fontSize: 24,
@@ -885,7 +881,6 @@ const styles=StyleSheet.create({
   paperInput: {
     backgroundColor: 'white',
   },
-
   editButtonHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -911,7 +906,6 @@ const styles=StyleSheet.create({
     alignSelf: 'center',
     alignItems: 'center',
   },
-
   buttonText: {
     color: '#1C75BC',
     fontWeight: '700',
@@ -984,4 +978,16 @@ const styles=StyleSheet.create({
     marginTop: 4,
     marginLeft: 4,
   },
-})
+  dateContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginVertical: 5,
+  },
+  dateInputWrapper: {
+    flex: 1,
+    marginHorizontal: 5,
+  },
+  dateInput: {
+    flex: 1,
+  },
+});

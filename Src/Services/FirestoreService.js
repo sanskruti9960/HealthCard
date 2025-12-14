@@ -76,18 +76,27 @@ class FirestoreService {
 
   // ---------- GET USER DATA BY TYPE ----------
   async getUserDataByType(dataType) {
-    try {
-      const userId = await this.getUserId();
-      const docSnap = await firestore().collection('Siddhi').doc(userId).get();
-      if (!docSnap.exists) return null;
+  try {
+    const userId = await this.getUserId();
+    const docSnap = await firestore()
+      .collection('Siddhi')
+      .doc(userId)
+      .get();
 
-      const userData = docSnap.data();
-      return userData[dataType] ? userData[dataType] : null;
-    } catch (error) {
-      console.error('Error getting user data by type:', error);
-      throw error;
-    }
+    // If document doesn't exist
+    if (!docSnap.exists) return null;
+
+    // SAFETY: data() can be undefined
+    const userData = docSnap.data() || {};
+
+    // SAFETY: dataType may not exist yet
+    return userData[dataType] ?? null;
+  } catch (error) {
+    console.error('Error getting user data by type:', error);
+    throw error;
   }
+}
+
 
   // ---------- GET ALL USER DATA ----------
   async getAllUserData() {
