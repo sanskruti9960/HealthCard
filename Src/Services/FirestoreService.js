@@ -1,7 +1,7 @@
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 
-/* ------------------ HELPERS ------------------ */
+/*------------------ HELPERS ------------------ */
 
 const generateUniqueId = () =>
   `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
