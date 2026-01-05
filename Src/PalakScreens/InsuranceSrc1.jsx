@@ -13,7 +13,6 @@ import {
 import React, { useState, useEffect,useRef } from 'react'
 import { Card, Divider, Avatar, TextInput } from 'react-native-paper'
 import Icon from 'react-native-vector-icons/MaterialIcons'
-import { useNavigation } from '@react-navigation/native'
 import Tooltip from 'react-native-walkthrough-tooltip'
 
 

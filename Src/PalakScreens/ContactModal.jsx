@@ -101,7 +101,7 @@ const ContactModal = ({
                 resetFields();
                 onClose();
               }}>
-                <Icon name="close" size={20} />
+                <Icon name="close" size={20} color="#374151" />
               </TouchableOpacity>
 
               <Text style={styles.modalTitle}>
@@ -176,6 +176,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: "#FFF",
     paddingVertical: 8,
+    
   },
   closeButton: {
     position: "absolute",
@@ -192,6 +193,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginTop: 18,
     marginBottom: 20,
+     color: '#3a3c41ff',
   },
   modalInputContainer: { marginBottom: 16, paddingHorizontal: 16 },
   modalButtonContainer: { paddingHorizontal: 16, marginTop: 10 },

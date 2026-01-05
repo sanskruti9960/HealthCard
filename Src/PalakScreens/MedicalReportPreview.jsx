@@ -169,7 +169,7 @@ const MedicalReportPreview = ({ navigation }) => {
             <Icon name="edit" size={20} color="#1C75BC" />
             <Text style={styles.editButtonText}>Edit Medical Info</Text>
           </TouchableOpacity>
-
+   
         </View>
       </ScrollView>
     </View>

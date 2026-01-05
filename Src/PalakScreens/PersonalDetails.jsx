@@ -13,6 +13,7 @@ import { TextInput } from "react-native-paper";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import FirestoreService, { USER_DATA_TYPES } from "../Services/FirestoreService";
+import { InteractionManager } from "react-native";
 
 const PersonalDetails = ({ navigation }) => {
   // -------------------- FORM STATE --------------------
@@ -23,6 +24,7 @@ const PersonalDetails = ({ navigation }) => {
   const [address, setAddress] = useState("");
   const [gender, setGender] = useState("");
   const [bloodGrp, setBloodGrp] = useState("");
+  const [saving, setSaving] = useState(false);
 
   // -------------------- ERROR STATE --------------------
   const [errors, setErrors] = useState({});
@@ -106,7 +108,7 @@ const PersonalDetails = ({ navigation }) => {
       );
 
       Keyboard.dismiss();
-      navigation.navigate("HomeScreen");//HomeScreen
+      navigation.navigate("HomeScreen");
     } catch (err) {
       console.log("Save error:", err);
     }
@@ -261,11 +263,15 @@ const PersonalDetails = ({ navigation }) => {
         {/* Save */}
         <View style={styles.buttonRow}>
           <TouchableOpacity
-            style={[styles.btnStyle, styles.btnFilled]}
-            onPress={handleSave}
-          >
-            <Text style={styles.btnTextFilled}>Save</Text>
-          </TouchableOpacity>
+  style={[styles.btnStyle, styles.btnFilled, saving && { opacity: 0.5 }]}
+  onPress={handleSave}
+  disabled={saving}
+>
+  <Text style={styles.btnTextFilled}>
+    {saving ? "Saving..." : "Save"}
+  </Text>
+</TouchableOpacity>
+
         </View>
       </View>
 

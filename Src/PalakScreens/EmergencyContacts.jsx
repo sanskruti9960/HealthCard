@@ -100,6 +100,7 @@ const EmergencyContacts = ({ navigation }) => {
             Add your emergency contact information for safety
           </Text>
 
+
         </View>
 
         <ScrollView
@@ -162,7 +163,7 @@ const EmergencyContacts = ({ navigation }) => {
           setSelectedContact={setSelectedContact}
         />
 
-        {/* Detail modal remains the same */}
+        {/* Detail modal*/}
         <Modal visible={detailModalVisible} transparent animationType="fade">
           <TouchableOpacity
             style={styles.modalOverlay}
@@ -176,7 +177,7 @@ const EmergencyContacts = ({ navigation }) => {
                     style={styles.closeButton}
                     onPress={() => setDetailModalVisible(false)}
                   >
-                    <Icon name="close" size={20} />
+                    <Icon name="close" size={20} color="#374151" />
                   </TouchableOpacity>
 
                   <Text style={styles.modalTitle}>Contact Details</Text>
@@ -289,7 +290,8 @@ const styles = StyleSheet.create({
   contactName: {
     marginLeft: 12,
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '500',
+    color: '#3a3c41ff',
   },
   contactDetails: {
     marginLeft: 36,
@@ -298,6 +300,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 6,
+    
   },
   contactInfo: {
     marginLeft: 8,
@@ -336,6 +339,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginTop: 18,
     marginBottom: 20,
+    color: '#3a3c41ff',
   },
   detailRow: {
     flexDirection: 'row',
@@ -344,10 +348,13 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     marginLeft: 12,
-    fontWeight: '600',
+    fontWeight: '500',
+    color: '#3a3c41ff',
   },
   detailValue: {
     marginLeft: 8,
+    color: '#374151',
+    
   },
   detailButtonContainer: {
     flexDirection: 'row',

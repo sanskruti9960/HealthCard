@@ -9,7 +9,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Modal,
-} from "react-native";
+} 
+from "react-native";
 import { Avatar, TextInput } from "react-native-paper";
 import Icon from "react-native-vector-icons/MaterialIcons";
 
