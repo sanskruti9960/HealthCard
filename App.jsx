@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useState, useEffect } from 'react';
 import { View } from 'react-native';
 import auth from '@react-native-firebase/auth';
@@ -112,3 +113,6 @@ const App = () => {
 };
 
 export default App;
+=======
+
+>>>>>>> 5dadc191f78b7718e66aef202841301244cb524d

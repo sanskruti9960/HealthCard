@@ -7,3 +7,7 @@ import App from './App';
 import { name as appName } from './app.json';
 
 AppRegistry.registerComponent(appName, () => App);
+<<<<<<< HEAD
+=======
+console.log("Hello world")
+>>>>>>> 5dadc191f78b7718e66aef202841301244cb524d

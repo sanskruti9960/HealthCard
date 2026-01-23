@@ -35,10 +35,13 @@ local.properties
 !debug.keystore
 .kotlin/
 
+<<<<<<< HEAD
 # Android crash logs
 hs_err_pid*.log
 replay_pid*.log
 
+=======
+>>>>>>> 5dadc191f78b7718e66aef202841301244cb524d
 # node.js
 #
 node_modules/
@@ -77,9 +80,12 @@ yarn-error.log
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+<<<<<<< HEAD
 
 # Backend secrets
 backend/serviceAccountKey.json
 
 # Backend dependencies
 backend/node_modules
+=======
+>>>>>>> 5dadc191f78b7718e66aef202841301244cb524d
