@@ -1,5 +1,8 @@
 apply plugin: "com.android.application"
+<<<<<<< HEAD
 apply plugin: "com.google.gms.google-services"
+=======
+>>>>>>> 5dadc191f78b7718e66aef202841301244cb524d
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 
@@ -79,14 +82,20 @@ android {
     compileSdk rootProject.ext.compileSdkVersion
 
     namespace "com.internpro"
+<<<<<<< HEAD
    
+=======
+>>>>>>> 5dadc191f78b7718e66aef202841301244cb524d
     defaultConfig {
         applicationId "com.internpro"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
+<<<<<<< HEAD
          missingDimensionStrategy 'react-native-camera', 'general'
+=======
+>>>>>>> 5dadc191f78b7718e66aef202841301244cb524d
     }
     signingConfigs {
         debug {
@@ -113,11 +122,23 @@ android {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
+<<<<<<< HEAD
 implementation 'com.google.firebase:firebase-auth'
+=======
+
+>>>>>>> 5dadc191f78b7718e66aef202841301244cb524d
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")
     } else {
         implementation jscFlavor
     }
 }
+<<<<<<< HEAD
+ext {
+    hermesEnabled = true
+}
+
+
 apply from: file("../../node_modules/react-native-vector-icons/fonts.gradle")
+=======
+>>>>>>> 5dadc191f78b7718e66aef202841301244cb524d
