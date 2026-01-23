@@ -1,13 +1,42 @@
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 
-/*------------------ HELPERS ------------------ */
+/* ================= HELPERS ================= */
 
+// Wait until Firebase Auth is ready (CRITICAL for APK)
+const waitForAuth = () =>
+  new Promise((resolve, reject) => {
+    const unsubscribe = auth().onAuthStateChanged(user => {
+      if (user) {
+        unsubscribe();
+        resolve(user);
+      }
+    });
+
+    // Safety timeout (5s)
+    setTimeout(() => {
+      unsubscribe();
+      reject(new Error('Firebase auth timeout'));
+    }, 5000);
+  });
+
+// Remove undefined values (Firestore-safe)
+const sanitize = (obj = {}) => {
+  const clean = {};
+  Object.keys(obj).forEach(key => {
+    clean[key] = obj[key] === undefined ? '' : obj[key];
+  });
+  return clean;
+};
+
+// Always return array
+const normalizeArray = data => (Array.isArray(data) ? data : []);
+
+// Unique ID generator
 const generateUniqueId = () =>
   `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
-const normalizeArray = (data) =>
-  Array.isArray(data) ? data : [];
+/* ================= CONSTANTS ================= */
 
 export const USER_DATA_TYPES = {
   PERSONAL: 'personalDetails',
@@ -17,53 +46,45 @@ export const USER_DATA_TYPES = {
   EMERGENCY: 'emergencyContacts',
 };
 
-/* ------------------ SERVICE ------------------ */
+/* ================= SERVICE ================= */
 
 class FirestoreService {
-  /* ---------- SAFE USER ID ---------- */
-  async getUserId() {
+  /* ---------- AUTH SAFE USER ---------- */
+  async getUser() {
     const user = auth().currentUser;
-
-    if (!user) {
-      console.warn('⚠ Firebase user not ready yet');
-      return null;
-    }
-
-    return user.uid;
+    if (user) return user;
+    return await waitForAuth(); // APK FIX
   }
 
   /* ---------- SAVE GENERIC USER DATA ---------- */
   async saveUserData(dataType, data) {
     try {
-      const userId = await this.getUserId();
-      if (!userId) return false;
+      const user = await this.getUser();
+      const cleanData = sanitize(data);
 
       await firestore()
         .collection('Siddhi')
-        .doc(userId)
+        .doc(user.uid)
         .set(
-          {
-            [dataType]: data,
-          },
+          { [dataType]: cleanData },
           { merge: true }
         );
 
       return true;
     } catch (error) {
       console.error('❌ saveUserData failed:', error);
-      return false;
+      throw error;
     }
   }
 
   /* ---------- GET USER DATA BY TYPE ---------- */
   async getUserDataByType(dataType) {
     try {
-      const userId = await this.getUserId();
-      if (!userId) return null;
+      const user = await this.getUser();
 
       const doc = await firestore()
         .collection('Siddhi')
-        .doc(userId)
+        .doc(user.uid)
         .get();
 
       if (!doc.exists) return null;
@@ -79,12 +100,11 @@ class FirestoreService {
   /* ---------- GET ALL USER DATA ---------- */
   async getAllUserData() {
     try {
-      const userId = await this.getUserId();
-      if (!userId) return {};
+      const user = await this.getUser();
 
       const doc = await firestore()
         .collection('Siddhi')
-        .doc(userId)
+        .doc(user.uid)
         .get();
 
       return doc.exists ? doc.data() || {} : {};
@@ -97,26 +117,22 @@ class FirestoreService {
   /* ---------- INSURANCE POLICIES ---------- */
   async saveInsurancePolicy(policyData) {
     try {
-      const userId = await this.getUserId();
-      if (!userId) return null;
-
-      const userRef = firestore().collection('Siddhi').doc(userId);
+      const user = await this.getUser();
+      const userRef = firestore().collection('Siddhi').doc(user.uid);
       const doc = await userRef.get();
 
       const policies = normalizeArray(doc.data()?.insurancePolicies);
 
-      const policy = {
+      const policy = sanitize({
         ...policyData,
         id: policyData.id || generateUniqueId(),
-      };
+      });
 
       const index = policies.findIndex(p => p.id === policy.id);
       index >= 0 ? (policies[index] = policy) : policies.push(policy);
 
       await userRef.set(
-        {
-          insurancePolicies: policies,
-        },
+        { insurancePolicies: policies },
         { merge: true }
       );
 
@@ -129,12 +145,11 @@ class FirestoreService {
 
   async getInsurancePolicies() {
     try {
-      const userId = await this.getUserId();
-      if (!userId) return [];
+      const user = await this.getUser();
 
       const doc = await firestore()
         .collection('Siddhi')
-        .doc(userId)
+        .doc(user.uid)
         .get();
 
       return normalizeArray(doc.data()?.insurancePolicies);
@@ -146,19 +161,15 @@ class FirestoreService {
 
   async deleteInsurancePolicy(policyId) {
     try {
-      const userId = await this.getUserId();
-      if (!userId) return false;
-
-      const userRef = firestore().collection('Siddhi').doc(userId);
+      const user = await this.getUser();
+      const userRef = firestore().collection('Siddhi').doc(user.uid);
       const doc = await userRef.get();
 
       const policies = normalizeArray(doc.data()?.insurancePolicies)
         .filter(p => p.id !== policyId);
 
       await userRef.set(
-        {
-          insurancePolicies: policies,
-        },
+        { insurancePolicies: policies },
         { merge: true }
       );
 
@@ -172,30 +183,22 @@ class FirestoreService {
   /* ---------- EMERGENCY CONTACTS ---------- */
   async saveEmergencyContact(contactData) {
     try {
-      if (!contactData?.emergencyName || !contactData?.emergencyPhone) {
-        return null;
-      }
-
-      const userId = await this.getUserId();
-      if (!userId) return null;
-
-      const userRef = firestore().collection('Siddhi').doc(userId);
+      const user = await this.getUser();
+      const userRef = firestore().collection('Siddhi').doc(user.uid);
       const doc = await userRef.get();
 
       const contacts = normalizeArray(doc.data()?.emergencyContacts);
 
-      const contact = {
+      const contact = sanitize({
         ...contactData,
         id: contactData.id || generateUniqueId(),
-      };
+      });
 
       const index = contacts.findIndex(c => c.id === contact.id);
       index >= 0 ? (contacts[index] = contact) : contacts.push(contact);
 
       await userRef.set(
-        {
-          emergencyContacts: contacts,
-        },
+        { emergencyContacts: contacts },
         { merge: true }
       );
 
@@ -208,12 +211,11 @@ class FirestoreService {
 
   async getEmergencyContacts() {
     try {
-      const userId = await this.getUserId();
-      if (!userId) return [];
+      const user = await this.getUser();
 
       const doc = await firestore()
         .collection('Siddhi')
-        .doc(userId)
+        .doc(user.uid)
         .get();
 
       return normalizeArray(doc.data()?.emergencyContacts);
@@ -225,19 +227,15 @@ class FirestoreService {
 
   async deleteEmergencyContact(contactId) {
     try {
-      const userId = await this.getUserId();
-      if (!userId) return false;
-
-      const userRef = firestore().collection('Siddhi').doc(userId);
+      const user = await this.getUser();
+      const userRef = firestore().collection('Siddhi').doc(user.uid);
       const doc = await userRef.get();
 
       const contacts = normalizeArray(doc.data()?.emergencyContacts)
         .filter(c => c.id !== contactId);
 
       await userRef.set(
-        {
-          emergencyContacts: contacts,
-        },
+        { emergencyContacts: contacts },
         { merge: true }
       );
 
@@ -249,5 +247,6 @@ class FirestoreService {
   }
 }
 
-/* ---------- EXPORT ---------- */
+/* ================= EXPORT ================= */
+
 export default new FirestoreService();

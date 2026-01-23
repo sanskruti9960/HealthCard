@@ -179,7 +179,7 @@ const onRefresh = async () => {
   }
 >
 
-        <FlipCardBanner/>
+        <FlipCardBanner/>  {/* Flip card banner component */}
    
      <Text style={{ marginTop: 20, fontSize: 23, marginLeft: 10, fontWeight: "bold" }}>Service</Text>
 
@@ -235,7 +235,7 @@ const onRefresh = async () => {
           pagingEnabled
           showsHorizontalScrollIndicator={false}
           keyExtractor={(item) => item.id}
-        />
+        /> 
 
 
 

@@ -1,13 +1,13 @@
-import {
-  StyleSheet,
-  Text,
-  View,
-  TouchableOpacity,
-  ScrollView,
-  RefreshControl,
+import { 
+  StyleSheet, 
+  Text, 
+  View, 
+  TouchableOpacity, 
+  ScrollView, 
+  RefreshControl, 
+  ActivityIndicator
 } from 'react-native';
 import React, { useState, useEffect } from 'react';
-import HeartLoader from '../Animations/Customloader'; // adjust path if needed
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import FirestoreService, { USER_DATA_TYPES } from '../Services/firestoreSrevice';
 
@@ -43,11 +43,11 @@ const MedicalReportPreview = ({ navigation }) => {
       setError(null);
 
       const userData = await FirestoreService.getUserDataByType(USER_DATA_TYPES.MEDICAL);
-
+      
       // Check if this is first time (no data exists)
-      const hasData = userData && Object.keys(userData).length > 0 &&
-        Object.values(userData).some(value => value && value.toString().trim() !== '');
-
+      const hasData = userData && Object.keys(userData).length > 0 && 
+                     Object.values(userData).some(value => value && value.toString().trim() !== '');
+      
       if (!hasData) {
         // First-time user, redirect to form
         navigation.replace('MedicalInfo');
@@ -72,7 +72,7 @@ const MedicalReportPreview = ({ navigation }) => {
       setError(null);
 
       const userData = await FirestoreService.getUserDataByType(USER_DATA_TYPES.MEDICAL);
-
+      
       if (userData) {
         setMedicalInfo(userData);
         console.log('Refreshed medical data from Firestore');
@@ -88,13 +88,7 @@ const MedicalReportPreview = ({ navigation }) => {
     }
   };
 
-  const handleBack = () => {
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'MainTab' }],
-    });
-  };
-
+  const handleBack = () => navigation.goBack();
 
   const getMedicalFields = (medicalInfo) => [
     ['Medical Conditions', medicalInfo.medicalConditions],
@@ -105,7 +99,12 @@ const MedicalReportPreview = ({ navigation }) => {
   ];
 
   if (checkingFirstTime) {
-    return <HeartLoader visible={true} />;
+    return (
+      <View style={styles.loaderScreen}>
+        <ActivityIndicator size="large" color="#0A66C2" />
+        <Text style={styles.loaderText}>Loading your medical report...</Text>
+      </View>
+    );
   }
 
   return (
@@ -133,30 +132,33 @@ const MedicalReportPreview = ({ navigation }) => {
           <Text style={styles.heroSubtitle}>Report Details</Text>
         </View>
 
-
-        <View style={styles.container}>
-          {loading ? (
-            <HeartLoader visible={true} />
-          ) : error ? (
-            <View style={styles.errorContainer}>
-              <Icon name="error" size={24} color="#ff3b30" />
-              <Text style={styles.errorText}>{error}</Text>
-              <TouchableOpacity onPress={fetchMedicalData} style={styles.retryButton}>
-                <Text style={styles.retryText}>Retry</Text>
-              </TouchableOpacity>
+        
+            <View style={styles.container}>
+              {loading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color="#1C75BC" />
+                  <Text style={styles.loadingText}>Loading medical data...</Text>
+                </View>
+              ) : error ? (
+                <View style={styles.errorContainer}>
+                  <Icon name="error" size={24} color="#ff3b30" />
+                  <Text style={styles.errorText}>{error}</Text>
+                  <TouchableOpacity onPress={fetchMedicalData} style={styles.retryButton}>
+                    <Text style={styles.retryText}>Retry</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                getMedicalFields(medicalInfo).map(([label, value], index) => (
+                  <View key={label} style={styles.dataRow}>
+                    <Text style={styles.label}>{label}</Text>
+                    <Text style={[styles.value, !value || value.toString().trim() === '' ? styles.noDataText : null]}>
+                      {value && value.toString().trim() !== '' ? value : '-- Not Provided --'}
+                    </Text>
+                  </View>
+                ))
+              )}
             </View>
-          ) : (
-            getMedicalFields(medicalInfo).map(([label, value], index) => (
-              <View key={label} style={styles.dataRow}>
-                <Text style={styles.label}>{label}</Text>
-                <Text style={[styles.value, !value || value.toString().trim() === '' ? styles.noDataText : null]}>
-                  {value && value.toString().trim() !== '' ? value : '-- Not Provided --'}
-                </Text>
-              </View>
-            ))
-          )}
-        </View>
-
+          
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity
@@ -166,7 +168,7 @@ const MedicalReportPreview = ({ navigation }) => {
             <Icon name="edit" size={20} color="#1C75BC" />
             <Text style={styles.editButtonText}>Edit Medical Info</Text>
           </TouchableOpacity>
-
+   
         </View>
       </ScrollView>
     </View>
@@ -227,14 +229,12 @@ const styles = StyleSheet.create({
   container: {
     padding: 10,
   },
-
   dataRow: {
     padding: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-
   label: {
     fontWeight: '600',
     fontSize: 15,
@@ -321,5 +321,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-
 });
