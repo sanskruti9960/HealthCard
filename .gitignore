@@ -35,6 +35,10 @@ local.properties
 !debug.keystore
 .kotlin/
 
+# Android crash logs
+hs_err_pid*.log
+replay_pid*.log
+
 # node.js
 #
 node_modules/
